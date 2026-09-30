@@ -1,6 +1,5 @@
 import { ArrowRight, BadgeCheck, Calculator, FileText, Route } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
-import { BorderBeam } from "@/components/ui/border-beam";
 
 const owing = [
   { name: "Mama Nkechi", stall: "Row C · Fabrics", amt: "₦2,000", late: false },
@@ -11,8 +10,7 @@ const owing = [
 
 function Dashboard() {
   return (
-    <div className="relative rounded-3xl border border-white/15 bg-navy-950/80 p-5 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.8)] backdrop-blur">
-      <BorderBeam size={240} duration={12} delay={3} />
+    <div className="relative rounded-3xl border border-white/10 bg-navy-900 p-5">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-slate-400">Collector dashboard</p>
@@ -64,9 +62,8 @@ const perks = [
 export function Collectors() {
   return (
     <section id="collectors" className="relative scroll-mt-24 overflow-hidden px-4 py-24 sm:py-32">
-      <div className="absolute inset-0 bg-gradient-to-br from-electric via-navy-700 to-navy-950" />
-      <div className="bg-grid-light absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-      <div className="pointer-events-none absolute -left-20 -top-20 size-[500px] rounded-full bg-sky/30 blur-[120px]" />
+      <div className="absolute inset-0 bg-electric" />
+      <div className="bg-grid-light absolute inset-0" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2">
         <div>
@@ -84,7 +81,7 @@ export function Collectors() {
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
             {perks.map((p, i) => (
               <Reveal key={p.title} delay={i * 0.08}>
-                <div className="glass-dark h-full rounded-2xl p-4">
+                <div className="h-full rounded-2xl border border-white/15 bg-white/10 p-4">
                   <p.icon className="size-5 text-sky-300" />
                   <p className="mt-3 font-medium text-white">{p.title}</p>
                   <p className="mt-1 text-sm text-white/65">{p.body}</p>

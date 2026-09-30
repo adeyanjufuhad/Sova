@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* Sova design tokens: blue and white only (navy, royal blue, logo sky blue, white) */
+/* Sova design tokens: flat, blue and white only (navy, royal blue, logo sky blue, white).
+   No gradients, glows or glass effects. */
 @theme {
   --color-ink: #050b18;
   --color-navy-950: #070f22;
@@ -18,7 +19,6 @@
   --font-mono: var(--font-geist-mono);
 
   --animate-marquee: marquee var(--duration, 40s) linear infinite;
-  --animate-border-beam: border-beam calc(var(--duration, 8) * 1s) infinite linear;
   --animate-float: float 6s ease-in-out infinite;
   --animate-spin-slow: spin 40s linear infinite;
   --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
@@ -26,9 +26,6 @@
   @keyframes marquee {
     from { transform: translateX(0); }
     to { transform: translateX(calc(-100% - var(--gap))); }
-  }
-  @keyframes border-beam {
-    100% { offset-distance: 100%; }
   }
   @keyframes float {
     0%, 100% { transform: translateY(0); }
@@ -56,7 +53,7 @@ body {
   color: white;
 }
 
-/* Faint blueprint grid used behind the hero */
+/* Faint blueprint grid */
 .bg-grid {
   background-image:
     linear-gradient(to right, rgb(29 78 216 / 0.06) 1px, transparent 1px),
@@ -64,35 +61,12 @@ body {
   background-size: 56px 56px;
 }
 
-/* Same grid for use on blue bands */
+/* Same grid for use on solid blue bands */
 .bg-grid-light {
   background-image:
     linear-gradient(to right, rgb(255 255 255 / 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(255 255 255 / 0.08) 1px, transparent 1px);
   background-size: 56px 56px;
-}
-
-.text-gradient {
-  background: linear-gradient(100deg, var(--color-electric) 0%, #3b6ae8 50%, var(--color-sky) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Frosted white panel for use on the white page */
-.glass {
-  background: rgb(255 255 255 / 0.75);
-  border: 1px solid rgb(11 26 51 / 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-/* Frosted panel for use on blue bands */
-.glass-dark {
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04));
-  border: 1px solid rgb(255 255 255 / 0.16);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 @media (prefers-reduced-motion: reduce) {

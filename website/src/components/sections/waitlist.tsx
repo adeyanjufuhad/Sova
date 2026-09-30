@@ -41,9 +41,8 @@ export function Waitlist() {
 
   return (
     <section id="waitlist" className="scroll-mt-24 px-4 py-24 sm:py-32">
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 overflow-hidden rounded-[2rem] bg-gradient-to-br from-electric via-[#1a44c2] to-navy-800 p-6 sm:p-12 lg:grid-cols-[1fr_1.1fr] lg:p-16">
-        <div className="bg-grid-light pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top_left,black,transparent_70%)]" />
-        <div className="pointer-events-none absolute -right-24 -top-24 size-[420px] rounded-full bg-sky/40 blur-[120px]" />
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 overflow-hidden rounded-[2rem] bg-electric p-6 sm:p-12 lg:grid-cols-[1fr_1.1fr] lg:p-16">
+        <div className="bg-grid-light pointer-events-none absolute inset-0" />
         <Reveal className="relative">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-sky-300">Early access</p>
           <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-balance text-white sm:text-6xl">
@@ -59,7 +58,7 @@ export function Waitlist() {
         </Reveal>
 
         <Reveal delay={0.1} className="relative">
-          <div className="relative rounded-3xl bg-white p-6 shadow-[0_30px_60px_-30px_rgba(5,11,24,0.6)] sm:p-8">
+          <div className="relative rounded-3xl bg-white p-6 sm:p-8">
             {status.kind === "done" ? (
               <div className="flex flex-col items-center py-10 text-center">
                 <CheckCircle2 className="size-14 text-electric" />
