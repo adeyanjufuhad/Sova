@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.vercel/
+.env
+.env*.local
+.DS_Store
+Thumbs.db
+*.log
+.claude/
+website/.claude/
