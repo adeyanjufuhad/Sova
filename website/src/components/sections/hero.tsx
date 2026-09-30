@@ -2,7 +2,6 @@
 
 import { motion } from "motion/react";
 import { ArrowRight, BellRing, Check, Clock3, ShieldCheck } from "lucide-react";
-import { BorderBeam } from "@/components/ui/border-beam";
 import { LightRays } from "@/components/ui/light-rays";
 import { DownloadButton } from "@/components/ui/download-button";
 
@@ -16,9 +15,8 @@ const members = [
 function PhoneMock() {
   return (
     <div className="relative mx-auto w-[280px] sm:w-[300px]">
-      <div className="relative rounded-[2.6rem] border border-navy-900/20 bg-navy-950 p-2.5 shadow-[0_50px_100px_-30px_rgba(11,26,51,0.45)]">
-        <BorderBeam size={180} duration={9} />
-        <div className="overflow-hidden rounded-[2.1rem] bg-gradient-to-b from-navy-800 to-navy-950">
+      <div className="relative rounded-[2.6rem] border border-navy-900/20 bg-navy-950 p-2.5">
+        <div className="overflow-hidden rounded-[2.1rem] bg-navy-900">
           <div className="flex items-center justify-between px-5 pt-4 text-[11px] text-slate-400">
             <span>9:41</span>
             <span className="h-5 w-20 rounded-full bg-black/60" />
@@ -37,7 +35,7 @@ function PhoneMock() {
 
             <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-sky to-electric"
+                className="h-full rounded-full bg-sky"
                 initial={{ width: "0%" }}
                 animate={{ width: "75%" }}
                 transition={{ duration: 1.6, delay: 0.6, ease: "easeOut" }}
@@ -85,7 +83,7 @@ function PhoneMock() {
         transition={{ delay: 1.2, duration: 0.6 }}
         className="absolute -right-4 -top-6 hidden animate-float sm:block lg:-right-24"
       >
-        <div className="flex w-56 items-start gap-3 rounded-2xl border border-navy-900/10 bg-white p-3 shadow-[0_20px_40px_-16px_rgba(11,26,51,0.3)]">
+        <div className="flex w-56 items-start gap-3 rounded-2xl border border-navy-900/10 bg-white p-3">
           <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-electric/10 text-electric">
             <BellRing className="size-4" />
           </span>
@@ -102,7 +100,7 @@ function PhoneMock() {
         transition={{ delay: 1.5, duration: 0.6 }}
         className="absolute -bottom-16 left-1/2 hidden -translate-x-1/2 animate-float whitespace-nowrap [animation-delay:1.5s] sm:block"
       >
-        <div className="flex items-center gap-2.5 rounded-2xl border border-navy-900/10 bg-white px-3.5 py-2.5 shadow-[0_20px_40px_-16px_rgba(11,26,51,0.3)]">
+        <div className="flex items-center gap-2.5 rounded-2xl border border-navy-900/10 bg-white px-3.5 py-2.5">
           <ShieldCheck className="size-5 text-electric" />
           <p className="text-sm text-navy-900">Sova never holds your money</p>
         </div>
@@ -114,7 +112,7 @@ function PhoneMock() {
 export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden pt-32 pb-20 sm:pt-40 lg:pb-32">
-      {/* backdrop: blue light rays from the top, a faint grid, then a fade into the page */}
+      {/* backdrop: blue light rays from the top */}
       <div className="absolute inset-0">
         <LightRays
           raysOrigin="top-center"
@@ -130,8 +128,6 @@ export function Hero() {
           lightMode
         />
       </div>
-      <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,black,transparent)]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-white" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-16 px-4 lg:grid-cols-[1.1fr_1fr]">
         <div>
@@ -139,7 +135,7 @@ export function Hero() {
             href="#how"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm text-navy-800 shadow-sm"
+            className="inline-flex items-center gap-2 rounded-full border border-navy-900/10 bg-white py-1.5 pl-1.5 pr-4 text-sm text-navy-800"
           >
             <span className="rounded-full bg-electric px-2.5 py-0.5 text-xs font-medium text-white">New</span>
             Ajo · Esusu · Adashe, now with receipts
@@ -154,7 +150,7 @@ export function Hero() {
           >
             Your ajo,
             <br />
-            <span className="text-gradient">on record.</span>
+            <span className="text-electric">on record.</span>
           </motion.h1>
 
           <motion.p

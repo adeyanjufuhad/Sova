@@ -48,4 +48,4 @@ When the Android app is live on Google Play, set `NEXT_PUBLIC_PLAY_STORE_URL` an
 
 ## UI credits
 
-Several components are adapted from open-source libraries also listed on [21st.dev](https://21st.dev): Aceternity UI (Spotlight, Card Spotlight), Magic UI (Marquee, Border Beam, Blur Fade) and React Bits (Light Rays, hero background).
+Several components are adapted from open-source libraries listed on [21st.dev](https://21st.dev): Aceternity UI (Timeline, Container Scroll Animation), Magic UI (Marquee, Animated Beam, Blur Fade), React Bits (Light Rays) and Orbiting Circles 02. The site uses a flat style: solid colours, no gradients or glows.

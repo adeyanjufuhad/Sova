@@ -23,7 +23,7 @@ export function Navbar() {
       <nav
         className={cn(
           "mx-auto flex max-w-6xl items-center justify-between rounded-2xl px-4 py-2.5 transition-all duration-300 sm:px-5",
-          scrolled ? "glass shadow-[0_8px_30px_-12px_rgba(11,26,51,0.18)]" : "border border-transparent",
+          scrolled ? "border border-navy-900/10 bg-white" : "border border-transparent",
         )}
       >
         <a href="#top" aria-label="Sova home">
@@ -68,7 +68,7 @@ export function Navbar() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="glass mx-auto mt-2 max-w-6xl rounded-2xl p-2 shadow-lg md:hidden"
+            className="mx-auto mt-2 max-w-6xl rounded-2xl border border-navy-900/10 bg-white p-2 md:hidden"
           >
             {site.nav.map((item) => (
               <a

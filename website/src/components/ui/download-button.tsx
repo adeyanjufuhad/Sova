@@ -29,7 +29,7 @@ export function DownloadButton({
         "group inline-flex items-center gap-3 rounded-2xl border px-5 py-3 text-left transition",
         tone === "light"
           ? "border-navy-900/15 bg-white text-navy-900 hover:border-electric/40 hover:bg-mist"
-          : "border-white/20 bg-white/10 text-white backdrop-blur hover:bg-white/15",
+          : "border-white/20 bg-white/10 text-white hover:bg-white/15",
         className,
       )}
     >

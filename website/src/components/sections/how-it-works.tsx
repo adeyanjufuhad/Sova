@@ -31,7 +31,7 @@ export function HowItWorks() {
         eyebrow="How it works"
         title={
           <>
-            Start. Contribute. <span className="text-gradient">Build trust.</span>
+            Start. Contribute. <span className="text-electric">Build trust.</span>
           </>
         }
         sub="Sova doesn't change how ajo works. It gives it the records, reminders and receipts it never had."
@@ -46,7 +46,7 @@ export function HowItWorks() {
                   "flex h-full flex-col rounded-3xl p-7",
                   s.tone === "outline" && "border border-navy-900/10 bg-white",
                   s.tone === "dark" && "border border-electric/10 bg-mist",
-                  s.tone === "blue" && "bg-gradient-to-br from-electric to-navy-700 text-white",
+                  s.tone === "blue" && "bg-electric text-white",
                 )}
               >
                 <div className="flex items-center justify-between">

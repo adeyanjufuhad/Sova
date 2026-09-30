@@ -1,34 +1,65 @@
+"use client";
+
 import { Bell, MessageCircle, UserRound, UsersRound } from "lucide-react";
+import { Timeline, type TimelineEntry } from "@/components/ui/timeline";
 import { Reveal } from "@/components/ui/reveal";
 
-const ladder = [
-  { icon: Bell, when: "Day before", title: "Friendly SMS reminder", body: "A quiet nudge so no one forgets." },
-  { icon: MessageCircle, when: "On the day", title: "Second reminder", body: "Sent only to members who haven't paid yet." },
-  { icon: UserRound, when: "A day late", title: "Collector is told", body: "The organiser can follow up in person." },
-  { icon: UsersRound, when: "Still unpaid", title: "Group can see it", body: "Social pressure, used last, not first." },
+const steps = [
+  {
+    when: "Day before",
+    icon: Bell,
+    title: "Friendly SMS reminder",
+    body: "A quiet nudge to every member who pays tomorrow, so nobody forgets.",
+    message: "Ngozi, your ₦10,000 for Balogun Market Ajo is due tomorrow.",
+  },
+  {
+    when: "On the day",
+    icon: MessageCircle,
+    title: "Second reminder",
+    body: "Sent only to members who haven't paid yet. Everyone else is left alone.",
+    message: "Today is contribution day. Mama Chidinma collects on Friday.",
+  },
+  {
+    when: "A day late",
+    icon: UserRound,
+    title: "Collector is told",
+    body: "The organiser sees who is late and can follow up in person, the way ajo has always worked.",
+    message: "Ngozi E. is 1 day late on Balogun Market Ajo.",
+  },
+  {
+    when: "Still unpaid",
+    icon: UsersRound,
+    title: "Group can see it",
+    body: "The missed payment shows on the group record. Social pressure comes last, not first.",
+    message: "Group record updated: 11 of 12 paid this week.",
+  },
 ];
+
+const data: TimelineEntry[] = steps.map((s) => ({
+  title: s.when,
+  content: (
+    <div className="rounded-3xl border border-navy-900/10 bg-white p-6">
+      <div className="flex items-center gap-3">
+        <span className="grid size-11 place-items-center rounded-2xl bg-electric text-white">
+          <s.icon className="size-5" />
+        </span>
+        <h4 className="font-display text-xl font-semibold text-navy-900">{s.title}</h4>
+      </div>
+      <p className="mt-3 text-slate-600">{s.body}</p>
+      <div className="mt-5 rounded-2xl rounded-bl-md bg-mist px-4 py-3 text-sm text-navy-800">{s.message}</div>
+    </div>
+  ),
+}));
 
 export function Protection() {
   return (
-    <section className="relative overflow-hidden bg-mist px-4 py-24 text-navy-900 sm:py-32">
-      {/* Blurred blue orb seen through vertical glass slats */}
-      <div className="pointer-events-none absolute -right-40 top-1/2 hidden size-[720px] -translate-y-1/2 lg:block">
-        <div className="absolute inset-0 rounded-full bg-electric/80 blur-[70px]" />
-        <div className="absolute inset-0 flex">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-full flex-1 border-l border-white/30 bg-gradient-to-r from-white/25 via-white/5 to-transparent backdrop-blur-[2px]"
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="relative mx-auto max-w-6xl">
-        <div className="max-w-xl">
-          <Reveal>
+    <section className="px-4 py-24 sm:py-32">
+      <Timeline
+        data={data}
+        heading={
+          <Reveal className="max-w-2xl">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-electric">How Sova protects your ajo</p>
-            <h2 className="mt-4 font-display text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+            <h2 className="mt-4 font-display text-3xl font-semibold tracking-tight text-balance text-navy-900 sm:text-5xl">
               Missed payments get handled before they become fights.
             </h2>
             <p className="mt-4 text-lg text-slate-600">
@@ -36,25 +67,8 @@ export function Protection() {
               tracked. Sova follows up step by step, gently at first.
             </p>
           </Reveal>
-
-          <ol className="relative mt-12 space-y-4 before:absolute before:bottom-6 before:left-[27px] before:top-6 before:w-px before:bg-navy-900/15">
-            {ladder.map((s, i) => (
-              <Reveal key={s.title} delay={i * 0.08}>
-                <li className="relative flex gap-5 rounded-3xl border border-navy-900/[0.06] bg-white/90 p-4 pr-6 shadow-[0_10px_30px_-18px_rgba(11,26,51,0.25)] backdrop-blur">
-                  <span className="relative grid size-14 shrink-0 place-items-center rounded-2xl bg-navy-900 text-white">
-                    <s.icon className="size-5" />
-                  </span>
-                  <div>
-                    <p className="font-mono text-[11px] uppercase tracking-wider text-electric">{s.when}</p>
-                    <p className="mt-0.5 font-display text-lg font-semibold">{s.title}</p>
-                    <p className="text-sm text-slate-500">{s.body}</p>
-                  </div>
-                </li>
-              </Reveal>
-            ))}
-          </ol>
-        </div>
-      </div>
+        }
+      />
     </section>
   );
 }
