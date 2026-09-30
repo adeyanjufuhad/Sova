@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { ArrowRight, BellRing, Check, Clock3, ShieldCheck } from "lucide-react";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { LightRays } from "@/components/ui/light-rays";
 import { DownloadButton } from "@/components/ui/download-button";
 
 const members = [
@@ -99,7 +100,7 @@ function PhoneMock() {
         initial={{ opacity: 0, x: -30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 1.5, duration: 0.6 }}
-        className="absolute -left-6 bottom-28 hidden animate-float [animation-delay:1.5s] sm:block lg:-left-24"
+        className="absolute -bottom-16 left-1/2 hidden -translate-x-1/2 animate-float whitespace-nowrap [animation-delay:1.5s] sm:block"
       >
         <div className="flex items-center gap-2.5 rounded-2xl border border-navy-900/10 bg-white px-3.5 py-2.5 shadow-[0_20px_40px_-16px_rgba(11,26,51,0.3)]">
           <ShieldCheck className="size-5 text-electric" />
@@ -113,10 +114,24 @@ function PhoneMock() {
 export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden pt-32 pb-20 sm:pt-40 lg:pb-32">
-      {/* backdrop */}
-      <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,black,transparent)]" />
-      <div className="pointer-events-none absolute -right-40 top-10 size-[640px] rounded-full bg-electric/20 blur-[140px]" />
-      <div className="pointer-events-none absolute -left-40 bottom-0 size-[420px] rounded-full bg-sky/25 blur-[120px]" />
+      {/* backdrop: blue light rays from the top, a faint grid, then a fade into the page */}
+      <div className="absolute inset-0">
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#3b6ae8"
+          raysSpeed={1}
+          lightSpread={0.9}
+          rayLength={2.2}
+          fadeDistance={1.4}
+          followMouse
+          mouseInfluence={0.08}
+          noiseAmount={0.05}
+          distortion={0.04}
+          lightMode
+        />
+      </div>
+      <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,black,transparent)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-white" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-16 px-4 lg:grid-cols-[1.1fr_1fr]">
         <div>
