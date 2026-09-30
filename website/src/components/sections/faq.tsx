@@ -72,7 +72,7 @@ export function Faq() {
       <SectionHeading eyebrow="FAQ" title="Questions people ask us" />
 
       <div className="mt-10 flex justify-center">
-        <div role="tablist" aria-label="Language" className="glass inline-flex rounded-full p-1">
+        <div role="tablist" aria-label="Language" className="inline-flex rounded-full border border-navy-900/10 bg-mist p-1">
           {(
             [
               ["en", "English"],
@@ -86,7 +86,7 @@ export function Faq() {
               onClick={() => setLang(key)}
               className={cn(
                 "rounded-full px-5 py-2 text-sm transition",
-                lang === key ? "bg-electric text-white" : "text-slate-300 hover:text-white",
+                lang === key ? "bg-electric text-white shadow-sm" : "text-slate-600 hover:text-navy-900",
               )}
             >
               {label}
@@ -99,15 +99,15 @@ export function Faq() {
         {faqs[lang].map((item, i) => {
           const isOpen = open === i;
           return (
-            <li key={item.q} className="overflow-hidden rounded-2xl border border-white/10 bg-navy-900/50">
+            <li key={item.q} className="overflow-hidden rounded-2xl border border-navy-900/10 bg-white transition-colors hover:border-electric/25">
               <button
                 onClick={() => setOpen(isOpen ? null : i)}
                 aria-expanded={isOpen}
                 className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-6"
               >
-                <span className="font-medium text-white">{item.q}</span>
+                <span className="font-medium text-navy-900">{item.q}</span>
                 <Plus
-                  className={cn("size-5 shrink-0 text-sky transition-transform duration-300", isOpen && "rotate-45")}
+                  className={cn("size-5 shrink-0 text-electric transition-transform duration-300", isOpen && "rotate-45")}
                 />
               </button>
               <div
@@ -117,7 +117,7 @@ export function Faq() {
                 )}
               >
                 <div className="overflow-hidden">
-                  <p className="px-5 pb-5 text-slate-400 sm:px-6">{item.a}</p>
+                  <p className="px-5 pb-5 text-slate-600 sm:px-6">{item.a}</p>
                 </div>
               </div>
             </li>

@@ -65,7 +65,7 @@ export function Collectors() {
   return (
     <section id="collectors" className="relative scroll-mt-24 overflow-hidden px-4 py-24 sm:py-32">
       <div className="absolute inset-0 bg-gradient-to-br from-electric via-navy-700 to-navy-950" />
-      <div className="bg-grid absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+      <div className="bg-grid-light absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <div className="pointer-events-none absolute -left-20 -top-20 size-[500px] rounded-full bg-sky/30 blur-[120px]" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2">
@@ -84,7 +84,7 @@ export function Collectors() {
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
             {perks.map((p, i) => (
               <Reveal key={p.title} delay={i * 0.08}>
-                <div className="glass h-full rounded-2xl p-4">
+                <div className="glass-dark h-full rounded-2xl p-4">
                   <p.icon className="size-5 text-sky-300" />
                   <p className="mt-3 font-medium text-white">{p.title}</p>
                   <p className="mt-1 text-sm text-white/65">{p.body}</p>
@@ -96,7 +96,7 @@ export function Collectors() {
           <Reveal delay={0.2}>
             <a
               href="#waitlist"
-              className="group mt-10 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 font-medium text-navy-900 transition hover:bg-sky-300"
+              className="group mt-10 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 font-medium text-navy-900 transition hover:bg-mist"
             >
               Register as a collector
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />

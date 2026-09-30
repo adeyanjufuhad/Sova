@@ -6,7 +6,7 @@ export function SectionHeading({
   title,
   sub,
   className,
-  tone = "dark",
+  tone = "light",
 }: {
   eyebrow: string;
   title: React.ReactNode;
@@ -19,7 +19,7 @@ export function SectionHeading({
       <p
         className={cn(
           "font-mono text-xs uppercase tracking-[0.2em]",
-          tone === "dark" ? "text-sky" : "text-electric",
+          tone === "dark" ? "text-sky-300" : "text-electric",
         )}
       >
         {eyebrow}
@@ -36,7 +36,7 @@ export function SectionHeading({
         <p
           className={cn(
             "mt-4 text-base text-pretty sm:text-lg",
-            tone === "dark" ? "text-slate-300" : "text-navy-700/80",
+            tone === "dark" ? "text-white/75" : "text-slate-600",
           )}
         >
           {sub}

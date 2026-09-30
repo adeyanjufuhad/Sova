@@ -10,7 +10,7 @@ const ladder = [
 
 export function Protection() {
   return (
-    <section className="relative overflow-hidden bg-white px-4 py-24 text-navy-900 sm:py-32">
+    <section className="relative overflow-hidden bg-mist px-4 py-24 text-navy-900 sm:py-32">
       {/* Blurred blue orb seen through vertical glass slats */}
       <div className="pointer-events-none absolute -right-40 top-1/2 hidden size-[720px] -translate-y-1/2 lg:block">
         <div className="absolute inset-0 rounded-full bg-electric/80 blur-[70px]" />
@@ -31,7 +31,7 @@ export function Protection() {
             <h2 className="mt-4 font-display text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
               Missed payments get handled before they become fights.
             </h2>
-            <p className="mt-4 text-lg text-navy-700/80">
+            <p className="mt-4 text-lg text-slate-600">
               Most circles don&apos;t collapse from one bad person. They collapse from small delays that nobody
               tracked. Sova follows up step by step, gently at first.
             </p>
@@ -40,14 +40,14 @@ export function Protection() {
           <ol className="relative mt-12 space-y-4 before:absolute before:bottom-6 before:left-[27px] before:top-6 before:w-px before:bg-navy-900/15">
             {ladder.map((s, i) => (
               <Reveal key={s.title} delay={i * 0.08}>
-                <li className="relative flex gap-5 rounded-3xl border border-navy-900/10 bg-white/80 p-4 pr-6 backdrop-blur">
+                <li className="relative flex gap-5 rounded-3xl border border-navy-900/[0.06] bg-white/90 p-4 pr-6 shadow-[0_10px_30px_-18px_rgba(11,26,51,0.25)] backdrop-blur">
                   <span className="relative grid size-14 shrink-0 place-items-center rounded-2xl bg-navy-900 text-white">
                     <s.icon className="size-5" />
                   </span>
                   <div>
                     <p className="font-mono text-[11px] uppercase tracking-wider text-electric">{s.when}</p>
                     <p className="mt-0.5 font-display text-lg font-semibold">{s.title}</p>
-                    <p className="text-sm text-navy-700/70">{s.body}</p>
+                    <p className="text-sm text-slate-500">{s.body}</p>
                   </div>
                 </li>
               </Reveal>

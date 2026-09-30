@@ -2,7 +2,6 @@
 
 import { motion } from "motion/react";
 import { ArrowRight, BellRing, Check, Clock3, ShieldCheck } from "lucide-react";
-import { Spotlight } from "@/components/ui/spotlight";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { DownloadButton } from "@/components/ui/download-button";
 
@@ -16,7 +15,7 @@ const members = [
 function PhoneMock() {
   return (
     <div className="relative mx-auto w-[280px] sm:w-[300px]">
-      <div className="relative rounded-[2.6rem] border border-white/15 bg-navy-950 p-2.5 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.7)]">
+      <div className="relative rounded-[2.6rem] border border-navy-900/20 bg-navy-950 p-2.5 shadow-[0_50px_100px_-30px_rgba(11,26,51,0.45)]">
         <BorderBeam size={180} duration={9} />
         <div className="overflow-hidden rounded-[2.1rem] bg-gradient-to-b from-navy-800 to-navy-950">
           <div className="flex items-center justify-between px-5 pt-4 text-[11px] text-slate-400">
@@ -85,13 +84,13 @@ function PhoneMock() {
         transition={{ delay: 1.2, duration: 0.6 }}
         className="absolute -right-4 -top-6 hidden animate-float sm:block lg:-right-24"
       >
-        <div className="flex w-56 items-start gap-3 rounded-2xl border border-white/15 bg-navy-800/95 p-3 shadow-2xl backdrop-blur-xl">
-          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/10 text-white">
+        <div className="flex w-56 items-start gap-3 rounded-2xl border border-navy-900/10 bg-white p-3 shadow-[0_20px_40px_-16px_rgba(11,26,51,0.3)]">
+          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-electric/10 text-electric">
             <BellRing className="size-4" />
           </span>
           <div>
-            <p className="text-[11px] text-slate-400">SMS receipt · just now</p>
-            <p className="text-sm leading-snug text-white">Tunde paid ₦10,000. Recorded by Sova.</p>
+            <p className="text-[11px] text-slate-500">SMS receipt · just now</p>
+            <p className="text-sm leading-snug text-navy-900">Tunde paid ₦10,000. Recorded by Sova.</p>
           </div>
         </div>
       </motion.div>
@@ -102,9 +101,9 @@ function PhoneMock() {
         transition={{ delay: 1.5, duration: 0.6 }}
         className="absolute -left-6 bottom-28 hidden animate-float [animation-delay:1.5s] sm:block lg:-left-24"
       >
-        <div className="flex items-center gap-2.5 rounded-2xl border border-white/15 bg-navy-800/95 px-3.5 py-2.5 shadow-2xl backdrop-blur-xl">
-          <ShieldCheck className="size-5 text-sky" />
-          <p className="text-sm text-white">Sova never holds your money</p>
+        <div className="flex items-center gap-2.5 rounded-2xl border border-navy-900/10 bg-white px-3.5 py-2.5 shadow-[0_20px_40px_-16px_rgba(11,26,51,0.3)]">
+          <ShieldCheck className="size-5 text-electric" />
+          <p className="text-sm text-navy-900">Sova never holds your money</p>
         </div>
       </motion.div>
     </div>
@@ -116,9 +115,8 @@ export function Hero() {
     <section id="top" className="relative overflow-hidden pt-32 pb-20 sm:pt-40 lg:pb-32">
       {/* backdrop */}
       <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,black,transparent)]" />
-      <Spotlight />
-      <div className="pointer-events-none absolute -right-40 top-10 size-[640px] rounded-full bg-electric/25 blur-[140px]" />
-      <div className="pointer-events-none absolute -left-40 bottom-0 size-[420px] rounded-full bg-sky/15 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-40 top-10 size-[640px] rounded-full bg-electric/20 blur-[140px]" />
+      <div className="pointer-events-none absolute -left-40 bottom-0 size-[420px] rounded-full bg-sky/25 blur-[120px]" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-16 px-4 lg:grid-cols-[1.1fr_1fr]">
         <div>
@@ -126,7 +124,7 @@ export function Hero() {
             href="#how"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm text-slate-200"
+            className="glass inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm text-navy-800 shadow-sm"
           >
             <span className="rounded-full bg-electric px-2.5 py-0.5 text-xs font-medium text-white">New</span>
             Ajo · Esusu · Adashe, now with receipts
@@ -137,7 +135,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.7 }}
-            className="mt-6 font-display text-5xl font-semibold leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl"
+            className="mt-6 font-display text-5xl font-semibold leading-[1.02] tracking-tight text-navy-900 sm:text-6xl lg:text-7xl"
           >
             Your ajo,
             <br />
@@ -148,7 +146,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.7 }}
-            className="mt-6 max-w-xl text-lg text-pretty text-slate-300"
+            className="mt-6 max-w-xl text-lg text-pretty text-slate-600"
           >
             Sova keeps your savings circle honest. Every contribution gets a receipt, every member
             knows their turn, and reminders go out before anyone forgets. The money moves between
@@ -175,11 +173,11 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.7 }}
-            className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400"
+            className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500"
           >
             {["SMS receipts", "Works on low-end Android", "English, Pidgin, Yoruba, Hausa, Igbo"].map((t) => (
               <li key={t} className="flex items-center gap-2">
-                <Check className="size-4 text-sky" /> {t}
+                <Check className="size-4 text-electric" /> {t}
               </li>
             ))}
           </motion.ul>
@@ -193,9 +191,9 @@ export function Hero() {
         >
           {/* orbit rings echoing the logo */}
           <div className="pointer-events-none absolute left-1/2 top-1/2 size-[520px] -translate-x-1/2 -translate-y-1/2">
-            <div className="absolute inset-0 animate-spin-slow rounded-full border border-dashed border-sky/20" />
-            <div className="absolute inset-12 rounded-full border border-white/5" />
-            <div className="absolute inset-24 rounded-full border border-electric/20" />
+            <div className="absolute inset-0 animate-spin-slow rounded-full border border-dashed border-electric/20" />
+            <div className="absolute inset-12 rounded-full border border-electric/10" />
+            <div className="absolute inset-24 rounded-full border border-sky/30" />
           </div>
           <PhoneMock />
         </motion.div>
