@@ -44,31 +44,31 @@ export function HowItWorks() {
               <div
                 className={cn(
                   "flex h-full flex-col rounded-3xl p-7",
-                  s.tone === "outline" && "border border-white/15 bg-white/[0.02]",
-                  s.tone === "dark" && "border border-white/10 bg-navy-800",
-                  s.tone === "blue" && "bg-gradient-to-br from-electric to-navy-700 ",
+                  s.tone === "outline" && "border border-navy-900/10 bg-white",
+                  s.tone === "dark" && "border border-electric/10 bg-mist",
+                  s.tone === "blue" && "bg-gradient-to-br from-electric to-navy-700 text-white",
                 )}
               >
                 <div className="flex items-center justify-between">
                   <span
                     className={cn(
                       "grid size-11 place-items-center rounded-2xl",
-                      s.tone === "blue" ? "bg-white/15 text-white" : "bg-electric/15 text-sky",
+                      s.tone === "blue" ? "bg-white/15 text-white" : "bg-electric/10 text-electric",
                     )}
                   >
                     <s.icon className="size-5" />
                   </span>
-                  <span className="font-mono text-xs text-white/40">0{i + 1}</span>
+                  <span className={cn("font-mono text-xs", s.tone === "blue" ? "text-white/50" : "text-navy-900/30")}>0{i + 1}</span>
                 </div>
-                <h3 className="mt-8 font-display text-xl font-semibold text-white">{s.title}</h3>
-                <p className={cn("mt-3 text-sm leading-relaxed", s.tone === "blue" ? "text-white/80" : "text-slate-400")}>
+                <h3 className={cn("mt-8 font-display text-xl font-semibold", s.tone === "blue" ? "text-white" : "text-navy-900")}>{s.title}</h3>
+                <p className={cn("mt-3 text-sm leading-relaxed", s.tone === "blue" ? "text-white/80" : "text-slate-600")}>
                   {s.body}
                 </p>
               </div>
             </Reveal>
             {i < steps.length - 1 && (
               <div className="hidden items-center justify-center md:flex">
-                <ArrowRight className="size-6 text-slate-500" />
+                <ArrowRight className="size-6 text-electric/40" />
               </div>
             )}
           </div>

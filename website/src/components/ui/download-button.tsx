@@ -13,26 +13,40 @@ function AndroidGlyph({ className }: { className?: string }) {
  * Points to Google Play once NEXT_PUBLIC_PLAY_STORE_URL is set.
  * Until then it's an honest "coming soon" that scrolls to the waitlist.
  */
-export function DownloadButton({ className }: { className?: string }) {
+export function DownloadButton({
+  className,
+  tone = "light",
+}: {
+  className?: string;
+  tone?: "light" | "blue";
+}) {
   const live = Boolean(site.playStoreUrl);
   return (
     <a
       href={live ? site.playStoreUrl : "#waitlist"}
       {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className={cn(
-        "group inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-left text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10",
+        "group inline-flex items-center gap-3 rounded-2xl border px-5 py-3 text-left transition",
+        tone === "light"
+          ? "border-navy-900/15 bg-white text-navy-900 hover:border-electric/40 hover:bg-mist"
+          : "border-white/20 bg-white/10 text-white backdrop-blur hover:bg-white/15",
         className,
       )}
     >
-      <AndroidGlyph className="size-6 text-white" />
+      <AndroidGlyph className={cn("size-6", tone === "light" ? "text-electric" : "text-white")} />
       <span className="leading-tight">
-        <span className="block text-[11px] uppercase tracking-wider text-slate-400">
+        <span className={cn("block text-[11px] uppercase tracking-wider", tone === "light" ? "text-slate-500" : "text-white/60")}>
           {live ? "Get it on" : "Coming soon to"}
         </span>
         <span className="block font-medium">Google Play</span>
       </span>
       {!live && (
-        <span className="ml-1 rounded-full bg-sky/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-sky">
+        <span
+          className={cn(
+            "ml-1 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+            tone === "light" ? "bg-electric/10 text-electric" : "bg-white/15 text-white",
+          )}
+        >
           Soon
         </span>
       )}

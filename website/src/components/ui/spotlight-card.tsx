@@ -9,7 +9,7 @@ export function SpotlightCard({
   children,
   className,
   radius = 320,
-  color = "rgba(59, 106, 232, 0.14)",
+  color = "rgba(29, 78, 216, 0.07)",
 }: {
   children: React.ReactNode;
   className?: string;
@@ -28,7 +28,7 @@ export function SpotlightCard({
         y.set(e.clientY - r.top);
       }}
       className={cn(
-        "group/card relative overflow-hidden rounded-3xl border border-white/10 bg-navy-900/60 p-6 transition-colors hover:border-white/20",
+        "group/card relative overflow-hidden rounded-3xl border border-navy-900/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(11,26,51,0.04),0_12px_32px_-16px_rgba(11,26,51,0.12)] transition-colors hover:border-electric/25",
         className,
       )}
     >

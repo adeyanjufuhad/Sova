@@ -23,11 +23,11 @@ export function Navbar() {
       <nav
         className={cn(
           "mx-auto flex max-w-6xl items-center justify-between rounded-2xl px-4 py-2.5 transition-all duration-300 sm:px-5",
-          scrolled ? "glass shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)]" : "border border-transparent",
+          scrolled ? "glass shadow-[0_8px_30px_-12px_rgba(11,26,51,0.18)]" : "border border-transparent",
         )}
       >
         <a href="#top" aria-label="Sova home">
-          <Logo />
+          <Logo variant="navy" />
         </a>
 
         <ul className="hidden items-center gap-1 md:flex">
@@ -35,7 +35,7 @@ export function Navbar() {
             <li key={item.href}>
               <a
                 href={item.href}
-                className="rounded-full px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                className="rounded-full px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-electric/5 hover:text-navy-900"
               >
                 {item.label}
               </a>
@@ -53,7 +53,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex size-10 items-center justify-center rounded-xl text-white hover:bg-white/10 md:hidden"
+            className="inline-flex size-10 items-center justify-center rounded-xl text-navy-900 hover:bg-navy-900/5 md:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
           >
@@ -68,14 +68,14 @@ export function Navbar() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="glass mx-auto mt-2 max-w-6xl rounded-2xl p-2 md:hidden"
+            className="glass mx-auto mt-2 max-w-6xl rounded-2xl p-2 shadow-lg md:hidden"
           >
             {site.nav.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="block rounded-xl px-4 py-3 text-base text-slate-200 hover:bg-white/5"
+                className="block rounded-xl px-4 py-3 text-base text-navy-800 hover:bg-mist"
               >
                 {item.label}
               </a>
