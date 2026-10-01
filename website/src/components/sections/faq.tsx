@@ -16,7 +16,7 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "What if someone collects their payout and stops paying?",
-      a: "Sova can't force anyone to pay, but it makes it much harder to get away with. New members collect last, reminders go out before every due date, and every missed payment stays on a record the whole group can see.",
+      a: "Sova can't force anyone to pay, but it makes it much harder to get away with. New members collect last and join on another member's word, everyone signs the group's rules, and anyone who collects and then misses a payment is flagged on the group record.",
     },
     {
       q: "Do I need a smartphone to join a circle?",
@@ -42,7 +42,7 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "If person collect money finish, come stop to pay nko?",
-      a: "Sova no fit force anybody pay, but e go hard person to do am. New member go collect last, reminder go dey go before every due date, and any payment wey person miss go show for record wey the whole group fit see.",
+      a: "Sova no fit force anybody pay, but e go hard person to do am. New member go collect last and somebody for the group go stand for am, everybody go sign the group rules, and anybody wey collect finish come stop to pay go show for the group record.",
     },
     {
       q: "I need smartphone before I fit join?",

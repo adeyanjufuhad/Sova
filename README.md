@@ -41,7 +41,10 @@ Only the website's server-side API route connects (via `DATABASE_URL`), so the b
 
 `db/migrations/20261001000000_app_schema.sql` holds the app schema, rebuilt for Neon from the old Expo/Supabase app:
 users, groups, group_members, rounds, contributions, notifications, scores and nigerian_banks, plus the
-`force_advance_round`, `calculate_sova_score` (v1 formula) and PIN-lockout functions. It does not depend on
+`force_advance_round`, `calculate_sova_score` (v1 formula) and PIN-lockout functions.
+`20261002000000_trust_features.sql` adds group rules and acceptances, vouching, proof of payment, payout
+receipts (`confirm_payout`), swap requests (`accept_swap`), slot handover (`approve_handover`), disputes with a
+timeline, and the `unfinished_obligations` view that flags members who collected and then stopped paying. It does not depend on
 Supabase Auth, so the Flutter app's login method is still open. Old Supabase data was not carried over.
 
 ## Deploy the website (free)
