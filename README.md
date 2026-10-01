@@ -37,6 +37,13 @@ Open http://localhost:3000.
 The waitlist lives in the Neon project **sova**. To recreate it, run `db/migrations/20260930000000_waitlist.sql` in the Neon SQL editor.
 Only the website's server-side API route connects (via `DATABASE_URL`), so the browser never touches the database. Read signups in the Neon console's Tables view or SQL editor.
 
+## App database
+
+`db/migrations/20261001000000_app_schema.sql` holds the app schema, rebuilt for Neon from the old Expo/Supabase app:
+users, groups, group_members, rounds, contributions, notifications, scores and nigerian_banks, plus the
+`force_advance_round`, `calculate_sova_score` (v1 formula) and PIN-lockout functions. It does not depend on
+Supabase Auth, so the Flutter app's login method is still open. Old Supabase data was not carried over.
+
 ## Deploy the website (free)
 
 1. Import this repo at https://vercel.com/new
