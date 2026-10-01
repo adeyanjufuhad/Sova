@@ -100,7 +100,7 @@ function RecordScreen() {
     <Screen title="My Sova record" className="hidden md:flex">
       <div className="rounded-2xl border border-navy-900/10 p-4 text-center">
         <p className="text-[11px] text-slate-500">On-time payments</p>
-        <p className="font-display text-4xl font-semibold text-electric">98%</p>
+        <p className="font-display text-4xl font-bold text-electric">98%</p>
         <p className="text-[11px] text-slate-500">46 of 47 contributions</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -130,8 +130,8 @@ export function AppPreview() {
       <ContainerScroll
         titleComponent={
           <>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-electric">The Sova app</p>
-            <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-navy-900 md:text-6xl">
+            <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric"><span className="size-1.5 bg-electric" /> The Sova app</p>
+            <h2 className="mt-4 font-display text-4xl font-bold tracking-tight text-navy-900 md:text-6xl">
               Your whole circle,
               <br />
               in your pocket.

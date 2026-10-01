@@ -18,15 +18,16 @@ export function SectionHeading({
     <Reveal className={cn("mx-auto max-w-2xl text-center", className)}>
       <p
         className={cn(
-          "font-mono text-xs uppercase tracking-[0.2em]",
+          "inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em]",
           tone === "dark" ? "text-sky-300" : "text-electric",
         )}
       >
+        <span className={cn("size-1.5", tone === "dark" ? "bg-sky-300" : "bg-electric")} />
         {eyebrow}
       </p>
       <h2
         className={cn(
-          "mt-4 font-display text-3xl font-semibold tracking-tight text-balance sm:text-5xl",
+          "mt-4 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl",
           tone === "dark" ? "text-white" : "text-navy-900",
         )}
       >

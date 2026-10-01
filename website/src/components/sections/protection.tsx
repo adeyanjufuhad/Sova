@@ -58,8 +58,8 @@ export function Protection() {
         data={data}
         heading={
           <Reveal className="max-w-2xl">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-electric">How Sova protects your ajo</p>
-            <h2 className="mt-4 font-display text-3xl font-semibold tracking-tight text-balance text-navy-900 sm:text-5xl">
+            <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric"><span className="size-1.5 bg-electric" /> How Sova protects your ajo</p>
+            <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-balance text-navy-900 sm:text-5xl">
               Missed payments get handled before they become fights.
             </h2>
             <p className="mt-4 text-lg text-slate-600">

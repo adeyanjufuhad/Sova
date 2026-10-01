@@ -10,6 +10,7 @@ export const site = {
     { label: "How it works", href: "#how" },
     { label: "Features", href: "#features" },
     { label: "Collectors", href: "#collectors" },
+    { label: "Our promise", href: "#promise" },
     { label: "FAQ", href: "#faq" },
   ],
 };

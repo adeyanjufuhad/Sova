@@ -9,6 +9,7 @@ import { Protection } from "@/components/sections/protection";
 import { Collectors } from "@/components/sections/collectors";
 import { Faq } from "@/components/sections/faq";
 import { AppPreview } from "@/components/sections/app-preview";
+import { SovaPromise } from "@/components/sections/promise";
 import { Waitlist } from "@/components/sections/waitlist";
 import { Footer } from "@/components/sections/footer";
 
@@ -18,15 +19,16 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
-        <Ticker />
         <HowItWorks />
         <RecordFlow />
         <Features />
         <Protection />
         <Circle />
+        <Ticker />
         <Collectors />
-        <Faq />
+        <SovaPromise />
         <AppPreview />
+        <Faq />
         <Waitlist />
       </main>
       <Footer />

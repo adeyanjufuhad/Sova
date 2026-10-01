@@ -1,9 +1,8 @@
 "use client";
 
-// "Orbiting Circles 02" (via 21st.dev), adapted for Sova: icons are passed in
-// as lucide components instead of remote logo images, colours use Sova tokens,
-// and the centre globe is our own ParticleSphere.
-import type { LucideIcon } from "lucide-react";
+// "Orbiting Circles 02" (via 21st.dev), adapted for Sova: items are any React
+// node (icons or text labels) instead of remote logo images, colours use Sova
+// tokens, and the centre globe is our own ParticleSphere.
 import { ParticleSphere } from "./particle-sphere";
 
 export type Orbit = {
@@ -11,7 +10,7 @@ export type Orbit = {
   size: string;
   /** seconds per revolution */
   duration: number;
-  icons: { icon: LucideIcon; label: string; angle: number }[];
+  items: { id: string; content: React.ReactNode; angle: number }[];
 };
 
 export function OrbitingCircles({ orbits }: { orbits: Orbit[] }) {
@@ -24,7 +23,7 @@ export function OrbitingCircles({ orbits }: { orbits: Orbit[] }) {
         @keyframes counter-ccw { from { transform: rotate(var(--counter-offset, 0deg)) } to { transform: rotate(calc(var(--counter-offset, 0deg) + 360deg)) } }
       `}</style>
 
-      {/* Centre globe, half below the fold of the section */}
+      {/* Centre globe, half below the bottom edge */}
       <div className="pointer-events-none absolute bottom-0 left-1/2 z-10 aspect-square w-75 -translate-x-1/2 translate-y-1/2 md:w-145">
         <ParticleSphere />
       </div>
@@ -39,10 +38,12 @@ export function OrbitingCircles({ orbits }: { orbits: Orbit[] }) {
             key={index}
             className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rounded-full border border-navy-900/10 ${orbit.size}`}
           >
-            {orbit.icons.map(({ icon: Icon, label, angle }) => (
+            {orbit.items.map(({ id, content, angle }) => (
+              // Zero-width arm from the ring's centre to its top edge; the item
+              // sits centred on the arm's tip and counter-rotates to stay upright.
               <div
-                key={label}
-                className="absolute left-1/2 top-0 -ml-8 flex h-1/2 origin-bottom flex-col items-center justify-start"
+                key={id}
+                className="absolute left-1/2 top-0 flex h-1/2 w-0 origin-bottom flex-col items-center justify-start"
                 style={
                   {
                     "--start-angle": `${angle}deg`,
@@ -51,8 +52,7 @@ export function OrbitingCircles({ orbits }: { orbits: Orbit[] }) {
                 }
               >
                 <div
-                  title={label}
-                  className="relative z-10 -mt-8 rounded-full border border-navy-900/10 bg-white p-3 text-electric sm:p-4"
+                  className="relative z-10 -mt-5 shrink-0"
                   style={
                     {
                       "--counter-offset": `${-angle}deg`,
@@ -60,7 +60,7 @@ export function OrbitingCircles({ orbits }: { orbits: Orbit[] }) {
                     } as React.CSSProperties
                   }
                 >
-                  <Icon className="size-6 md:size-8" strokeWidth={1.75} aria-label={label} />
+                  {content}
                 </div>
               </div>
             ))}

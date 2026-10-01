@@ -14,13 +14,12 @@
   --color-sky-300: #a9d8ee;
   --color-mist: #f3f6fd;
 
-  --font-sans: var(--font-geist-sans);
-  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-jakarta);
+  --font-display: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
 
   --animate-marquee: marquee var(--duration, 40s) linear infinite;
   --animate-float: float 6s ease-in-out infinite;
-  --animate-spin-slow: spin 40s linear infinite;
   --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
 
   @keyframes marquee {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { DownloadButton } from "@/components/ui/download-button";
 import { Reveal } from "@/components/ui/reveal";
+import { AdirePattern } from "@/components/ui/adire";
 import { cn } from "@/lib/utils";
 
 const roles = [
@@ -42,10 +43,10 @@ export function Waitlist() {
   return (
     <section id="waitlist" className="scroll-mt-24 px-4 py-24 sm:py-32">
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 overflow-hidden rounded-[2rem] bg-electric p-6 sm:p-12 lg:grid-cols-[1fr_1.1fr] lg:p-16">
-        <div className="bg-grid-light pointer-events-none absolute inset-0" />
+        <AdirePattern id="waitlist-adire" className="text-white/[0.08]" />
         <Reveal className="relative">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-sky-300">Early access</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-balance text-white sm:text-6xl">
+          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-sky-300"><span className="size-1.5 bg-sky-300" /> Early access</p>
+          <h2 className="mt-4 font-display text-4xl font-bold tracking-tight text-balance text-white sm:text-6xl">
             Be first when Sova <span className="text-sky-300">goes live.</span>
           </h2>
           <p className="mt-5 max-w-md text-lg text-white/80">
