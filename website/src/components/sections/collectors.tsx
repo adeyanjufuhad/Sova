@@ -1,5 +1,6 @@
 import { ArrowRight, BadgeCheck, Calculator, FileText, Route } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
+import { AdirePattern } from "@/components/ui/adire";
 
 const owing = [
   { name: "Mama Nkechi", stall: "Row C · Fabrics", amt: "₦2,000", late: false },
@@ -63,13 +64,13 @@ export function Collectors() {
   return (
     <section id="collectors" className="relative scroll-mt-24 overflow-hidden px-4 py-24 sm:py-32">
       <div className="absolute inset-0 bg-electric" />
-      <div className="bg-grid-light absolute inset-0" />
+      <AdirePattern id="collectors-adire" className="text-white/[0.08]" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2">
         <div>
           <Reveal>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-sky-300">For alajo &amp; esusu collectors</p>
-            <h2 className="mt-4 font-display text-3xl font-semibold tracking-tight text-balance text-white sm:text-5xl">
+            <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-sky-300"><span className="size-1.5 bg-sky-300" /> For alajo &amp; esusu collectors</p>
+            <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-balance text-white sm:text-5xl">
               Run every group from one phone.
             </h2>
             <p className="mt-4 text-lg text-white/75">
