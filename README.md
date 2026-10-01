@@ -8,7 +8,7 @@ Records, reminders and receipts for ajo, esusu and adashe savings circles. Sova 
 | --- | --- |
 | `website/` | Marketing site + waitlist (Next.js, Tailwind CSS v4, Motion) |
 | `db/migrations/` | Database schema (Neon Postgres) |
-| `app/` | Flutter Android app *(coming next)* |
+| `app/` | Flutter Android app, package `ng.sova.app` (Riverpod, GoRouter) |
 
 ## Zero-cost stack
 
@@ -46,6 +46,18 @@ users, groups, group_members, rounds, contributions, notifications, scores and n
 receipts (`confirm_payout`), swap requests (`accept_swap`), slot handover (`approve_handover`), disputes with a
 timeline, and the `unfinished_obligations` view that flags members who collected and then stopped paying. It does not depend on
 Supabase Auth, so the Flutter app's login method is still open. Old Supabase data was not carried over.
+
+## App: run locally
+
+```bash
+cd app
+flutter pub get
+flutter run            # on a connected Android phone or emulator
+flutter test           # unit + sign-up flow tests
+```
+
+The app currently runs on an in-memory demo backend (`lib/data/demo_repository.dart`); the OTP is `123456`.
+Screens talk only to the `SovaRepository` interface, so the real API can replace the demo without touching UI code.
 
 ## Deploy the website (free)
 
