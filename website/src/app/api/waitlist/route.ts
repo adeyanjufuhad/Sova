@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { neon } from "@neondatabase/serverless";
 
 const ROLES = new Set(["member", "admin", "collector"]);
 
@@ -14,9 +14,9 @@ function normalisePhone(raw: string): string | null {
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 export async function POST(req: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
+  // Server-only Neon connection string; never exposed to the browser.
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
     return NextResponse.json({ error: "The waitlist isn't open yet. Please check back soon." }, { status: 503 });
   }
 
@@ -41,12 +41,15 @@ export async function POST(req: Request) {
   if (!phone) return NextResponse.json({ error: "Please enter a valid Nigerian phone number." }, { status: 400 });
   if (!ROLES.has(role)) return NextResponse.json({ error: "Please choose what describes you." }, { status: 400 });
 
-  const supabase = createClient(url, key, { auth: { persistSession: false } });
-  const { error } = await supabase.from("waitlist").insert({ name, phone, role, city, group_size });
-
-  // 23505 = unique violation: already signed up, treat as success.
-  if (error && error.code !== "23505") {
-    console.error("waitlist insert failed", error);
+  try {
+    const sql = neon(databaseUrl);
+    // Signing up twice with the same number is treated as success.
+    await sql`
+      insert into waitlist (name, phone, role, city, group_size)
+      values (${name}, ${phone}, ${role}, ${city}, ${group_size})
+      on conflict (phone) do nothing`;
+  } catch (err) {
+    console.error("waitlist insert failed", err);
     return NextResponse.json({ error: "We couldn't save that just now. Please try again." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });

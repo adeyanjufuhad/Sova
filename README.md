@@ -7,7 +7,7 @@ Records, reminders and receipts for ajo, esusu and adashe savings circles. Sova 
 | Path | What it is |
 | --- | --- |
 | `website/` | Marketing site + waitlist (Next.js, Tailwind CSS v4, Motion) |
-| `supabase/migrations/` | Database schema (Supabase Postgres) |
+| `db/migrations/` | Database schema (Neon Postgres) |
 | `app/` | Flutter Android app *(coming next)* |
 
 ## Zero-cost stack
@@ -16,7 +16,7 @@ Records, reminders and receipts for ajo, esusu and adashe savings circles. Sova 
 | --- | --- | --- |
 | Code hosting | GitHub | Free |
 | Website hosting | Vercel Hobby | Free, `*.vercel.app` domain |
-| Database + auth | Supabase | Free (2 active projects, pauses after 7 days idle) |
+| Database | Neon (project `sova`, London) | Free (0.5 GB per project, scales to zero when idle) |
 | App builds | Flutter + GitHub Actions | Free |
 
 Paid things we are deliberately postponing: a custom domain (~₦15k/yr for `.com.ng`), the Google Play developer account ($25 one-off), and SMS credits.
@@ -26,7 +26,7 @@ Paid things we are deliberately postponing: a custom domain (~₦15k/yr for `.co
 ```bash
 cd website
 npm install
-cp .env.example .env.local   # then fill in the Supabase values
+cp .env.example .env.local   # then paste the Neon DATABASE_URL
 npm run dev
 ```
 
@@ -34,8 +34,8 @@ Open http://localhost:3000.
 
 ## Waitlist database
 
-Run `supabase/migrations/20260930000000_waitlist.sql` in the Supabase SQL editor (or `supabase db push`).
-The table only allows anonymous **inserts**; nobody can read the list from the browser. Read signups from the Supabase dashboard.
+The waitlist lives in the Neon project **sova**. To recreate it, run `db/migrations/20260930000000_waitlist.sql` in the Neon SQL editor.
+Only the website's server-side API route connects (via `DATABASE_URL`), so the browser never touches the database. Read signups in the Neon console's Tables view or SQL editor.
 
 ## Deploy the website (free)
 

@@ -1,5 +1,5 @@
--- Waitlist for the Sova website. The site inserts with the public anon key,
--- so RLS allows anonymous INSERT only: nobody can read the list from the browser.
+-- Waitlist for the Sova website (Neon Postgres). Only the website's server-side
+-- API route connects, using DATABASE_URL; the browser never touches the database.
 create table if not exists public.waitlist (
   id          uuid primary key default gen_random_uuid(),
   name        text not null check (char_length(name) between 2 and 80),
@@ -9,11 +9,3 @@ create table if not exists public.waitlist (
   group_size  int  check (group_size between 1 and 5000),
   created_at  timestamptz not null default now()
 );
-
-alter table public.waitlist enable row level security;
-
-drop policy if exists "anyone can join the waitlist" on public.waitlist;
-create policy "anyone can join the waitlist"
-  on public.waitlist for insert
-  to anon
-  with check (true);
