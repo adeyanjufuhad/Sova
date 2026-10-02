@@ -54,6 +54,12 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Built and working
 
+### Repository and CI (Phase 0, done 2 Oct)
+- `docs/STATUS.md` (this file) and `CLAUDE.md` (conventions).
+- `api/` skeleton: Fastify + strict TypeScript on Node 22, environment validated at startup, secret-redacting logs, `GET /health` with database readiness (503 when a configured database is down), 6 tests, `.env.example`, README.
+- GitHub Actions CI on every push and pull request: API typecheck/test/build, website lint/build, Flutter analyze/test. First run green.
+- `.gitattributes` keeps LF line endings across Windows and Linux.
+
 ### Website (`website/`)
 - Sections: anti-fraud notice bar; navbar; hero (React Bits LightRays, phone mock, receipt card, trust row); how it works; "money moves between members" (Animated Beam); features grid; protection timeline; "one tradition, many names" (orbiting circles, pan-African names); Nigerian markets ticker; collectors band; "Our promise" charter; app preview (container scroll); FAQ (English + Pidgin); waitlist; footer with disclosure.
 - Waitlist API route writes to Postgres (`DATABASE_URL`), validates input, normalises Nigerian numbers, ignores duplicates.
@@ -91,7 +97,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- API service; the app does not talk to any database yet.
+- API endpoints beyond `/health`; the app does not talk to any database yet.
 - Real login (OTP provider), session persistence across restarts.
 - Real photo upload (bucket, presigned URLs).
 - Tamper-evident ledger and the public verify page.
@@ -105,7 +111,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 | Phase | Dates | Scope |
 |---|---|---|
-| 0. Housekeeping | 2–3 Oct | This file, `CLAUDE.md`, `api/` skeleton with `/health`, CI on GitHub Actions |
+| 0. Housekeeping ✅ | 2 Oct | This file, `CLAUDE.md`, `api/` skeleton with `/health`, CI on GitHub Actions |
 | 1. Database + API foundation | 3–7 Oct | Migration runner; schema fixes (payout amount, undrawn turns, invite codes); auth (OTP provider interface, test numbers, paid-SMS stub, demo login, JWT with refresh rotation, argon2id PINs, lockout, rate limits); seed script |
 | 2. Core loop live | 7–12 Oct | Circle lifecycle endpoints; app on the API; session persistence (Android + web); proof photos via presigned uploads; payout shortfall; auto-advance; app web build, website static export, honesty fixes and waitlist via API, all deployed |
 | 3. Ledger | 12–17 Oct | Append-only hash-chained ledger written by triggers; UPDATE/DELETE/TRUNCATE blocked; public chain endpoint; website "Verify this circle" recomputing in the browser; docs/ledger.md |
