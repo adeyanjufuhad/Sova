@@ -65,4 +65,44 @@ void main() {
     await repo.acceptRules('class-ajo');
     expect((await repo.circle('class-ajo')).rules!.acceptedBy, contains(DemoRepository.me));
   });
+
+  group('create and join', () {
+    test('creating a circle makes you admin, collecting last, with the rules accepted', () async {
+      final c = await repo.createCircle(NewCircle(
+        name: '  Market Friends  ',
+        contributionAmount: 5000,
+        memberCount: 5,
+        cycle: CycleType.weekly,
+        startDate: DateTime(2026, 10, 9),
+        adminCollectsFirst: false,
+        lateFee: 500,
+        graceDays: 1,
+        earlyExit: EarlyExitPolicy.findReplacement,
+      ));
+      expect(c.name, 'Market Friends');
+      expect(c.isAdmin(DemoRepository.me), isTrue);
+      expect(c.memberById(DemoRepository.me)!.position, 5);
+      expect(c.rules!.acceptedBy, {DemoRepository.me});
+      expect(c.inviteCode, matches(RegExp(r'^[A-HJKMNP-Z2-9]{6}$')));
+      expect(c.activeRound, isNull);
+      expect((await repo.myCircles()).first.id, c.id);
+    });
+
+    test('invite codes are found regardless of case and dashes', () async {
+      final c = await repo.findByInviteCode('t7k-p9q');
+      expect(c.name, 'Ikeja Tech Hub Esusu');
+      expect(() => repo.findByInviteCode('ZZZZZZ'), throwsA(isA<SovaException>()));
+    });
+
+    test('joining takes the earliest free turn, records the voucher and accepts the rules', () async {
+      expect(() => repo.joinCircle(code: 'T7KP9Q', voucherId: 'stranger'), throwsA(isA<SovaException>()));
+      final c = await repo.joinCircle(code: 'T7KP9Q', voucherId: 'kemi');
+      final mine = c.memberById(DemoRepository.me)!;
+      expect(mine.position, 4); // 1, 2, 3 and 8 were taken
+      expect(mine.vouchedBy, 'kemi');
+      expect(c.rules!.acceptedBy, contains(DemoRepository.me));
+      expect((await repo.myCircles()).map((x) => x.id), contains('tech-hub'));
+      expect(() => repo.joinCircle(code: 'T7KP9Q', voucherId: 'kemi'), throwsA(isA<SovaException>()));
+    });
+  });
 }

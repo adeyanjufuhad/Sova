@@ -66,7 +66,8 @@ class DemoRepository implements SovaRepository {
   @override
   Future<List<Circle>> myCircles() async {
     await _latency();
-    return _circles.values.toList();
+    // Newest first; only circles the signed-in member belongs to.
+    return _circles.values.where((c) => c.memberById(me) != null).toList().reversed.toList();
   }
 
   @override
@@ -145,6 +146,106 @@ class DemoRepository implements SovaRepository {
     );
   }
 
+  @override
+  Future<Circle> createCircle(NewCircle d) async {
+    await _latency();
+    final name = d.name.trim();
+    if (name.length < 2) throw const SovaException('Give your circle a name.');
+    if (d.contributionAmount < 100) throw const SovaException('The contribution must be at least ₦100.');
+    final id = 'circle-${_random.nextInt(1000000000)}';
+    final circle = Circle(
+      id: id,
+      name: name,
+      adminId: me,
+      memberCount: d.memberCount,
+      contributionAmount: d.contributionAmount,
+      cycle: d.cycle,
+      startDate: d.startDate,
+      inviteCode: _newInviteCode(),
+      members: [
+        Member(
+          userId: me,
+          name: _session?.fullName ?? 'You',
+          phone: _session?.phone ?? '',
+          position: d.adminCollectsFirst ? 1 : d.memberCount,
+        ),
+      ],
+      rounds: const [],
+      contributions: const [],
+      rules: GroupRules(
+        version: 1,
+        lateFee: d.lateFee,
+        graceDays: d.graceDays,
+        earlyExit: d.earlyExit,
+        emergencyPolicy: (d.emergencyPolicy?.trim().isEmpty ?? true) ? null : d.emergencyPolicy!.trim(),
+        acceptedBy: const {me},
+      ),
+    );
+    _circles[id] = circle;
+    return circle;
+  }
+
+  @override
+  Future<Circle> findByInviteCode(String code) async {
+    await _latency();
+    final c = _byCode(code);
+    if (c.memberById(me) != null) throw const SovaException('You are already in this circle.');
+    if (c.members.length >= c.memberCount) throw const SovaException('This circle is already full.');
+    return c;
+  }
+
+  @override
+  Future<Circle> joinCircle({required String code, required String voucherId}) async {
+    await _latency();
+    final c = _byCode(code);
+    if (c.memberById(me) != null) throw const SovaException('You are already in this circle.');
+    if (c.members.length >= c.memberCount) throw const SovaException('This circle is already full.');
+    if (c.memberById(voucherId) == null) throw const SovaException('Choose the member who invited you.');
+
+    // Take the earliest free payout position.
+    final taken = c.members.map((m) => m.position).toSet();
+    final position = [for (var p = 1; p <= c.memberCount; p++) p].firstWhere((p) => !taken.contains(p));
+    final joined = _copyCircle(
+      c,
+      members: [
+        ...c.members,
+        Member(
+          userId: me,
+          name: _session?.fullName ?? 'You',
+          phone: _session?.phone ?? '',
+          position: position,
+          vouchedBy: voucherId,
+        ),
+      ],
+      rules: c.rules == null
+          ? null
+          : GroupRules(
+              version: c.rules!.version,
+              lateFee: c.rules!.lateFee,
+              graceDays: c.rules!.graceDays,
+              earlyExit: c.rules!.earlyExit,
+              emergencyPolicy: c.rules!.emergencyPolicy,
+              acceptedBy: {...c.rules!.acceptedBy, me},
+            ),
+    );
+    _circles[c.id] = joined;
+    return joined;
+  }
+
+  Circle _byCode(String code) {
+    final clean = code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    for (final c in _circles.values) {
+      if (c.inviteCode == clean) return c;
+    }
+    throw const SovaException('No circle has that code. Check it with the member who invited you.');
+  }
+
+  /// Six characters without look-alikes (no 0/O, 1/I/L).
+  String _newInviteCode() {
+    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    return String.fromCharCodes(List.generate(6, (_) => alphabet.codeUnitAt(_random.nextInt(alphabet.length))));
+  }
+
   // ---------------------------------------------------------------------------
 
   void _replaceContribution(Circle c, Contribution next) {
@@ -176,7 +277,14 @@ class DemoRepository implements SovaRepository {
     }
   }
 
-  Circle _copyCircle(Circle c, {List<Member>? members, List<Contribution>? contributions, GroupRules? rules}) => Circle(
+  Circle _copyCircle(
+    Circle c, {
+    List<Member>? members,
+    List<Round>? rounds,
+    List<Contribution>? contributions,
+    GroupRules? rules,
+  }) =>
+      Circle(
         id: c.id,
         name: c.name,
         adminId: c.adminId,
@@ -186,7 +294,7 @@ class DemoRepository implements SovaRepository {
         startDate: c.startDate,
         inviteCode: c.inviteCode,
         members: members ?? c.members,
-        rounds: c.rounds,
+        rounds: rounds ?? c.rounds,
         contributions: contributions ?? c.contributions,
         rules: rules ?? c.rules,
       );
@@ -253,6 +361,34 @@ class DemoRepository implements SovaRepository {
         earlyExit: EarlyExitPolicy.findReplacement,
         emergencyPolicy: 'If a member falls ill, the group can agree to move their turn earlier.',
         acceptedBy: {'ifeoma', 'bayo', 'halima', me, 'chuka', 'zainab'},
+      ),
+    );
+
+    // A circle you can join with code T7KP9Q (you are not a member yet).
+    _circles['tech-hub'] = Circle(
+      id: 'tech-hub',
+      name: 'Ikeja Tech Hub Esusu',
+      adminId: 'kemi',
+      memberCount: 8,
+      contributionAmount: 15000,
+      cycle: CycleType.weekly,
+      startDate: day(10),
+      inviteCode: 'T7KP9Q',
+      members: const [
+        Member(userId: 'kemi', name: 'Kemi Adebayo', phone: '+2348033330001', position: 8),
+        Member(userId: 'femi', name: 'Femi Lawal', phone: '+2348033330002', position: 1),
+        Member(userId: 'ngozi2', name: 'Ngozi Eze', phone: '+2348033330003', position: 2),
+        Member(userId: 'sani', name: 'Sani Musa', phone: '+2348033330004', position: 3, vouchedBy: 'kemi'),
+      ],
+      rounds: const [],
+      contributions: const [],
+      rules: const GroupRules(
+        version: 1,
+        lateFee: 1000,
+        graceDays: 1,
+        earlyExit: EarlyExitPolicy.findReplacement,
+        emergencyPolicy: 'Members can swap turns for emergencies if both agree.',
+        acceptedBy: {'kemi', 'femi', 'ngozi2', 'sani'},
       ),
     );
 

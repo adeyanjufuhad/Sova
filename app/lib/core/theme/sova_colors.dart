@@ -28,4 +28,8 @@ abstract final class SovaColors {
   // Tints
   static const electricTint = Color(0x1A1D4ED8); // electric at 10%
   static const skyTint = Color(0x267DC3E3); // sky at 15%
+
+  // Opaque versions of the tints, for use on dark or patterned backgrounds.
+  static const electricTintSolid = Color(0xFFE8EDFB);
+  static const mistSolid = Color(0xFFF3F6FD);
 }

@@ -56,6 +56,8 @@ void main() {
         '/circle/office-esusu/pay',
         '/circle/office-esusu/rules',
         '/circle/class-ajo',
+        '/create',
+        '/join',
       ]) {
         router.go(location);
         await settle(tester);

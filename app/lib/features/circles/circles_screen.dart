@@ -10,7 +10,6 @@ import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
-import '../home/home_screen.dart' show comingNext;
 
 class CirclesScreen extends ConsumerStatefulWidget {
   const CirclesScreen({super.key});
@@ -57,7 +56,7 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
                             title: 'Start a circle',
                             subtitle: 'Set the amount, rules and order',
                             primary: true,
-                            onTap: () => comingNext(context, 'Starting a circle'),
+                            onTap: () => context.push('/create'),
                           ),
                         ),
                         const SizedBox(width: SovaSpacing.md),
@@ -66,7 +65,7 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
                             icon: Icons.qr_code_rounded,
                             title: 'Join with a code',
                             subtitle: 'From a member who vouches for you',
-                            onTap: () => comingNext(context, 'Joining with a code'),
+                            onTap: () => context.push('/join'),
                           ),
                         ),
                       ],
@@ -186,7 +185,7 @@ class AvatarStack extends StatelessWidget {
                 height: size,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: i.isEven ? SovaColors.electricTint : SovaColors.mist,
+                  color: i.isEven ? SovaColors.electricTintSolid : SovaColors.mistSolid,
                   shape: BoxShape.circle,
                   border: Border.all(color: SovaColors.white, width: 2),
                 ),
@@ -238,7 +237,11 @@ class CircleCard extends StatelessWidget {
     final c = circle;
     final round = c.activeRound;
     final mine = c.memberById(me);
-    final progress = c.payersThisRound == 0 ? 0.0 : c.paidThisRound / c.payersThisRound;
+    // Before the first turn, progress shows how full the circle is.
+    final waiting = round == null && c.rounds.isEmpty;
+    final progress = waiting
+        ? c.members.length / c.memberCount
+        : (c.payersThisRound == 0 ? 0.0 : c.paidThisRound / c.payersThisRound);
 
     return Pressable(
       onTap: () => context.push('/circle/${c.id}'),
@@ -290,7 +293,9 @@ class CircleCard extends StatelessWidget {
                 AvatarStack(members: c.membersByPosition),
                 const Spacer(),
                 if (round != null)
-                  Text('Turn ${round.number} of ${c.memberCount}', style: SovaText.label.copyWith(fontSize: 13)),
+                  Text('Turn ${round.number} of ${c.memberCount}', style: SovaText.label.copyWith(fontSize: 13))
+                else if (waiting)
+                  Text('Waiting for members', style: SovaText.label.copyWith(fontSize: 13)),
               ],
             ),
             const SizedBox(height: SovaSpacing.md),
@@ -309,7 +314,12 @@ class CircleCard extends StatelessWidget {
               spacing: SovaSpacing.md,
               runSpacing: SovaSpacing.xs,
               children: [
-                Text('${c.paidThisRound} of ${c.payersThisRound} paid this turn', style: SovaText.caption),
+                Text(
+                  waiting
+                      ? '${c.members.length} of ${c.memberCount} joined'
+                      : '${c.paidThisRound} of ${c.payersThisRound} paid this turn',
+                  style: SovaText.caption,
+                ),
                 if (mine != null)
                   Text(
                     'Your turn: ${shortDate(payoutDateFor(c, mine.position))}',

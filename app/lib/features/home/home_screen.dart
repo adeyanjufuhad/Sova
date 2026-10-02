@@ -217,12 +217,12 @@ class _Header extends ConsumerWidget {
                   ),
                   const SizedBox(width: SovaSpacing.md),
                   Expanded(
-                    child: _PillButton(icon: Icons.add_rounded, label: 'Start', onTap: () => comingNext(context, 'Starting a circle')),
+                    child: _PillButton(icon: Icons.add_rounded, label: 'Start', onTap: () => context.push('/create')),
                   ),
                   const SizedBox(width: SovaSpacing.md),
                   Pressable(
-                    onTap: () => comingNext(context, 'Joining by QR code'),
-                    semanticLabel: 'Join a circle with a QR code',
+                    onTap: () => context.push('/join'),
+                    semanticLabel: 'Join a circle with an invite code',
                     child: Container(
                       width: 54,
                       height: 52,
