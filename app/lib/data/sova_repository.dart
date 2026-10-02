@@ -31,6 +31,17 @@ abstract interface class SovaRepository {
   Future<Contribution> confirmReceived({required String circleId, required String contributionId});
 
   Future<void> acceptRules(String circleId);
+
+  /// Starts a circle with the signed-in member as admin. The admin accepts
+  /// the rules by creating it.
+  Future<Circle> createCircle(NewCircle draft);
+
+  /// Looks up a circle by its 6-character invite code, before joining.
+  Future<Circle> findByInviteCode(String code);
+
+  /// Joins with an invite code. [voucherId] is the member who invited you and
+  /// vouches for you; joining also accepts the group's rules.
+  Future<Circle> joinCircle({required String code, required String voucherId});
 }
 
 class SovaException implements Exception {

@@ -56,6 +56,35 @@ class _CircleBody extends ConsumerWidget {
           style: SovaText.bodySmall,
         ),
         const SizedBox(height: SovaSpacing.lg),
+        if (round == null && c.rounds.isEmpty)
+          AdirePanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Eyebrow('Waiting for members', onBlue: true),
+                const SizedBox(height: SovaSpacing.md),
+                Text(
+                  '${c.members.length} of ${c.memberCount} joined',
+                  style: SovaText.h2.copyWith(color: SovaColors.white),
+                ),
+                const SizedBox(height: SovaSpacing.xs),
+                Text(
+                  'Turns start on ${longDate(c.startDate)}. Share the invite code below with people you trust.',
+                  style: SovaText.bodySmall.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
+                ),
+                const SizedBox(height: SovaSpacing.lg),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(SovaRadius.full),
+                  child: LinearProgressIndicator(
+                    value: c.members.length / c.memberCount,
+                    minHeight: 6,
+                    color: SovaColors.white,
+                    backgroundColor: SovaColors.white.withValues(alpha: 0.25),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (round != null && collector != null)
           AdirePanel(
             child: Column(

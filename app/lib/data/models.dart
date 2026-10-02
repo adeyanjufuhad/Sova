@@ -222,3 +222,34 @@ class Session {
         hasPin: hasPin ?? this.hasPin,
       );
 }
+
+/// What the admin fills in when starting a circle.
+class NewCircle {
+  const NewCircle({
+    required this.name,
+    required this.contributionAmount,
+    required this.memberCount,
+    required this.cycle,
+    required this.startDate,
+    required this.adminCollectsFirst,
+    required this.lateFee,
+    required this.graceDays,
+    required this.earlyExit,
+    this.emergencyPolicy,
+  });
+
+  final String name;
+  final int contributionAmount;
+  final int memberCount;
+  final CycleType cycle;
+  final DateTime startDate;
+
+  /// Admins often collect last to show good faith; some collect first.
+  final bool adminCollectsFirst;
+  final int lateFee;
+  final int graceDays;
+  final EarlyExitPolicy earlyExit;
+  final String? emergencyPolicy;
+
+  int get payout => contributionAmount * memberCount;
+}

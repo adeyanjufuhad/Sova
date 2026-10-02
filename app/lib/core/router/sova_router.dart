@@ -13,6 +13,8 @@ import '../../features/circle/pay_screen.dart';
 import '../../features/circle/receipt_screen.dart';
 import '../../features/circle/rules_screen.dart';
 import '../../features/circles/circles_screen.dart';
+import '../../features/create/create_circle_screen.dart';
+import '../../features/join/join_circle_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/record/record_screen.dart';
 import '../../shared/widgets/app_shell.dart';
@@ -77,6 +79,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // Full-screen flows above the tab bar.
+      GoRoute(path: '/create', parentNavigatorKey: _rootKey, builder: (_, _) => const CreateCircleScreen()),
+      GoRoute(path: '/join', parentNavigatorKey: _rootKey, builder: (_, _) => const JoinCircleScreen()),
       GoRoute(
         path: '/circle/:id',
         parentNavigatorKey: _rootKey,
