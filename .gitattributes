@@ -1,0 +1,10 @@
+# Store text with LF line endings so builds behave the same on Windows and Linux.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff2 binary
+*.jar binary
