@@ -216,6 +216,7 @@ class DemoRepository implements SovaRepository {
       Round(id: 'o-r2', number: 2, collectorId: 'bayo', dueDate: day(-5), status: RoundStatus.completed),
       Round(id: 'o-r3', number: 3, collectorId: 'halima', dueDate: day(2), status: RoundStatus.active),
     ];
+    const paidOn = {'o-r1': -13, 'o-r2': -6, 'o-r3': -1, 'c-r1': -22, 'c-r2': -1};
     Contribution paid(String round, String user, int amount, {ContributionStatus status = ContributionStatus.fullyConfirmed}) =>
         Contribution(
           id: '$round-$user',
@@ -224,7 +225,7 @@ class DemoRepository implements SovaRepository {
           amount: amount,
           status: status,
           hasProof: true,
-          payerConfirmedAt: day(-1),
+          payerConfirmedAt: day(paidOn[round]!),
           reference: _reference(),
         );
     _circles[office] = Circle(

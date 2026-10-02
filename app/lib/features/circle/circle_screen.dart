@@ -253,7 +253,7 @@ class _MemberRow extends StatelessWidget {
     if (collecting) {
       trailing = const _Tag('Collecting');
     } else if (round != null) {
-      trailing = StatusPill(c.statusFor(round!.id, m.userId));
+      trailing = StatusPill(c.statusFor(round!.id, m.userId), compact: true);
     } else {
       trailing = const SizedBox.shrink();
     }

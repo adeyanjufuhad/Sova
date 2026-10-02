@@ -1,8 +1,9 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
+import '../../features/activity/activity_screen.dart';
 import '../../features/auth/otp_screen.dart';
 import '../../features/auth/phone_screen.dart';
 import '../../features/auth/profile_screen.dart';
@@ -11,7 +12,10 @@ import '../../features/circle/circle_screen.dart';
 import '../../features/circle/pay_screen.dart';
 import '../../features/circle/receipt_screen.dart';
 import '../../features/circle/rules_screen.dart';
+import '../../features/circles/circles_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/record/record_screen.dart';
+import '../../shared/widgets/app_shell.dart';
 
 abstract final class SovaRoutes {
   static const welcome = '/welcome';
@@ -19,7 +23,12 @@ abstract final class SovaRoutes {
   static const otp = '/otp';
   static const profile = '/profile';
   static const home = '/home';
+  static const circles = '/circles';
+  static const activity = '/activity';
+  static const record = '/record';
 }
+
+final _rootKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Re-run redirects whenever sign-in state changes.
@@ -28,6 +37,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
+    navigatorKey: _rootKey,
     initialLocation: SovaRoutes.welcome,
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -57,9 +67,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: SovaRoutes.phone, builder: (_, _) => const PhoneScreen()),
       GoRoute(path: SovaRoutes.otp, builder: (_, _) => const OtpScreen()),
       GoRoute(path: SovaRoutes.profile, builder: (_, _) => const ProfileScreen()),
-      GoRoute(path: SovaRoutes.home, builder: (_, _) => const HomeScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, shell) => AppShell(shell: shell),
+        branches: [
+          StatefulShellBranch(routes: [GoRoute(path: SovaRoutes.home, builder: (_, _) => const HomeScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: SovaRoutes.circles, builder: (_, _) => const CirclesScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: SovaRoutes.activity, builder: (_, _) => const ActivityScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: SovaRoutes.record, builder: (_, _) => const RecordScreen())]),
+        ],
+      ),
+      // Full-screen flows above the tab bar.
       GoRoute(
         path: '/circle/:id',
+        parentNavigatorKey: _rootKey,
         builder: (_, state) => CircleScreen(circleId: state.pathParameters['id']!),
         routes: [
           GoRoute(path: 'pay', builder: (_, state) => PayScreen(circleId: state.pathParameters['id']!)),

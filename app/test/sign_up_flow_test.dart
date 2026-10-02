@@ -26,7 +26,7 @@ void main() {
 
     await tester.pumpWidget(const ProviderScope(child: SovaApp()));
     await settle(tester);
-    expect(find.text('Your ajo, on record.'), findsOneWidget);
+    expect(find.text('Your ajo.\nOn record.'), findsOneWidget);
 
     await tester.tap(find.text('Skip'));
     await settle(tester);
@@ -64,10 +64,22 @@ void main() {
     await tapKeys(tester, '2580');
     await settle(tester);
 
-    expect(find.text('Ada'), findsOneWidget);
-    expect(find.text('Office Esusu'), findsOneWidget);
-    expect(find.textContaining('Pay Halima'), findsOneWidget);
-    expect(find.textContaining('Did Emeka pay you'), findsOneWidget);
-    expect(find.text('Accept the group rules'), findsNothing); // both circles' rules include "me"
+    // Home: name in the header, the nudge to pay Halima, and the payments list.
+    expect(find.text('Ada Obi'), findsOneWidget);
+    expect(find.text('Pay Halima now'), findsOneWidget);
+    expect(find.text('Office Esusu – Halima'), findsOneWidget);
+    expect(find.text('Emeka paid you'), findsOneWidget);
+
+    // "Needs action" hides the upcoming-payout rows.
+    expect(find.textContaining('Your payout'), findsWidgets);
+    await tester.tap(find.text('Needs action'));
+    await settle(tester);
+    expect(find.textContaining('Your payout'), findsNothing);
+
+    // Hiding amounts masks every naira figure.
+    await tester.tap(find.byTooltip('Hide amounts'));
+    await settle(tester);
+    expect(find.text('₦ ••••••'), findsWidgets);
+    expect(find.text('₦120,000'), findsNothing);
   });
 }

@@ -58,9 +58,12 @@ class Eyebrow extends StatelessWidget {
 }
 
 class StatusPill extends StatelessWidget {
-  const StatusPill(this.status, {super.key});
+  const StatusPill(this.status, {super.key, this.compact = false});
 
   final ContributionStatus status;
+
+  /// Shorter wording for tight rows ("Awaiting" instead of "Awaiting confirmation").
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +81,10 @@ class StatusPill extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: fg),
           const SizedBox(width: SovaSpacing.xs),
-          Text(status.label, style: SovaText.caption.copyWith(color: fg, fontWeight: FontWeight.w600)),
+          Text(
+            compact && status == ContributionStatus.payerConfirmed ? 'Awaiting' : status.label,
+            style: SovaText.caption.copyWith(color: fg, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
