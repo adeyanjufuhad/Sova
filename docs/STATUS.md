@@ -60,6 +60,16 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - GitHub Actions CI on every push and pull request: API typecheck/test/build, website lint/build, Flutter analyze/test. First run green.
 - `.gitattributes` keeps LF line endings across Windows and Linux.
 
+### Database and API foundation (Phase 1, done 3 Oct)
+- RumptyCloud Postgres 17 (`sova_db`) is **migrated and seeded** (4 migrations; 18 demo people, 5 circles).
+- Migration runner: ordered, once each, checksummed, advisory-locked; grants the restricted `sova_app` role afterwards. `npm run migrate`.
+- Schema fixes (`20261003000000_auth_and_fixes.sql`): turns empty until the draw; `admin_collects_last`; invite code format; payout shortfall measured against contribution × (members − 1); `otp_challenges`; rotating `sessions`; `users.is_demo`.
+- Auth API: `POST /auth/otp/request|verify`, `/auth/demo`, `/auth/refresh`, `/auth/logout`; `GET/PATCH /me`; `POST /me/pin`, `/me/pin/verify`. Test-numbers OTP provider (free) and paid-SMS stub; HMAC'd codes; per-IP and per-phone limits; JWT + rotating refresh tokens with reuse detection; argon2id PINs with database lockout.
+- Postgres TLS handled for RumptyCloud's self-signed certificate (`DATABASE_SSL`).
+- `npm run db:create-app-role` (restricted login), `npm run seed` (demo data: mid-cycle, collecting as admin, new and joinable with `T7KP9Q`, completed, dispute + collected-then-stopped).
+- 34 API tests against a real embedded PostgreSQL 17 (UTF-8, like production). CI also blocks committed database URLs with passwords.
+- `db/README.md`; `api/README.md` and `.env.example` cover every variable and endpoint.
+
 ### Website (`website/`)
 - Sections: anti-fraud notice bar; navbar; hero (React Bits LightRays, phone mock, receipt card, trust row); how it works; "money moves between members" (Animated Beam); features grid; protection timeline; "one tradition, many names" (orbiting circles, pan-African names); Nigerian markets ticker; collectors band; "Our promise" charter; app preview (container scroll); FAQ (English + Pidgin); waitlist; footer with disclosure.
 - Waitlist API route writes to Postgres (`DATABASE_URL`), validates input, normalises Nigerian numbers, ignores duplicates.
@@ -97,8 +107,8 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- API endpoints beyond `/health`; the app does not talk to any database yet.
-- Real login (OTP provider), session persistence across restarts.
+- Circle, payment and payout API endpoints; the app does not talk to the API yet.
+- Login in the app (the API side exists), session persistence across restarts.
 - Real photo upload (bucket, presigned URLs).
 - Tamper-evident ledger and the public verify page.
 - Provably fair payout draw.
@@ -112,7 +122,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | Phase | Dates | Scope |
 |---|---|---|
 | 0. Housekeeping ✅ | 2 Oct | This file, `CLAUDE.md`, `api/` skeleton with `/health`, CI on GitHub Actions |
-| 1. Database + API foundation | 3–7 Oct | Migration runner; schema fixes (payout amount, undrawn turns, invite codes); auth (OTP provider interface, test numbers, paid-SMS stub, demo login, JWT with refresh rotation, argon2id PINs, lockout, rate limits); seed script |
+| 1. Database + API foundation ✅ | 3 Oct | Migration runner; schema fixes (payout amount, undrawn turns, invite codes); auth (OTP provider interface, test numbers, paid-SMS stub, demo login, JWT with refresh rotation, argon2id PINs, lockout, rate limits); seed script |
 | 2. Core loop live | 7–12 Oct | Circle lifecycle endpoints; app on the API; session persistence (Android + web); proof photos via presigned uploads; payout shortfall; auto-advance; app web build, website static export, honesty fixes and waitlist via API, all deployed |
 | 3. Ledger | 12–17 Oct | Append-only hash-chained ledger written by triggers; UPDATE/DELETE/TRUNCATE blocked; public chain endpoint; website "Verify this circle" recomputing in the browser; docs/ledger.md |
 | 4. Fair draw + trust screens | 17–22 Oct | Commit-reveal draw with animation and verification; Sova Score card from the database; swaps, handovers, disputes with votes; collected-then-stopped flag |
