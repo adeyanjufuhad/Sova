@@ -125,6 +125,6 @@ Not yet answered; do not assume:
 1. Dockerfile deploys supported? (Flutter web build needs the Flutter SDK.)
 2. Static site configuration (build command, output directory); scheduled jobs; pre-deploy commands for migrations.
 3. Node service port variable and health-check configuration.
-4. Postgres version; whether a second restricted role can be created.
+4. ~~Postgres version; restricted role~~ **Answered 3 Oct:** RumptyCloud managed Postgres **17.11**, database `sova_db`, admin user `postgres` (superuser, can create roles). Built-in `sha256()` and `gen_random_uuid()` work. Public endpoint uses TLS with a **self-signed certificate** (Node `pg` must not verify it unless RumptyCloud publishes a CA). Plan: migrations run as `postgres`; the API runs as a restricted `sova_app` role.
 5. Bucket CORS configuration for browser uploads.
 6. Default domains; whether app and API can share a parent domain (affects web session storage).
