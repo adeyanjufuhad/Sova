@@ -2,12 +2,14 @@
  * Creates (or rotates the password of) the restricted `sova_app` role the API
  * should connect as in production, and grants it access to the schema.
  *
- *   npm run db:create-app-role      (uses MIGRATION_DATABASE_URL, else DATABASE_URL, as admin)
+ *   npm run db:create-app-role                        print the connection string once
+ *   npm run db:create-app-role -- --out .env.deploy   write it to a file instead (never shown)
  *
- * The new connection string is printed once to this terminal for you to paste
- * into the deployment's DATABASE_URL. It is not stored or logged anywhere.
+ * Uses MIGRATION_DATABASE_URL, else DATABASE_URL, as the admin connection.
+ * The new connection string is not stored or logged anywhere else.
  */
 import { randomBytes } from "node:crypto";
+import { appendFileSync } from "node:fs";
 
 import { loadConfig } from "../config.js";
 import { createPool } from "../db.js";
@@ -19,6 +21,9 @@ if (!pool || !adminUrl) {
   console.error("Set MIGRATION_DATABASE_URL or DATABASE_URL to the admin connection string.");
   process.exit(1);
 }
+
+const outIndex = process.argv.indexOf("--out");
+const outFile = outIndex > -1 ? process.argv[outIndex + 1] : undefined;
 
 const client = await pool.connect();
 try {
@@ -35,8 +40,14 @@ try {
   url.username = APP_ROLE;
   url.password = password;
   console.log(`${exists ? "Rotated password for" : "Created"} role ${APP_ROLE}.`);
-  console.log("\nConnection string for the API (shown once; paste it into the deployment, then clear this terminal):\n");
-  console.log(`  ${url.toString()}\n`);
+
+  if (outFile) {
+    appendFileSync(outFile, `SOVA_APP_PASSWORD=${password}\nSOVA_APP_DATABASE_URL_PUBLIC=${url.toString()}\n`, { mode: 0o600 });
+    console.log(`Wrote the new password and connection string to ${outFile} (not printed).`);
+  } else {
+    console.log("\nConnection string for the API (shown once; paste it into the deployment, then clear this terminal):\n");
+    console.log(`  ${url.toString()}\n`);
+  }
   console.log("On RumptyCloud, use the same user and password with the database's INTERNAL host.");
 } finally {
   client.release();
