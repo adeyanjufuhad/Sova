@@ -79,6 +79,26 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 2. **Sessions.** A 15-minute JWT (HS256) plus a 30-day opaque refresh token stored as SHA-256. Every refresh rotates the token; presenting an already-rotated token revokes the whole family.
 3. **PIN.** argon2id hash. Each check goes through the database function `check_and_increment_pin_attempts`: 5 wrong tries lock the PIN for 15 minutes.
 
+## Deploy on RumptyCloud
+
+Live at `https://sova-api.rumptycloud.app` (`/health`).
+
+1. Create the restricted login once, as the admin user: `npm run db:create-app-role -- --out .env.deploy` (writes the password to a git-ignored file instead of the screen). Use the same user and password with the database's **internal** host for `DATABASE_URL`.
+2. Run `npm run migrate` (and optionally `npm run seed`) from your machine with the admin URL. The image does not contain the migrations.
+3. New deployment from GitHub: repository `Sova`, branch `main`, root directory `api`, type Web Service/Backend.
+
+| Setting | Value |
+|---|---|
+| Build command | `npm ci && npm run build` |
+| Start command | `export PATH="/mise/shims:$(echo /mise/installs/node/*/bin):$PATH"; exec node dist/server.js` |
+| Health check path | `/health` |
+| Port | `8080` |
+| Variables | `NODE_ENV=production`, `LOG_LEVEL=info`, `DEMO_LOGIN_ENABLED=true`, `OTP_PROVIDER=test-numbers`, `OTP_TEST_NUMBERS`, `DATABASE_URL`, `JWT_SECRET`, later `CORS_ORIGINS` |
+
+The start command sets `PATH` itself because RumptyCloud runs it in a shell that does not see the Node install inside the image; plain `npm start` or `node dist/server.js` fail with "not found".
+
+Free deployments sleep when idle (first request waits about 8 seconds). Paid sizes can turn scale-to-zero off.
+
 ## Security notes
 
 - Logs redact authorization headers, cookies, PINs, codes, tokens and secrets.

@@ -69,6 +69,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - `npm run db:create-app-role` (restricted login), `npm run seed` (demo data: mid-cycle, collecting as admin, new and joinable with `T7KP9Q`, completed, dispute + collected-then-stopped).
 - 34 API tests against a real embedded PostgreSQL 17 (UTF-8, like production). CI also blocks committed database URLs with passwords.
 - `db/README.md`; `api/README.md` and `.env.example` cover every variable and endpoint.
+- **API live on RumptyCloud (3 Oct):** https://sova-api.rumptycloud.app/health returns `"database":"ok"`; demo sign-in works. Deployment `sova-api` (Free size, auto-deploy on push to `main`), connecting as `sova_app` over the internal host.
 
 ### Website (`website/`)
 - Sections: anti-fraud notice bar; navbar; hero (React Bits LightRays, phone mock, receipt card, trust row); how it works; "money moves between members" (Animated Beam); features grid; protection timeline; "one tradition, many names" (orbiting circles, pan-African names); Nigerian markets ticker; collectors band; "Our promise" charter; app preview (container scroll); FAQ (English + Pidgin); waitlist; footer with disclosure.
@@ -114,7 +115,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Provably fair payout draw.
 - Notifications/reminders.
 - Voice prompts, local languages, offline use, SMS (website currently overclaims these).
-- Deployment of anything to RumptyCloud.
+- Deployment of the app web build and the website to RumptyCloud (the API is live).
 - Root README with architecture and deployment guide; per-folder READMEs; docs/ledger.md; docs/fair-draw.md.
 
 ## Phase plan
@@ -129,12 +130,24 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 5. Settings + reminders | 22–25 Oct | Edit profile, bank details, change PIN; in-app notifications |
 | 6. Docs + polish | 25–28 Oct | Root README with Mermaid diagram and RumptyCloud deployment; folder READMEs; demo script |
 
+## RumptyCloud facts (observed 3 Oct)
+
+- **Deployments** come from GitHub through the RumptyCloud GitHub App (granted only to `adeyanjufuhad/Sova`), from a chosen branch and root directory. Builds use Railpack. Auto-deploy on push is a checkbox.
+- **Settings per deployment:** root directory, build command, start command, application type (Static Site/SPA or Web Service/Backend), health-check path (default `/`), port (default 8080; apps reading `$PORT` get it automatically), environment variables (bulk `.env` paste; all stored as secrets), persistent volume, autoscaling.
+- **Sizes:** Free (5 apps, 0.5 vCPU, 512 MB, **always sleeps when idle**, ~8 s cold start), Tiny NGN 3.70/hr (~NGN 2,700/month), Starter NGN 7.40/hr, Scale, Pro. Scale-to-zero is optional only on paid sizes. CVE scan is a paid add-on ($0.50/deployment/month), turned off. Per-PR preview URLs are a paid add-on, off.
+- **Default domain:** `<name>.rumptycloud.app` (API: `sova-api.rumptycloud.app`). App and website will share the `rumptycloud.app` parent.
+- **Runtime gotcha:** the start command runs in `sh` without the image's PATH, so neither `npm` nor `node` is found. Working start command for the API:
+  `export PATH="/mise/shims:$(echo /mise/installs/node/*/bin):$PATH"; exec node dist/server.js`
+- **Build:** `npm ci && npm run build` with root `api`; only that folder is in the build context, so `db/migrations` is not copied into the image (migrations run from a laptop as the admin user).
+- **API environment on RumptyCloud:** `NODE_ENV`, `LOG_LEVEL`, `DEMO_LOGIN_ENABLED`, `OTP_PROVIDER`, `OTP_TEST_NUMBERS`, `DATABASE_URL` (internal host `pg-c69bfa.db.rumpty.internal`, user `sova_app`), `JWT_SECRET`. `CORS_ORIGINS` to add once the app and website URLs exist.
+- **Before judging:** Free apps cannot disable sleep. Decide by late October whether to move the API (and possibly the app) to Tiny with scale-to-zero off for 1–7 Nov.
+
 ## Open questions (RumptyCloud)
 
 Not yet answered; do not assume:
-1. Dockerfile deploys supported? (Flutter web build needs the Flutter SDK.)
-2. Static site configuration (build command, output directory); scheduled jobs; pre-deploy commands for migrations.
-3. Node service port variable and health-check configuration.
-4. ~~Postgres version; restricted role~~ **Answered 3 Oct:** RumptyCloud managed Postgres **17.11**, database `sova_db`, admin user `postgres` (superuser, can create roles). Built-in `sha256()` and `gen_random_uuid()` work. Public endpoint uses TLS with a **self-signed certificate** (Node `pg` must not verify it unless RumptyCloud publishes a CA). Plan: migrations run as `postgres`; the API runs as a restricted `sova_app` role.
+1. Dockerfile deploys supported? (Flutter web build needs the Flutter SDK; Railpack may not provide it.)
+2. Static site build output directory setting; scheduled jobs; pre-deploy commands.
+3. ~~Port and health check~~ **Answered 3 Oct** (see facts above).
+4. ~~Postgres version; restricted role~~ **Answered 3 Oct:** RumptyCloud managed Postgres **17.11**, database `sova_db`, admin user `postgres` (superuser, can create roles). Built-in `sha256()` and `gen_random_uuid()` work. Public endpoint uses TLS with a **self-signed certificate** (Node `pg` must not verify it unless RumptyCloud publishes a CA). Migrations run as `postgres`; the API runs as the restricted `sova_app` role.
 5. Bucket CORS configuration for browser uploads.
-6. Default domains; whether app and API can share a parent domain (affects web session storage).
+6. ~~Default domains~~ **Answered 3 Oct:** `<name>.rumptycloud.app`; custom domains configurable per deployment.
