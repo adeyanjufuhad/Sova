@@ -14,7 +14,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "migrate": "tsx src/cli/migrate.ts",
-    "migrate:prod": "node dist/cli/migrate.js"
+    "migrate:prod": "node dist/cli/migrate.js",
+    "seed": "tsx src/cli/seed.ts",
+    "seed:prod": "node dist/cli/seed.js",
+    "db:create-app-role": "tsx src/cli/create-app-role.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

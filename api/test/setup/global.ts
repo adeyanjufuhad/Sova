@@ -44,6 +44,8 @@ export default async function setup(project: TestProject) {
     password,
     port,
     persistent: false,
+    // UTF-8 like production; Windows would otherwise default to WIN1252 and reject "₦".
+    initdbFlags: ["--encoding=UTF8", "--locale=C"],
     onLog: () => {},
   });
   await server.initialise();
