@@ -10,6 +10,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets:
+    name: No committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refuse database URLs with embedded passwords
+        run: |
+          if git grep -nIE 'postgres(ql)?://[^:@/[:space:]$]+:[^@/[:space:]$]+@' -- . ':!*.md'; then
+            echo "A database connection string with a password is committed. Move it to an untracked .env file and rotate the password."
+            exit 1
+          fi
+
   api:
     name: API (typecheck, test, build)
     runs-on: ubuntu-latest
