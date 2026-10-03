@@ -3,7 +3,7 @@ import { loadConfig } from "./config.js";
 import { createPool } from "./db.js";
 
 const config = loadConfig();
-const pool = createPool(config.DATABASE_URL);
+const pool = createPool(config);
 const app = await buildApp(config, pool);
 
 // Graceful shutdown so in-flight requests finish during redeploys.
