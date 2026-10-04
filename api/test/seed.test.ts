@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
+import { commitmentOf, drawOrder } from "../src/lib/draw.js";
 import { DEMO_PHONE, seedDemo } from "../src/seed/demo.js";
 import { freshDatabase } from "./setup/db.js";
 
@@ -25,7 +26,7 @@ describe("demo seed", () => {
     const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
     expect(byName["Church Adashe"]).toMatchObject({ status: "completed", active: 0 });
     expect(byName["Office Esusu"]).toMatchObject({ members: 6, active: 1 });
-    expect(byName["Ikeja Tech Hub Esusu"]).toMatchObject({ members: 4, active: 0 });
+    expect(byName["Ikeja Tech Hub Esusu"]).toMatchObject({ status: "forming", members: 4, active: 0 });
 
     const disputes = await db.pool.query("select status from disputes");
     expect(disputes.rows).toEqual([{ status: "open" }]);
@@ -44,6 +45,31 @@ describe("demo seed", () => {
         where g.invite_code = 'T7KP9Q' and m.payout_position is not null`,
     );
     expect(rows[0].n).toBe(0);
+  });
+
+  it("gives every started circle a draw that verifies, and keeps the forming one secret", async () => {
+    const { rows } = await db.pool.query<{
+      status: string;
+      commitment: string;
+      seed: string;
+      revealed_at: Date | null;
+      admin_id: string;
+      admin_collects_last: boolean;
+      members: string[];
+    }>(`
+      select g.status, d.commitment, d.seed, d.revealed_at, g.admin_id, g.admin_collects_last,
+             array(select user_id::text from group_members m where m.group_id = g.id order by m.payout_position) as members
+        from groups g join circle_draws d on d.group_id = g.id`);
+    expect(rows).toHaveLength(5);
+    for (const r of rows) {
+      expect(commitmentOf(r.seed)).toBe(r.commitment);
+      if (r.status === "forming") {
+        expect(r.revealed_at).toBeNull();
+        continue;
+      }
+      expect(r.revealed_at).not.toBeNull();
+      expect(drawOrder(r.seed, r.members, r.admin_id, r.admin_collects_last)).toEqual(r.members);
+    }
   });
 
   it("computes Sova Scores with the database function", async () => {
