@@ -12,6 +12,7 @@ The database holds the rules that protect the records, so they apply no matter w
 | `20261001000000_app_schema.sql` | Users, banks, circles (`groups`), members, rounds, contributions, notifications, scores; PIN lockout, `force_advance_round`, `calculate_sova_score` |
 | `20261002000000_trust_features.sql` | Group rules and acceptances, vouches, proof of payment, payout receipts (`confirm_payout`), swaps, handovers, disputes, `unfinished_obligations` |
 | `20261003000000_auth_and_fixes.sql` | One-time codes, sessions; turns stay empty until the fair draw; admin "collect last" pledge; invite code format; payout = contribution × (members − 1) |
+| `20261004000000_circle_lifecycle.sql` | `forming` status; commit-reveal draw (`circle_draws`, `run_draw`); joining, rule acceptance, paying, confirming and closing a turn as functions; shortfall opens a dispute |
 
 Rules:
 - Files are named `YYYYMMDDHHMMSS_description.sql` and applied in order, once each.
