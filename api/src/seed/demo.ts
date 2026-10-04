@@ -107,6 +107,17 @@ async function addCircle(ctx: Ctx, c: CircleSpec): Promise<string> {
     [c.name, id(ctx, c.admin), c.size, c.amount, c.cycle, iso(day(c.start)), c.code, c.status, c.adminCollectsLast ?? false],
   );
   const groupId = rows[0]!.id;
+
+  // Like a real circle: the draw is committed before members join and revealed once it's full.
+  const drawn = c.members.every((m) => m.position !== null);
+  const order = [...c.members].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((m) => id(ctx, m.key));
+  const seed = drawn ? seedForOrder(order, id(ctx, c.admin), c.adminCollectsLast ?? false) : newSeed();
+  await ctx.client.query("insert into circle_draws (group_id, commitment, seed) values ($1, $2, $3)", [
+    groupId,
+    commitmentOf(seed),
+    seed,
+  ]);
+
   for (const m of c.members) {
     await ctx.client.query("insert into group_members (group_id, user_id, payout_position) values ($1, $2, $3)", [
       groupId,
@@ -130,15 +141,9 @@ async function addCircle(ctx: Ctx, c: CircleSpec): Promise<string> {
     await ctx.client.query("insert into rule_acceptances (rules_id, user_id) values ($1, $2)", [rules.rows[0]!.id, id(ctx, m.key)]);
   }
 
-  const drawn = c.members.every((m) => m.position !== null);
-  const order = [...c.members].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((m) => id(ctx, m.key));
-  const seed = drawn ? seedForOrder(order, id(ctx, c.admin), c.adminCollectsLast ?? false) : newSeed();
-  await ctx.client.query("insert into circle_draws (group_id, commitment, seed, revealed_at) values ($1, $2, $3, $4)", [
-    groupId,
-    commitmentOf(seed),
-    seed,
-    drawn ? day(c.start - 1) : null,
-  ]);
+  if (drawn) {
+    await ctx.client.query("update circle_draws set revealed_at = $2 where group_id = $1", [groupId, day(c.start - 1)]);
+  }
   return groupId;
 }
 
@@ -222,7 +227,15 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
   const client = await pool.connect();
   try {
     await client.query("begin");
-    // Circles run by seeded people go first (cascades to members, rounds, contributions, rules...).
+    // Demo ledgers can only be purged with this flag, and only for circles run by
+    // the reserved demo numbers (see ledger_guard). Real circles' ledgers stay.
+    await client.query("set local sova.purge_demo = 'on'");
+    await client.query(
+      `delete from ledger_entries where group_id in
+         (select g.id from groups g join users u on u.id = g.admin_id where u.phone like $1)`,
+      [SEEDED_PHONES],
+    );
+    // Circles run by seeded people go next (cascades to members, rounds, contributions, rules...).
     await client.query(
       `delete from groups where admin_id in (select id from users where phone like $1)`,
       [SEEDED_PHONES],

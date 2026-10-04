@@ -206,8 +206,9 @@ export async function circleRoutes(app: FastifyInstance, opts: { pool: pg.Pool; 
             [body.name, me, body.memberCount, body.contributionAmount, body.cycleType, body.startDate, newInviteCode(), body.adminCollectsLast],
           );
           const id = rows[0]!.id;
-          await client.query("insert into group_members (group_id, user_id) values ($1, $2)", [id, me]);
+          // Commit the draw before anyone (even the admin) joins; the ledger shows this order.
           await client.query("insert into circle_draws (group_id, commitment, seed) values ($1, $2, $3)", [id, commitmentOf(seed), seed]);
+          await client.query("insert into group_members (group_id, user_id) values ($1, $2)", [id, me]);
           const rules = await client.query<{ id: string }>(
             `insert into group_rules (group_id, version, late_fee, grace_days, early_exit_policy, emergency_policy, other_rules, created_by)
              values ($1, 1, $2, $3, $4, $5, $6, $7) returning id`,
