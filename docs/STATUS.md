@@ -51,6 +51,10 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 2 Oct | **Shortfall rule:** if a payout is short, the round still advances and a dispute opens automatically against members who did not pay. |
 | 2 Oct | **Reminders:** in-app notifications only for now (no paid SMS, no email). |
 | 2 Oct | **Ledger** is described as tamper-evident (not tamper-proof). Publishing the chain head publicly is a roadmap item. |
+| 4 Oct | **Circle start:** a circle starts on its own once it is full and every member has accepted the current rules; if that happens after the planned start date, turn 1 is due today. |
+| 4 Oct | **Draw formula:** commitment = SHA-256(seed bytes); turn order by SHA-256(seed hex + ":" + user id), byte order; admin last if pledged. Built in Phase 2 (the circle can't start without it); Phase 4 adds the animation and the verify screen. |
+| 4 Oct | **Shortfall dispute:** one dispute per short payout, raised by the collector; the members who didn't pay that turn are its evidence (not one dispute per member). |
+| 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
 
 ## Built and working
 
@@ -70,6 +74,12 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - 34 API tests against a real embedded PostgreSQL 17 (UTF-8, like production). CI also blocks committed database URLs with passwords.
 - `db/README.md`; `api/README.md` and `.env.example` cover every variable and endpoint.
 - **API live on RumptyCloud (3 Oct):** https://sova-api.rumptycloud.app/health returns `"database":"ok"`; demo sign-in works. Deployment `sova-api` (Free size, auto-deploy on push to `main`), connecting as `sova_app` over the internal host.
+
+### Circle lifecycle API (Phase 2, in progress, 4 Oct)
+- Migration `20261004000000_circle_lifecycle.sql` (applied to RumptyCloud; demo data reseeded): `forming` status, commit-reveal draw (`circle_draws`, `run_draw`), and database functions `join_circle`, `accept_rules`, `try_start_circle`, `record_contribution`, `confirm_contribution`, `close_round`. They refuse with `SVxxx` errors that the API turns into `{ error: { code, message } }`.
+- Endpoints: banks, bank details, list/create/preview/join circles, circle detail (members, rules, draw, current turn with each payment), accept rules, turn history, pay, confirm, confirm payout. Money actions need the PIN; non-members get 404.
+- Shortfall opens a dispute and the circle still advances; the last turn completes the circle; Sova Scores are recalculated after every turn.
+- 47 API tests (13 new: full lifecycle, draw verification, collect-last pledge, seeded draws verify).
 
 ### Website (`website/`)
 - Sections: anti-fraud notice bar; navbar; hero (React Bits LightRays, phone mock, receipt card, trust row); how it works; "money moves between members" (Animated Beam); features grid; protection timeline; "one tradition, many names" (orbiting circles, pan-African names); Nigerian markets ticker; collectors band; "Our promise" charter; app preview (container scroll); FAQ (English + Pidgin); waitlist; footer with disclosure.
@@ -99,7 +109,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | Group rules | Yes | Create, view, accept |
 | Vouching | Yes | Choose voucher on join; shown on member list |
 | Proof of payment | Columns exist | Toggle only; no real photo picked or uploaded |
-| Payout receipt / shortfall | `confirm_payout` | No screen |
+| Payout receipt / shortfall | `close_round` + API | No screen |
 | Swaps, handovers | Functions exist | No screens |
 | Disputes | Tables exist | "Disputed" pill only |
 | Collected-then-stopped flag | View exists | Not shown |
@@ -108,7 +118,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- Circle, payment and payout API endpoints; the app does not talk to the API yet.
+- The app does not talk to the API yet (circle endpoints exist).
 - Login in the app (the API side exists), session persistence across restarts.
 - Real photo upload (bucket, presigned URLs).
 - Tamper-evident ledger and the public verify page.
