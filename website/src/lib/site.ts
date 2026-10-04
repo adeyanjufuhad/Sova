@@ -14,7 +14,7 @@ export const site = {
     { label: "How it works", href: "#how" },
     { label: "Features", href: "#features" },
     { label: "Roadmap", href: "#roadmap" },
-    { label: "Our promise", href: "#promise" },
+    { label: "Verify a circle", href: "/verify" },
     { label: "FAQ", href: "#faq" },
   ],
 };
