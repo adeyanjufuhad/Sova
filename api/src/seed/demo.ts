@@ -100,11 +100,22 @@ function seedForOrder(order: string[], adminId: string, adminCollectsLast: boole
   throw new Error("no seed found for the scripted order");
 }
 
+const HOUR = 3_600_000;
+const at = (d: Date, hours: number) => new Date(d.getTime() + hours * HOUR);
+
+/**
+ * Timestamps follow a real circle's life so the ledger reads in order:
+ * created three days before the start (two days ago at most for new circles),
+ * members join over the following hours, the draw is revealed two days before
+ * the start, and each turn opens when the previous payout is confirmed.
+ */
 async function addCircle(ctx: Ctx, c: CircleSpec): Promise<string> {
+  const createdAt = at(day(Math.min(c.start - 3, -2)), 9);
   const { rows } = await ctx.client.query<{ id: string }>(
-    `insert into groups (name, admin_id, member_count, contribution_amount, cycle_type, start_date, invite_code, status, admin_collects_last)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
-    [c.name, id(ctx, c.admin), c.size, c.amount, c.cycle, iso(day(c.start)), c.code, c.status, c.adminCollectsLast ?? false],
+    `insert into groups (name, admin_id, member_count, contribution_amount, cycle_type, start_date, invite_code, status,
+                         admin_collects_last, created_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
+    [c.name, id(ctx, c.admin), c.size, c.amount, c.cycle, iso(day(c.start)), c.code, c.status, c.adminCollectsLast ?? false, createdAt],
   );
   const groupId = rows[0]!.id;
 
@@ -112,40 +123,46 @@ async function addCircle(ctx: Ctx, c: CircleSpec): Promise<string> {
   const drawn = c.members.every((m) => m.position !== null);
   const order = [...c.members].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((m) => id(ctx, m.key));
   const seed = drawn ? seedForOrder(order, id(ctx, c.admin), c.adminCollectsLast ?? false) : newSeed();
-  await ctx.client.query("insert into circle_draws (group_id, commitment, seed) values ($1, $2, $3)", [
+  await ctx.client.query("insert into circle_draws (group_id, commitment, seed, created_at) values ($1, $2, $3, $4)", [
     groupId,
     commitmentOf(seed),
     seed,
+    createdAt,
   ]);
+  const rules = await ctx.client.query<{ id: string }>(
+    `insert into group_rules (group_id, version, late_fee, grace_days, early_exit_policy, emergency_policy, created_by, created_at)
+     values ($1, 1, $2, $3, $4, $5, $6, $7) returning id`,
+    [groupId, c.rules.lateFee, c.rules.graceDays, c.rules.earlyExit, c.rules.emergency ?? null, id(ctx, c.admin), createdAt],
+  );
 
-  for (const m of c.members) {
-    await ctx.client.query("insert into group_members (group_id, user_id, payout_position) values ($1, $2, $3)", [
-      groupId,
-      id(ctx, m.key),
-      m.position,
-    ]);
+  for (const [i, m] of c.members.entries()) {
+    const joinedAt = at(createdAt, i);
+    await ctx.client.query(
+      "insert into group_members (group_id, user_id, payout_position, joined_at) values ($1, $2, $3, $4)",
+      [groupId, id(ctx, m.key), m.position, joinedAt],
+    );
     if (m.vouchedBy) {
-      await ctx.client.query("insert into vouches (group_id, voucher_id, vouchee_id) values ($1, $2, $3)", [
+      await ctx.client.query("insert into vouches (group_id, voucher_id, vouchee_id, created_at) values ($1, $2, $3, $4)", [
         groupId,
         id(ctx, m.vouchedBy),
         id(ctx, m.key),
+        joinedAt,
       ]);
     }
-  }
-  const rules = await ctx.client.query<{ id: string }>(
-    `insert into group_rules (group_id, version, late_fee, grace_days, early_exit_policy, emergency_policy, created_by)
-     values ($1, 1, $2, $3, $4, $5, $6) returning id`,
-    [groupId, c.rules.lateFee, c.rules.graceDays, c.rules.earlyExit, c.rules.emergency ?? null, id(ctx, c.admin)],
-  );
-  for (const m of c.members) {
-    await ctx.client.query("insert into rule_acceptances (rules_id, user_id) values ($1, $2)", [rules.rows[0]!.id, id(ctx, m.key)]);
+    await ctx.client.query("insert into rule_acceptances (rules_id, user_id, accepted_at) values ($1, $2, $3)", [
+      rules.rows[0]!.id,
+      id(ctx, m.key),
+      joinedAt,
+    ]);
   }
 
   if (drawn) {
-    await ctx.client.query("update circle_draws set revealed_at = $2 where group_id = $1", [groupId, day(c.start - 1)]);
+    await ctx.client.query("update circle_draws set revealed_at = $2 where group_id = $1", [groupId, revealAt(c)]);
   }
   return groupId;
 }
+
+const revealAt = (c: CircleSpec) => at(day(c.start - 2), 9);
 
 const STEP = { daily: 1, weekly: 7, monthly: 30 } as const;
 
@@ -163,6 +180,8 @@ async function addRounds(
     /** round number -> member key -> status for that member (default fully_confirmed) */
     overrides?: Record<number, Record<string, "pending" | "payer_confirmed" | "fully_confirmed" | "missing">>;
     shortPayout?: Record<number, number>;
+    /** Runs right after turn n's payout is confirmed (e.g. the automatic dispute). */
+    afterPayout?: Record<number, (roundId: string, at: Date) => Promise<void>>;
   } = {},
 ): Promise<Map<number, string>> {
   const ordered = [...spec.members].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -171,10 +190,12 @@ async function addRounds(
     const collector = ordered[n - 1]!;
     const due = day(spec.start + (n - 1) * STEP[spec.cycle]);
     const active = opts.activeLast && n === upTo;
+    // Turn 1 opens just after the draw; later turns open when the previous payout is confirmed.
+    const openedAt = n === 1 ? at(revealAt(spec), 1) : at(day(spec.start + (n - 2) * STEP[spec.cycle]), 18);
     const { rows } = await ctx.client.query<{ id: string }>(
-      `insert into rounds (group_id, round_number, collector_id, due_date, status)
-       values ($1, $2, $3, $4, $5) returning id`,
-      [groupId, n, id(ctx, collector.key), iso(due), active ? "active" : "completed"],
+      `insert into rounds (group_id, round_number, collector_id, due_date, status, created_at)
+       values ($1, $2, $3, $4, $5, $6) returning id`,
+      [groupId, n, id(ctx, collector.key), iso(due), active ? "active" : "completed", openedAt],
     );
     const roundId = rows[0]!.id;
     roundIds.set(n, roundId);
@@ -184,7 +205,8 @@ async function addRounds(
       if (m.key === collector.key) continue;
       const status = opts.overrides?.[n]?.[m.key] ?? (active ? "pending" : "fully_confirmed");
       if (status === "pending" || status === "missing") continue;
-      const paidAt = new Date(due.getTime() - 86_400_000);
+      // Payments land three hours apart, each confirmed an hour later, so the record reads in order.
+      const paidAt = at(due, -24 + 3 * ordered.indexOf(m));
       await ctx.client.query(
         `insert into contributions
            (round_id, group_id, user_id, amount, payer_confirmed, payer_confirmed_at,
@@ -197,7 +219,7 @@ async function addRounds(
           spec.amount,
           paidAt,
           status === "fully_confirmed",
-          status === "fully_confirmed" ? paidAt : null,
+          status === "fully_confirmed" ? at(paidAt, 1) : null,
           status,
           `FT${String(Math.abs(hash(`${roundId}${m.key}`))).slice(0, 10)}`,
         ],
@@ -206,11 +228,13 @@ async function addRounds(
     }
     if (!active) {
       const amount = opts.shortPayout?.[n] ?? received;
+      const confirmedAt = at(due, 17);
       await ctx.client.query("update rounds set payout_received = $2, payout_confirmed_at = $3 where id = $1", [
         roundId,
         amount,
-        due,
+        confirmedAt,
       ]);
+      await opts.afterPayout?.[n]?.(roundId, confirmedAt);
     }
   }
   return roundIds;
@@ -367,33 +391,38 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
       status: "active",
     };
     const yabaId = await addCircle(ctx, yaba);
-    const yabaRounds = await addRounds(ctx, yabaId, yaba, 3, {
+    await addRounds(ctx, yabaId, yaba, 3, {
       activeLast: true,
       overrides: { 2: { musa: "missing" }, 3: { musa: "missing", peter: "fully_confirmed", sani: "fully_confirmed" } },
       shortPayout: { 2: 20000 },
+      // The short payout opens a dispute straight away, as it does in the app.
+      afterPayout: {
+        2: async (roundId, confirmedAt) => {
+          const dispute = await client.query<{ id: string }>(
+            `insert into disputes (group_id, round_id, raised_by, against_user_id, reason, created_at)
+             values ($1, $2, $3, $4, $5, $6) returning id`,
+            [
+              yabaId,
+              roundId,
+              id(ctx, "peter"),
+              id(ctx, "musa"),
+              "My turn-2 payout was ₦10,000 short. Musa collected turn 1 and has not paid since.",
+              confirmedAt,
+            ],
+          );
+          for (const [actor, kind, message, hours] of [
+            ["peter", "opened", "Opened after confirming a ₦20,000 payout instead of ₦30,000.", 0],
+            ["ada", "evidence", "My transfer receipt for turn 2 is attached to my contribution.", 20],
+            ["musa", "comment", "I will pay this week. My shop was closed.", 44],
+          ] as const) {
+            await client.query(
+              "insert into dispute_events (dispute_id, actor_id, kind, message, created_at) values ($1, $2, $3, $4, $5)",
+              [dispute.rows[0]!.id, id(ctx, actor), kind, message, at(confirmedAt, hours)],
+            );
+          }
+        },
+      },
     });
-    const dispute = await client.query<{ id: string }>(
-      `insert into disputes (group_id, round_id, raised_by, against_user_id, reason, created_at)
-       values ($1, $2, $3, $4, $5, $6) returning id`,
-      [
-        yabaId,
-        yabaRounds.get(2),
-        id(ctx, "peter"),
-        id(ctx, "musa"),
-        "My turn-2 payout was ₦10,000 short. Musa collected turn 1 and has not paid since.",
-        day(-8),
-      ],
-    );
-    for (const [actor, kind, message, offset] of [
-      ["peter", "opened", "Opened after confirming a ₦20,000 payout instead of ₦30,000.", -8],
-      ["ada", "evidence", "My transfer receipt for turn 2 is attached to my contribution.", -7],
-      ["musa", "comment", "I will pay this week. My shop was closed.", -6],
-    ] as const) {
-      await client.query(
-        "insert into dispute_events (dispute_id, actor_id, kind, message, created_at) values ($1, $2, $3, $4, $5)",
-        [dispute.rows[0]!.id, id(ctx, actor), kind, message, day(offset)],
-      );
-    }
 
     // Sova Scores from the database function, for everyone seeded.
     for (const userId of ctx.users.values()) {

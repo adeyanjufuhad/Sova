@@ -43,6 +43,13 @@ describe("ledger", () => {
     }
   });
 
+  it("reads in time order, like a real circle's history", async () => {
+    for (const code of ["K7QX2M", "P4DN8R", "T7KP9Q", "CHRDA9", "YBTR4K"]) {
+      const times = (await ledger(code)).entries.map((e) => JSON.parse(e.body).at as string);
+      expect(times).toEqual([...times].sort());
+    }
+  });
+
   it("lets anyone check the fair draw from the chain alone", async () => {
     const { entries } = await ledger("K7QX2M");
     const [created] = bodies(entries, "circle_created");
