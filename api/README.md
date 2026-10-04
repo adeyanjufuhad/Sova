@@ -74,6 +74,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/me/pin/verify` | bearer | `{ pin }` → `204`, `401` with attempts left, or `423` when locked |
 | PUT | `/me/bank` | bearer | `{ bankName, accountNumber, accountName }`: where this person receives payouts |
 | GET | `/banks` | none | Nigerian banks and fintechs to choose from |
+| POST | `/waitlist` | none | Website sign-up `{ name, phone, role, city?, groupSize? }`; 5/min per IP, honeypot field `website` |
 | GET | `/circles` | bearer | My circles, with the current turn and my payment status |
 | POST | `/circles` | bearer | Create: `{ name, contributionAmount, memberCount, cycleType, startDate, adminCollectsLast, rules, pin }` |
 | GET | `/circles/preview/:code` | bearer | Before joining: amounts, rules, members, draw commitment |
