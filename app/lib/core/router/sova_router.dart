@@ -10,6 +10,7 @@ import '../../features/auth/profile_screen.dart';
 import '../../features/auth/welcome_screen.dart';
 import '../../features/circle/circle_screen.dart';
 import '../../features/circle/pay_screen.dart';
+import '../../features/circle/payout_screen.dart';
 import '../../features/circle/receipt_screen.dart';
 import '../../features/circle/rules_screen.dart';
 import '../../features/circles/circles_screen.dart';
@@ -18,8 +19,10 @@ import '../../features/join/join_circle_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/record/record_screen.dart';
 import '../../shared/widgets/app_shell.dart';
+import '../../shared/widgets/common.dart';
 
 abstract final class SovaRoutes {
+  static const start = '/';
   static const welcome = '/welcome';
   static const phone = '/phone';
   static const otp = '/otp';
@@ -40,7 +43,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: SovaRoutes.welcome,
+    initialLocation: SovaRoutes.start,
     refreshListenable: refresh,
     redirect: (context, state) {
       final auth = ref.read(authProvider);
@@ -48,7 +51,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Where this person should be, given how far through sign-up they are.
       final String? gate;
-      if (!auth.onboarded) {
+      if (auth.restoring) {
+        gate = SovaRoutes.start;
+      } else if (!auth.onboarded) {
         gate = SovaRoutes.welcome;
       } else if (!auth.signedIn) {
         gate = auth.pendingPhone == null ? SovaRoutes.phone : SovaRoutes.otp;
@@ -61,10 +66,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (gate != null) return at == gate ? null : gate;
 
       // Fully signed in: keep people out of the sign-up screens.
-      const authScreens = {SovaRoutes.welcome, SovaRoutes.phone, SovaRoutes.otp, SovaRoutes.profile};
+      const authScreens = {SovaRoutes.start, SovaRoutes.welcome, SovaRoutes.phone, SovaRoutes.otp, SovaRoutes.profile};
       return authScreens.contains(at) ? SovaRoutes.home : null;
     },
     routes: [
+      // Shown for a moment while the saved session loads.
+      GoRoute(path: SovaRoutes.start, builder: (_, _) => const Scaffold(body: LoadingView())),
       GoRoute(path: SovaRoutes.welcome, builder: (_, _) => const WelcomeScreen()),
       GoRoute(path: SovaRoutes.phone, builder: (_, _) => const PhoneScreen()),
       GoRoute(path: SovaRoutes.otp, builder: (_, _) => const OtpScreen()),
@@ -88,6 +95,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: 'pay', builder: (_, state) => PayScreen(circleId: state.pathParameters['id']!)),
           GoRoute(path: 'rules', builder: (_, state) => RulesScreen(circleId: state.pathParameters['id']!)),
+          GoRoute(path: 'payout', builder: (_, state) => PayoutScreen(circleId: state.pathParameters['id']!)),
           GoRoute(
             path: 'receipt/:roundId',
             builder: (_, state) => ReceiptScreen(

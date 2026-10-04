@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/insights.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -45,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           loading: () => const SafeArea(child: SkeletonList()),
           error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circlesProvider)),
           data: (list) {
-            const me = DemoRepository.me;
+            final me = ref.watch(meProvider);
             final items = paymentItems(list, me);
             final shown = _actionsOnly ? items.where((i) => i.needsAction).toList() : items;
             final firstPay = items.where((i) => i.kind == PaymentKind.pay).firstOrNull;

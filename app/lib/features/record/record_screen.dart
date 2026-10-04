@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/insights.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
@@ -26,7 +25,7 @@ class RecordScreen extends ConsumerWidget {
           loading: () => const SkeletonList(),
           error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circlesProvider)),
           data: (list) {
-            final s = recordStats(list, DemoRepository.me);
+            final s = recordStats(list, ref.watch(meProvider));
             final pct = (s.onTimeRate * 100).round();
             return ListView(
               padding: const EdgeInsets.fromLTRB(SovaSpacing.screenH, SovaSpacing.lg, SovaSpacing.screenH, SovaSpacing.xl3),

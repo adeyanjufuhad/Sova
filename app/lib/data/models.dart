@@ -1,4 +1,4 @@
-// Domain models. Field names mirror the Neon tables in db/migrations.
+// Domain models. Field names mirror the tables in db/migrations and the API.
 
 enum CycleType {
   daily('Daily', 'day'),
@@ -9,6 +9,9 @@ enum CycleType {
   final String label;
   final String unit;
 }
+
+/// A circle fills up while 'forming'; the fair draw then starts it.
+enum CircleStatus { forming, active, paused, completed }
 
 enum RoundStatus { pending, active, completed }
 
@@ -47,16 +50,22 @@ class Member {
     required this.position,
     this.bank,
     this.vouchedBy,
+    this.owesAfterCollecting = false,
   });
 
   final String userId;
   final String name;
   final String phone;
-  final int position;
+
+  /// Payout turn; null until the fair draw runs when the circle is full.
+  final int? position;
   final BankDetails? bank;
 
   /// userId of the member who vouched for this one, if any.
   final String? vouchedBy;
+
+  /// Collected their payout, then missed a later payment that is now overdue.
+  final bool owesAfterCollecting;
 
   String get firstName => name.split(' ').first;
   String get initial => name.isEmpty ? '?' : name[0].toUpperCase();
@@ -69,6 +78,7 @@ class Round {
     required this.collectorId,
     required this.dueDate,
     required this.status,
+    this.payoutReceived,
   });
 
   final String id;
@@ -76,6 +86,9 @@ class Round {
   final String collectorId;
   final DateTime dueDate;
   final RoundStatus status;
+
+  /// What the collector confirmed receiving, once they closed the turn.
+  final int? payoutReceived;
 }
 
 class Contribution {
@@ -122,6 +135,18 @@ class GroupRules {
   final Set<String> acceptedBy;
 }
 
+/// The commit-reveal draw: [commitment] is public from the start; [seed] is
+/// revealed when the turns are drawn, so anyone can check the order.
+class DrawInfo {
+  const DrawInfo({required this.commitment, this.seed, this.revealedAt});
+
+  final String commitment;
+  final String? seed;
+  final DateTime? revealedAt;
+
+  bool get revealed => seed != null;
+}
+
 class Circle {
   const Circle({
     required this.id,
@@ -135,7 +160,11 @@ class Circle {
     required this.members,
     required this.rounds,
     required this.contributions,
+    this.status = CircleStatus.active,
+    this.adminCollectsLast = false,
     this.rules,
+    this.draw,
+    this.openDisputes = 0,
   });
 
   final String id;
@@ -149,11 +178,18 @@ class Circle {
   final List<Member> members;
   final List<Round> rounds;
   final List<Contribution> contributions;
-  final GroupRules? rules;
+  final CircleStatus status;
 
-  /// Everyone pays in each round, including the collector, so the payout is
-  /// one contribution per seat.
-  int get payout => contributionAmount * memberCount;
+  /// The admin pledged to take the last turn; the draw respects it.
+  final bool adminCollectsLast;
+  final GroupRules? rules;
+  final DrawInfo? draw;
+  final int openDisputes;
+
+  /// The collector receives one contribution from every other member.
+  int get payout => contributionAmount * (memberCount - 1);
+
+  bool get forming => status == CircleStatus.forming;
 
   Round? get activeRound {
     for (final r in rounds) {
@@ -174,7 +210,9 @@ class Circle {
     return r == null ? null : memberById(r.collectorId);
   }
 
-  List<Member> get membersByPosition => [...members]..sort((a, b) => a.position.compareTo(b.position));
+  /// Drawn turns first, in order; members still waiting for the draw last.
+  List<Member> get membersByPosition =>
+      [...members]..sort((a, b) => (a.position ?? 1 << 30).compareTo(b.position ?? 1 << 30));
 
   Contribution? contributionFor(String roundId, String userId) {
     for (final c in contributions) {
@@ -197,6 +235,9 @@ class Circle {
 
   int get payersThisRound => activeRound == null ? 0 : members.length - 1;
 
+  /// Total of this turn's payments the collector has confirmed.
+  int get confirmedThisRound => paidThisRound * contributionAmount;
+
   bool isAdmin(String userId) => adminId == userId;
 }
 
@@ -206,12 +247,16 @@ class Session {
     required this.userId,
     this.fullName,
     this.hasPin = false,
+    this.isDemo = false,
   });
 
   final String phone;
   final String userId;
   final String? fullName;
   final bool hasPin;
+
+  /// The shared demo account behind "Try the demo".
+  final bool isDemo;
 
   bool get profileComplete => (fullName?.isNotEmpty ?? false) && hasPin;
 
@@ -220,6 +265,7 @@ class Session {
         userId: userId,
         fullName: fullName ?? this.fullName,
         hasPin: hasPin ?? this.hasPin,
+        isDemo: isDemo,
       );
 }
 
@@ -231,7 +277,7 @@ class NewCircle {
     required this.memberCount,
     required this.cycle,
     required this.startDate,
-    required this.adminCollectsFirst,
+    required this.adminCollectsLast,
     required this.lateFee,
     required this.graceDays,
     required this.earlyExit,
@@ -244,12 +290,25 @@ class NewCircle {
   final CycleType cycle;
   final DateTime startDate;
 
-  /// Admins often collect last to show good faith; some collect first.
-  final bool adminCollectsFirst;
+  /// Admins often pledge to collect last to show good faith. Otherwise the
+  /// fair draw decides their turn like everyone else's.
+  final bool adminCollectsLast;
   final int lateFee;
   final int graceDays;
   final EarlyExitPolicy earlyExit;
   final String? emergencyPolicy;
 
-  int get payout => contributionAmount * memberCount;
+  int get payout => contributionAmount * (memberCount - 1);
+}
+
+/// What happened when the collector confirmed their payout.
+class PayoutResult {
+  const PayoutResult({required this.shortfall, required this.nextRound, required this.circle});
+
+  /// Naira missing from the expected payout; a dispute opens when above 0.
+  final int shortfall;
+
+  /// The turn that opened next, or null when the circle is complete.
+  final int? nextRound;
+  final Circle circle;
 }

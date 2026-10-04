@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/insights.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
@@ -68,10 +67,12 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
       context,
       title: 'Join ${c.name}',
       subtitle: 'You accept the rules and agree to pay ${naira(c.contributionAmount)} every ${c.cycle.unit}.',
-      onPin: (pin) async {
-        await repo.verifyPin(pin);
-        await repo.joinCircle(code: c.inviteCode, voucherId: _voucherId!);
-      },
+      onPin: (pin) => repo.joinCircle(
+        code: c.inviteCode,
+        voucherId: _voucherId,
+        rulesVersion: c.rules?.version ?? 1,
+        pin: pin,
+      ),
     );
     if (!mounted || !ok) return;
     refreshCircle(ref, c.id);
@@ -130,8 +131,8 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
               : const Text('Find circle'),
         ),
         const SizedBox(height: SovaSpacing.xl2),
-        // TODO: remove once circles come from the server.
-        const NoticeBox('Demo mode: try the code T7KP9Q.', icon: Icons.science_outlined),
+        if (ref.watch(authProvider).session?.isDemo ?? ref.read(repositoryProvider).otpHint != null)
+          const NoticeBox('Demo: try the code T7KP9Q.', icon: Icons.science_outlined),
       ],
     );
   }
@@ -139,8 +140,6 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
   Widget _preview(Circle c) {
     final admin = c.memberById(c.adminId);
     final spots = c.memberCount - c.members.length;
-    final taken = c.members.map((m) => m.position).toSet();
-    final myTurn = [for (var p = 1; p <= c.memberCount; p++) p].firstWhere((p) => !taken.contains(p), orElse: () => 0);
     final rules = c.rules;
 
     return Column(
@@ -164,7 +163,7 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
                       InfoRow('Admin', admin?.name ?? '—'),
                       InfoRow('You pay', '${naira(c.contributionAmount)} ${c.cycle.label.toLowerCase()}', valueStyle: SovaText.moneySmall),
                       InfoRow('You collect', naira(c.payout), valueStyle: SovaText.moneySmall.copyWith(color: SovaColors.electric)),
-                      if (myTurn > 0) InfoRow('Your turn', 'Turn $myTurn · ${shortDate(payoutDateFor(c, myTurn))}'),
+                      InfoRow('Your turn', c.adminCollectsLast ? 'Drawn fairly (admin goes last)' : 'Drawn fairly when full'),
                       InfoRow('Starts', longDate(c.startDate)),
                       InfoRow('Spots left', '$spots of ${c.memberCount}'),
                     ],

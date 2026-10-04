@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/insights.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -39,7 +38,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           loading: () => const SkeletonList(),
           error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circlesProvider)),
           data: (list) {
-            final all = activity(list, DemoRepository.me);
+            final all = activity(list, ref.watch(meProvider));
             final items = switch (_filter) {
               _Filter.all => all,
               _Filter.paid => all.where((a) => !a.incoming).toList(),

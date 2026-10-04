@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
@@ -42,7 +41,7 @@ class _CircleBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const me = DemoRepository.me;
+    final me = ref.watch(meProvider);
     final c = circle;
     final round = c.activeRound;
     final collector = c.currentCollector;
@@ -56,7 +55,7 @@ class _CircleBody extends ConsumerWidget {
           style: SovaText.bodySmall,
         ),
         const SizedBox(height: SovaSpacing.lg),
-        if (round == null && c.rounds.isEmpty)
+        if (c.forming)
           AdirePanel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +68,8 @@ class _CircleBody extends ConsumerWidget {
                 ),
                 const SizedBox(height: SovaSpacing.xs),
                 Text(
-                  'Turns start on ${longDate(c.startDate)}. Share the invite code below with people you trust.',
+                  'When everyone has joined and accepted the rules, Sova draws the turns fairly and turn 1 starts '
+                  '(planned for ${longDate(c.startDate)}). Share the invite code below with people you trust.',
                   style: SovaText.bodySmall.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
                 ),
                 const SizedBox(height: SovaSpacing.lg),
@@ -81,6 +81,22 @@ class _CircleBody extends ConsumerWidget {
                     color: SovaColors.white,
                     backgroundColor: SovaColors.white.withValues(alpha: 0.25),
                   ),
+                ),
+              ],
+            ),
+          ),
+        if (c.status == CircleStatus.completed)
+          AdirePanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Eyebrow('Circle complete', onBlue: true),
+                const SizedBox(height: SovaSpacing.md),
+                Text('All ${c.memberCount} turns paid out', style: SovaText.h2.copyWith(color: SovaColors.white)),
+                const SizedBox(height: SovaSpacing.xs),
+                Text(
+                  "Every payment stays on the record and counts towards each member's Sova Score.",
+                  style: SovaText.bodySmall.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
                 ),
               ],
             ),
@@ -120,9 +136,18 @@ class _CircleBody extends ConsumerWidget {
             ),
           ),
         const SizedBox(height: SovaSpacing.lg),
+        if (c.openDisputes > 0) ...[
+          NoticeBox(
+            c.openDisputes == 1
+                ? 'There is an open dispute in this circle.'
+                : 'There are ${c.openDisputes} open disputes in this circle.',
+            icon: Icons.gavel_rounded,
+          ),
+          const SizedBox(height: SovaSpacing.lg),
+        ],
         if (round != null) _MyAction(circle: c, round: round, me: me),
         const SizedBox(height: SovaSpacing.xl3),
-        const Eyebrow('Payout order'),
+        Eyebrow(c.forming ? 'Members' : 'Payout order'),
         const SizedBox(height: SovaSpacing.md),
         Card(
           child: Column(
@@ -139,9 +164,11 @@ class _CircleBody extends ConsumerWidget {
         const SizedBox(height: SovaSpacing.md),
         _RulesCard(circle: c, me: me),
         const SizedBox(height: SovaSpacing.xl3),
-        const Eyebrow('Invite members'),
-        const SizedBox(height: SovaSpacing.md),
-        _InviteCard(code: c.inviteCode),
+        if (c.forming) ...[
+          const Eyebrow('Invite members'),
+          const SizedBox(height: SovaSpacing.md),
+          _InviteCard(code: c.inviteCode),
+        ],
       ],
     );
   }
@@ -162,24 +189,36 @@ class _MyAction extends ConsumerWidget {
       final toConfirm = c.contributions
           .where((x) => x.roundId == round.id && x.status == ContributionStatus.payerConfirmed)
           .toList();
-      if (toConfirm.isEmpty) {
-        return const NoticeBox('You are collecting this turn. We will tell you when someone says they have paid.',
-            icon: Icons.call_received_rounded);
-      }
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(SovaSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Check your bank, then confirm', style: SovaText.h3),
-              const SizedBox(height: SovaSpacing.xs),
-              const Text('Only confirm money that has actually arrived in your account.', style: SovaText.bodySmall),
-              const SizedBox(height: SovaSpacing.md),
-              for (final x in toConfirm) _ConfirmRow(circle: c, contribution: x),
-            ],
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (toConfirm.isEmpty)
+            const NoticeBox('You are collecting this turn. Payments members mark as sent will appear here.',
+                icon: Icons.call_received_rounded)
+          else
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(SovaSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Check your bank, then confirm', style: SovaText.h3),
+                    const SizedBox(height: SovaSpacing.xs),
+                    const Text('Only confirm money that has actually arrived in your account.',
+                        style: SovaText.bodySmall),
+                    const SizedBox(height: SovaSpacing.md),
+                    for (final x in toConfirm) _ConfirmRow(circle: c, contribution: x),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: SovaSpacing.md),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/circle/${c.id}/payout'),
+            icon: const Icon(Icons.task_alt_rounded),
+            label: Text('Confirm payout received (${c.paidThisRound} of ${c.payersThisRound} paid)'),
           ),
-        ),
+        ],
       );
     }
 
@@ -220,10 +259,7 @@ class _ConfirmRowState extends ConsumerState<_ConfirmRow> {
       context,
       title: 'Confirm ${naira(widget.contribution.amount)} received',
       subtitle: 'From ${payer?.name ?? 'member'}. Enter your PIN to confirm.',
-      onPin: (pin) async {
-        await repo.verifyPin(pin);
-        await repo.confirmReceived(circleId: widget.circle.id, contributionId: widget.contribution.id);
-      },
+      onPin: (pin) => repo.confirmReceived(circleId: widget.circle.id, contributionId: widget.contribution.id, pin: pin),
     );
     if (!mounted || !ok) return;
     refreshCircle(ref, widget.circle.id);
@@ -274,7 +310,8 @@ class _MemberRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = circle;
     final m = member;
-    final collected = c.rounds.any((r) => r.number == m.position && r.status == RoundStatus.completed);
+    final collected =
+        m.position != null && c.rounds.any((r) => r.number == m.position && r.status == RoundStatus.completed);
     final collecting = round?.collectorId == m.userId;
     final voucher = m.vouchedBy == null ? null : c.memberById(m.vouchedBy!);
 
@@ -293,7 +330,8 @@ class _MemberRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 24,
-            child: Text('${m.position}', style: SovaText.label.copyWith(color: SovaColors.textMuted)),
+            child: Text(m.position == null ? '–' : '${m.position}',
+                style: SovaText.label.copyWith(color: SovaColors.textMuted)),
           ),
           MemberAvatar(m, size: 36, highlight: collecting),
           const SizedBox(width: SovaSpacing.md),
@@ -307,7 +345,8 @@ class _MemberRow extends StatelessWidget {
                     if (collected) 'Collected',
                     if (c.isAdmin(m.userId)) 'Admin',
                     if (voucher != null) 'Vouched for by ${voucher.firstName}',
-                  ].join(' · ').ifEmpty('Turn ${m.position}'),
+                    if (m.owesAfterCollecting) 'Collected, then missed a payment',
+                  ].join(' · ').ifEmpty(m.position == null ? 'Turn drawn when the circle is full' : 'Turn ${m.position}'),
                   style: SovaText.caption,
                 ),
               ],

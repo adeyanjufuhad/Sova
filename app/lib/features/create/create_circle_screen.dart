@@ -42,7 +42,7 @@ class _CreateCircleScreenState extends ConsumerState<CreateCircleScreen> {
   int _members = 6;
   CycleType _cycle = CycleType.weekly;
   late DateTime _start = DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 7));
-  bool _adminFirst = false;
+  bool _adminLast = true;
   int _lateFee = 500;
   int _graceDays = 1;
   EarlyExitPolicy _earlyExit = EarlyExitPolicy.findReplacement;
@@ -66,7 +66,7 @@ class _CreateCircleScreenState extends ConsumerState<CreateCircleScreen> {
     memberCount: _members,
     cycle: _cycle,
     startDate: _start,
-    adminCollectsFirst: _adminFirst,
+    adminCollectsLast: _adminLast,
     lateFee: _lateFee,
     graceDays: _graceDays,
     earlyExit: _earlyExit,
@@ -98,8 +98,7 @@ class _CreateCircleScreenState extends ConsumerState<CreateCircleScreen> {
       title: 'Create ${_draft.name}',
       subtitle: 'You are the admin and you accept these rules.',
       onPin: (pin) async {
-        await repo.verifyPin(pin);
-        created = await repo.createCircle(_draft);
+        created = await repo.createCircle(_draft, pin: pin);
       },
     );
     if (!mounted || !ok || created == null) return;
@@ -353,17 +352,17 @@ class _CreateCircleScreenState extends ConsumerState<CreateCircleScreen> {
       const Text('When do you collect?', style: SovaText.label),
       const SizedBox(height: SovaSpacing.sm),
       _ChoiceCard(
-        selected: !_adminFirst,
+        selected: _adminLast,
         title: 'Last (recommended)',
         subtitle: 'Shows good faith: you collect after everyone else.',
-        onTap: () => setState(() => _adminFirst = false),
+        onTap: () => setState(() => _adminLast = true),
       ),
       const SizedBox(height: SovaSpacing.sm),
       _ChoiceCard(
-        selected: _adminFirst,
-        title: 'First',
-        subtitle: 'Other members join in the order they accept.',
-        onTap: () => setState(() => _adminFirst = true),
+        selected: !_adminLast,
+        title: 'Let the draw decide',
+        subtitle: "Your turn is drawn fairly with everyone else's when the circle is full.",
+        onTap: () => setState(() => _adminLast = false),
       ),
       const SizedBox(height: SovaSpacing.xl),
       Container(
@@ -486,7 +485,7 @@ class _CreateCircleScreenState extends ConsumerState<CreateCircleScreen> {
                   ),
                   InfoRow('Members', '${d.memberCount}'),
                   InfoRow('First payment', longDate(d.startDate)),
-                  InfoRow('Your turn', d.adminCollectsFirst ? 'First' : 'Last (turn ${d.memberCount})'),
+                  InfoRow('Your turn', d.adminCollectsLast ? 'Last (turn ${d.memberCount})' : 'Drawn when the circle is full'),
                   InfoRow('Late fine', d.lateFee == 0 ? 'None' : '${naira(d.lateFee)} after ${d.graceDays} day(s)'),
                   InfoRow('Leaving early', d.earlyExit.label),
                   if (_emergency.text.trim().isNotEmpty) InfoRow('Emergencies', _emergency.text.trim()),
