@@ -13,6 +13,15 @@ const params = z.object({ id: z.uuid("Not a valid circle id.") });
  * numbers or bank details.
  */
 export async function ledgerRoutes(app: FastifyInstance, opts: { pool: pg.Pool }) {
+  /** The seeded demo circles (reserved demo numbers only), so anyone can try the verify page. */
+  app.get("/public/demo-circles", async () => {
+    const { rows } = await opts.pool.query<{ id: string; name: string; status: string }>(
+      `select g.id, g.name, g.status from groups g join users u on u.id = g.admin_id
+        where u.phone like '+2348000000%' order by g.name`,
+    );
+    return { circles: rows };
+  });
+
   app.get("/public/circles/:id/ledger", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (req) => {
     const { id } = params.parse(req.params);
     const circle = await opts.pool.query<{ name: string; status: string; member_count: number }>(
