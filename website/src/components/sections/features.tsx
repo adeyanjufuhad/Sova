@@ -1,14 +1,14 @@
 import {
   ArrowLeftRight,
-  Camera,
+  CheckCheck,
   CloudOff,
   FileSignature,
   Gavel,
+  Globe,
   Handshake,
   ListOrdered,
-  MessageSquareText,
   Mic,
-  Smartphone,
+  ReceiptText,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
@@ -22,16 +22,27 @@ function IconTile({ icon: Icon }: { icon: React.ComponentType<{ className?: stri
   );
 }
 
+function Soon() {
+  return (
+    <span className="ml-2 inline-block rounded-full bg-electric/10 px-2 py-0.5 align-middle font-mono text-[10px] font-medium uppercase tracking-wider text-electric">
+      Coming soon
+    </span>
+  );
+}
+
 function ReceiptVisual() {
   return (
     <div className="mt-6 space-y-2">
       {[
-        { text: "Ngozi, your ₦10,000 for Balogun Market Ajo is due tomorrow.", t: "Thu 6:00pm" },
-        { text: "Received! Ngozi paid ₦10,000. Turn 5 of 12. Ref SV-4821", t: "Fri 9:12am" },
+        { text: "Ngozi marked ₦10,000 as sent to Mama Chidinma. Bank ref FT2610ABC.", t: "Fri 9:04am" },
+        { text: "Mama Chidinma confirmed it arrived. Receipt SV-4821, turn 5 of 12.", t: "Fri 9:12am" },
       ].map((m) => (
-        <div key={m.t} className="max-w-sm rounded-2xl rounded-bl-md bg-mist px-4 py-3">
-          <p className="text-sm text-navy-800">{m.text}</p>
-          <p className="mt-1 text-[11px] text-slate-500">{m.t}</p>
+        <div key={m.t} className="flex max-w-sm items-start gap-2 rounded-2xl rounded-bl-md bg-mist px-4 py-3">
+          <CheckCheck className="mt-0.5 size-4 shrink-0 text-electric" />
+          <div>
+            <p className="text-sm text-navy-800">{m.text}</p>
+            <p className="mt-1 text-[11px] text-slate-500">{m.t}</p>
+          </div>
         </div>
       ))}
     </div>
@@ -40,9 +51,9 @@ function ReceiptVisual() {
 
 function OrderVisual() {
   const rows = [
-    { n: "Iya Bisi", tag: "5 cycles on time", w: "w-full" },
-    { n: "Chinedu", tag: "3 cycles on time", w: "w-4/5" },
-    { n: "New member", tag: "Collects last", w: "w-2/5" },
+    { n: "Chinedu", tag: "hash 1f3a…", w: "w-1/4" },
+    { n: "Iya Bisi", tag: "hash 6c09…", w: "w-3/5" },
+    { n: "Mama Chidinma", tag: "Admin, pledged last", w: "w-full" },
   ];
   return (
     <ul className="mt-6 space-y-2.5">
@@ -67,38 +78,41 @@ function OrderVisual() {
 }
 
 // The fixes for how circles actually break.
-const trust = [
+type Item = { icon: typeof Gavel; title: string; body: string; soon?: boolean };
+
+const trust: Item[] = [
   {
     icon: FileSignature,
     title: "Group rules everyone signs",
-    body: "Late fines, leaving early, sickness and emergencies agreed up front. Sova saves who accepted what, and when.",
+    body: "Late fines, leaving early, sickness and emergencies agreed up front. Sova saves who accepted which version, and when.",
   },
   {
-    icon: Camera,
+    icon: ReceiptText,
     title: "Proof of payment",
-    body: "Attach the transfer receipt and bank reference to each contribution. Arguments end with evidence, not memory.",
+    body: "Record the bank reference with each payment, and the collector confirms with their PIN. Receipt photos are next.",
   },
   {
     icon: Handshake,
     title: "Members vouch for newcomers",
-    body: "A new member joins on someone's word. If they collect and stop paying, it shows on both records.",
+    body: "A new member joins on someone's word. If they collect and stop paying, the group sees it on the record.",
+  },
+  {
+    icon: Gavel,
+    title: "Short payouts can't hide",
+    body: "If a payout comes up short, Sova opens a dispute automatically and flags anyone who collected and then stopped paying.",
   },
   {
     icon: ArrowLeftRight,
     title: "Swap turns, hand over a slot",
-    body: "Need your payout early? Swap with a willing member. Have to leave? Hand your place to someone the admin approves.",
-  },
-  {
-    icon: Gavel,
-    title: "Disputes settled by the record",
-    body: "Raise a dispute and every payment, photo and message lands on one timeline the admin can rule on.",
+    body: "Swap your turn with a willing member, or hand your place to someone the admin approves.",
+    soon: true,
   },
 ];
 
-const basics = [
-  { icon: Mic, title: "Speaks your language", body: "Voice prompts in English, Pidgin, Yoruba, Hausa and Igbo." },
-  { icon: CloudOff, title: "Works without signal", body: "Record payments offline; Sova syncs when network returns." },
-  { icon: Smartphone, title: "Light on your phone", body: "Built for low-storage Android phones and costly data." },
+const basics: Item[] = [
+  { icon: Globe, title: "Works in your browser", body: "Try Sova from any phone or computer, no download needed. Android app too." },
+  { icon: Mic, title: "Speaks your language", body: "Voice prompts in Pidgin, Yoruba, Hausa and Igbo.", soon: true },
+  { icon: CloudOff, title: "Works without signal", body: "Record payments offline and sync when network returns.", soon: true },
 ];
 
 export function Features() {
@@ -114,11 +128,11 @@ export function Features() {
         <div className="mt-16 grid gap-4 md:grid-cols-6">
           <Reveal className="md:col-span-4">
             <Card className="h-full p-7 sm:p-8">
-              <IconTile icon={MessageSquareText} />
-              <h3 className="mt-6 font-display text-2xl font-bold text-navy-900">Reminders and receipts by SMS</h3>
+              <IconTile icon={ReceiptText} />
+              <h3 className="mt-6 font-display text-2xl font-bold text-navy-900">A receipt both sides confirm</h3>
               <p className="mt-2 max-w-md text-slate-600">
-                Every member gets a reminder before their day and a receipt from Sova when they pay. It works on any
-                phone, even without the app.
+                The payer marks the money as sent; the collector confirms it arrived with their PIN. Both get the same
+                receipt, so &ldquo;I paid&rdquo; and &ldquo;I never got it&rdquo; can&apos;t both be true.
               </p>
               <ReceiptVisual />
             </Card>
@@ -127,8 +141,11 @@ export function Features() {
           <Reveal delay={0.1} className="md:col-span-2">
             <Card className="h-full p-7">
               <IconTile icon={ListOrdered} />
-              <h3 className="mt-6 font-display text-xl font-bold text-navy-900">Fair payout order</h3>
-              <p className="mt-2 text-sm text-slate-600">New members collect last. A good record moves you up next cycle.</p>
+              <h3 className="mt-6 font-display text-xl font-bold text-navy-900">A payout order nobody can rig</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Sova seals a random seed before anyone joins, then draws the order from it when the circle is full. Anyone
+                can check the result.
+              </p>
               <OrderVisual />
             </Card>
           </Reveal>
@@ -137,7 +154,10 @@ export function Features() {
             <Reveal key={f.title} delay={0.06 * i} className={i < 3 ? "md:col-span-2" : "md:col-span-3"}>
               <Card className="h-full p-7">
                 <IconTile icon={f.icon} />
-                <h3 className="mt-6 font-display text-xl font-bold text-navy-900">{f.title}</h3>
+                <h3 className="mt-6 font-display text-xl font-bold text-navy-900">
+                  {f.title}
+                  {f.soon && <Soon />}
+                </h3>
                 <p className="mt-2 text-sm text-slate-600">{f.body}</p>
               </Card>
             </Reveal>
@@ -149,7 +169,10 @@ export function Features() {
                 <li key={b.title} className="flex items-start gap-4 p-6">
                   <b.icon className="mt-0.5 size-5 shrink-0 text-electric" />
                   <div>
-                    <p className="font-bold text-navy-900">{b.title}</p>
+                    <p className="font-bold text-navy-900">
+                      {b.title}
+                      {b.soon && <Soon />}
+                    </p>
                     <p className="mt-1 text-sm text-slate-600">{b.body}</p>
                   </div>
                 </li>

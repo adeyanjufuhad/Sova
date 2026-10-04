@@ -6,7 +6,7 @@ import { RecordFlow } from "@/components/sections/record-flow";
 import { Features } from "@/components/sections/features";
 import { Circle } from "@/components/sections/circle";
 import { Protection } from "@/components/sections/protection";
-import { Collectors } from "@/components/sections/collectors";
+import { Roadmap } from "@/components/sections/roadmap";
 import { Faq } from "@/components/sections/faq";
 import { AppPreview } from "@/components/sections/app-preview";
 import { SovaPromise } from "@/components/sections/promise";
@@ -25,7 +25,7 @@ export default function Home() {
         <Protection />
         <Circle />
         <Ticker />
-        <Collectors />
+        <Roadmap />
         <SovaPromise />
         <AppPreview />
         <Faq />

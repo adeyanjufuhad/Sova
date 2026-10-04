@@ -27,7 +27,7 @@ function HomeScreen() {
     <Screen title="My circles">
       <div className="rounded-2xl bg-electric p-4 text-white">
         <p className="text-[11px] text-white/70">Your next payout</p>
-        <p className="mt-1 font-display text-2xl font-semibold">₦120,000</p>
+        <p className="mt-1 font-display text-2xl font-semibold">₦110,000</p>
         <p className="text-[11px] text-white/70">Balogun Market Ajo · in 7 weeks</p>
       </div>
       {circles.map((c) => (

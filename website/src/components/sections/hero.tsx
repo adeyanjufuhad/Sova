@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowRight, BellRing, Check, CheckCheck, Clock3, Landmark, Lock, MapPin, UsersRound } from "lucide-react";
+import { ArrowRight, Check, CheckCheck, Clock3, Landmark, Lock, MapPin, ReceiptText, UsersRound } from "lucide-react";
 import { AdirePattern } from "@/components/ui/adire";
 import { LightRays } from "@/components/ui/light-rays";
-import { DownloadButton } from "@/components/ui/download-button";
+import { site } from "@/lib/site";
 
 const members = [
   { name: "Aisha B.", status: "paid" },
@@ -26,12 +26,12 @@ function PhoneMock() {
           <div className="px-5 pt-5">
             <p className="text-xs text-slate-400">Balogun Market Ajo</p>
             <div className="mt-1 flex items-end justify-between">
-              <p className="font-display text-3xl font-bold tabular-nums text-white">₦120,000</p>
+              <p className="font-display text-3xl font-bold tabular-nums text-white">₦110,000</p>
               <span className="rounded-full bg-sky/15 px-2 py-0.5 text-[10px] font-medium text-sky">
                 Turn 5 of 12
               </span>
             </div>
-            <p className="mt-0.5 text-[11px] text-slate-400">This week&apos;s pot · ₦10,000 × 12</p>
+            <p className="mt-0.5 text-[11px] text-slate-400">This turn&apos;s payout · ₦10,000 from 11 members</p>
 
             <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
               <motion.div
@@ -42,7 +42,7 @@ function PhoneMock() {
               />
             </div>
             <p className="mt-1.5 flex justify-between text-[11px] text-slate-400">
-              <span>9 of 12 paid</span>
+              <span>8 of 11 paid</span>
               <span>Mama Chidinma collects Fri</span>
             </p>
           </div>
@@ -86,12 +86,12 @@ function PhoneMock() {
       >
         <div className="flex w-60 items-start gap-3 rounded-2xl border border-navy-900/10 bg-white p-3">
           <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-electric/10 text-electric">
-            <BellRing className="size-4" />
+            <ReceiptText className="size-4" />
           </span>
           <div>
-            <p className="text-[11px] text-slate-500">SMS from SOVA · 9:12am</p>
+            <p className="text-[11px] text-slate-500">Sova receipt · 9:12am</p>
             <p className="text-sm leading-snug text-navy-900">
-              Received: Tunde paid <span className="tabular-nums">₦10,000</span>. Ref SV-4821.
+              Mama Chidinma confirmed Tunde&apos;s <span className="tabular-nums">₦10,000</span>. Ref SV-4821.
             </p>
           </div>
         </div>
@@ -175,9 +175,9 @@ export function Hero() {
             transition={{ delay: 0.2, duration: 0.7 }}
             className="mt-6 max-w-xl text-lg text-pretty text-slate-600"
           >
-            Sova keeps your savings circle honest. Every contribution gets a receipt, every member
-            knows their turn, and reminders go out before anyone forgets. The money moves between
-            you, Sova just keeps the record.
+            Sova keeps your savings circle honest. Every payment is confirmed by both sides, the payout
+            order is drawn fairly where everyone can check it, and anyone who collects and stops paying
+            shows up on the record. The money moves between you; Sova keeps the record.
           </motion.p>
 
           <motion.div
@@ -187,13 +187,20 @@ export function Hero() {
             className="mt-9 flex flex-wrap items-center gap-3"
           >
             <a
-              href="#waitlist"
+              href={site.appUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="group inline-flex items-center gap-2 rounded-2xl bg-electric px-6 py-4 font-semibold text-white transition hover:bg-electric-400"
             >
-              Join the waitlist
+              Try the live demo
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </a>
-            <DownloadButton />
+            <a
+              href="#waitlist"
+              className="inline-flex items-center gap-2 rounded-2xl border border-navy-900/15 bg-white px-6 py-4 font-semibold text-navy-900 transition hover:border-electric/40 hover:bg-mist"
+            >
+              Join the waitlist
+            </a>
           </motion.div>
 
           <motion.ul

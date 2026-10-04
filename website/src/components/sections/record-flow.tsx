@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import { BookOpenCheck, Check, LayoutDashboard, MessageSquareText } from "lucide-react";
+import { BookOpenCheck, Check, ListOrdered, ReceiptText } from "lucide-react";
 import { AnimatedBeam } from "@/components/ui/animated-beam";
 import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
@@ -71,14 +71,14 @@ function FlowDiagram() {
         </Node>
 
         <div className="flex h-full flex-col justify-between">
-          <Node ref={o1} label="SMS receipt">
-            <MessageSquareText className="size-6" />
+          <Node ref={o1} label="Receipt for both">
+            <ReceiptText className="size-6" />
           </Node>
           <Node ref={o2} label="Group record">
             <BookOpenCheck className="size-6" />
           </Node>
-          <Node ref={o3} label="Collector view">
-            <LayoutDashboard className="size-6" />
+          <Node ref={o3} label="Next turn">
+            <ListOrdered className="size-6" />
           </Node>
         </div>
       </div>

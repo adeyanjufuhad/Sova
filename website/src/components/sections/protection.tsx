@@ -1,37 +1,37 @@
 "use client";
 
-import { Bell, MessageCircle, UserRound, UsersRound } from "lucide-react";
+import { Gavel, Lock, ReceiptText, UserRoundX } from "lucide-react";
 import { Timeline, type TimelineEntry } from "@/components/ui/timeline";
 import { Reveal } from "@/components/ui/reveal";
 
 const steps = [
   {
-    when: "Day before",
-    icon: Bell,
-    title: "Friendly SMS reminder",
-    body: "A quiet nudge to every member who pays tomorrow, so nobody forgets.",
-    message: "Ngozi, your ₦10,000 for Balogun Market Ajo is due tomorrow.",
+    when: "When you pay",
+    icon: ReceiptText,
+    title: "You mark it as sent",
+    body: "After transferring from your own bank, you record the payment and its bank reference in Sova.",
+    message: "Ngozi marked ₦10,000 as sent to Mama Chidinma. Ref FT2610ABC.",
   },
   {
-    when: "On the day",
-    icon: MessageCircle,
-    title: "Second reminder",
-    body: "Sent only to members who haven't paid yet. Everyone else is left alone.",
-    message: "Today is contribution day. Mama Chidinma collects on Friday.",
+    when: "When it arrives",
+    icon: Lock,
+    title: "The collector confirms with their PIN",
+    body: "Only the person collecting this turn can confirm, and only after checking their account. Both of you get the receipt.",
+    message: "Confirmed by Mama Chidinma. Receipt SV-4821.",
   },
   {
-    when: "A day late",
-    icon: UserRound,
-    title: "Collector is told",
-    body: "The organiser sees who is late and can follow up in person, the way ajo has always worked.",
-    message: "Ngozi E. is 1 day late on Balogun Market Ajo.",
+    when: "Payout day",
+    icon: Gavel,
+    title: "A short payout opens a dispute",
+    body: "The collector confirms what actually reached them. If it's short, Sova opens a dispute on its own and the next turn still starts on time.",
+    message: "Turn 5 payout was ₦20,000 short: expected ₦110,000, received ₦90,000.",
   },
   {
-    when: "Still unpaid",
-    icon: UsersRound,
-    title: "Group can see it",
-    body: "The missed payment shows on the group record. Social pressure comes last, not first.",
-    message: "Group record updated: 11 of 12 paid this week.",
+    when: "Collected, then stopped?",
+    icon: UserRoundX,
+    title: "The group can see it",
+    body: "Anyone who collects their payout and then misses a later payment is flagged on the group record for every member to see.",
+    message: "Musa collected turn 1, then missed turn 2.",
   },
 ];
 
@@ -60,11 +60,12 @@ export function Protection() {
           <Reveal className="max-w-2xl">
             <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric"><span className="size-1.5 bg-electric" /> How Sova protects your ajo</p>
             <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-balance text-navy-900 sm:text-5xl">
-              Missed payments get handled before they become fights.
+              Missed payments can&apos;t hide.
             </h2>
             <p className="mt-4 text-lg text-slate-600">
-              Most circles don&apos;t collapse from one bad person. They collapse from small delays that nobody
-              tracked. Sova follows up step by step, gently at first.
+              Most circles don&apos;t collapse from one bad person. They collapse from small gaps nobody tracked.
+              In Sova, every naira has two witnesses and every shortfall leaves a mark. Reminders before the due day
+              are coming soon.
             </p>
           </Reveal>
         }

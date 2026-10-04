@@ -16,11 +16,15 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "What if someone collects their payout and stops paying?",
-      a: "Sova can't force anyone to pay, but it makes it much harder to get away with. New members collect last and join on another member's word, everyone signs the group's rules, and anyone who collects and then misses a payment is flagged on the group record.",
+      a: "Sova can't force anyone to pay, but it makes it much harder to get away with. New members join on another member's word, everyone signs the group's rules, a short payout opens a dispute automatically, and anyone who collects and then misses a payment is flagged on the group record.",
+    },
+    {
+      q: "How do I know the payout order is fair?",
+      a: "Before anyone joins, Sova seals a random seed and shows everyone its fingerprint (a SHA-256 hash). When the circle is full, the order is drawn from that seed and the seed is revealed, so any member can check nobody changed it. If the admin pledged to collect last, they go last.",
     },
     {
       q: "Do I need a smartphone to join a circle?",
-      a: "No. Members without smartphones get SMS reminders and receipts, and their collector or group admin can record payments for them.",
+      a: "For now, yes: Sova runs on Android phones and in any web browser. Access for basic phones by SMS and USSD is on our roadmap.",
     },
     {
       q: "How much does it cost?",
@@ -28,7 +32,7 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "When can I download the app?",
-      a: "Android comes first, on Google Play. Join the waitlist to hear the moment it's ready, or to become one of our early testers.",
+      a: "You can try Sova right now in your browser with the live demo link at the top of this page. The Android app comes to Google Play after our beta; join the waitlist to hear when it's ready.",
     },
     {
       q: "Is my information safe?",
@@ -42,11 +46,15 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "If person collect money finish, come stop to pay nko?",
-      a: "Sova no fit force anybody pay, but e go hard person to do am. New member go collect last and somebody for the group go stand for am, everybody go sign the group rules, and anybody wey collect finish come stop to pay go show for the group record.",
+      a: "Sova no fit force anybody pay, but e go hard person to do am. Somebody for the group go stand for every new member, everybody go sign the group rules, if payout no complete Sova go open dispute by itself, and anybody wey collect finish come stop to pay go show for the group record.",
+    },
+    {
+      q: "How I go know say the order fair?",
+      a: "Before anybody join, Sova go lock one random seed and show everybody im fingerprint (SHA-256 hash). When the circle full, na from that seed Sova go draw the order, then e go show the seed, so any member fit check say nobody change am. If admin promise to collect last, e go collect last.",
     },
     {
       q: "I need smartphone before I fit join?",
-      a: "No. If you no get smartphone, you go dey receive SMS reminder and receipt, and your collector or group admin fit record your payment for you.",
+      a: "For now, yes: Sova dey work for Android phone and for any web browser. SMS and USSD for small phone dey our roadmap.",
     },
     {
       q: "How much e cost?",
@@ -54,7 +62,7 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "When app go ready?",
-      a: "Android go come first, for Google Play. Join the waitlist make we tell you as e ready, or make you test am before everybody.",
+      a: "You fit try Sova now now for your browser with the live demo link for top of this page. Android app go enter Google Play after our beta; join the waitlist make we tell you as e ready.",
     },
     {
       q: "My information dey safe?",
