@@ -92,10 +92,18 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - 28 Flutter tests (API client: wake page, token refresh, errors, JSON mapping).
 - `app-web` branch: built and published by `.github/workflows/app-web.yml` on every push that touches `app/`.
 
+### Tamper-evident ledger (Phase 3, done early, 4 Oct)
+- Migration `20261005000000_ledger.sql` (applied to RumptyCloud; demo data reseeded): per-circle hash chain `ledger_entries` written by triggers on circles, draws, members, vouches, rules, acceptances, turns, payments, payouts and disputes. `hash = SHA-256(prevHash|seq|kind|body)`.
+- Append-only: UPDATE/DELETE/TRUNCATE refused by triggers for every role; `sova_app` has no such privileges; a circle with a ledger can't be deleted. Only the demo seed may purge demo circles' ledgers, with an explicit session flag.
+- Public endpoints: `GET /public/circles/:id/ledger`, `GET /public/demo-circles`. People appear as id + "Ada O."; never phones or bank details.
+- Website `/verify`: downloads a circle's chain and recomputes every hash and the fair draw (commitment, order, sealed before anyone joined) in the browser. The app links each circle to it.
+- Demo circles have a realistic, chronological history (tested).
+- `docs/ledger.md`, `docs/fair-draw.md`. API tests: 59.
+
 ### Website (`website/`)
-- Sections: anti-fraud notice bar; navbar; hero (React Bits LightRays, phone mock, receipt card, trust row); how it works; "money moves between members" (Animated Beam); features grid; protection timeline; "one tradition, many names" (orbiting circles, pan-African names); Nigerian markets ticker; collectors band; "Our promise" charter; app preview (container scroll); FAQ (English + Pidgin); waitlist; footer with disclosure.
-- Waitlist API route writes to Postgres (`DATABASE_URL`), validates input, normalises Nigerian numbers, ignores duplicates.
-- Lint and production build pass.
+- Honest copy (4 Oct): only built features are described; reminders, voice, languages, offline, swaps, collector mode, USSD, Sova Score card and credit history are labelled "coming soon" or listed in the new Roadmap section (the Collectors section is gone). Payout maths corrected (contribution × (members − 1)). "Try the live demo" is the hero's main button.
+- Static export (`output: "export"`), published to the `site-web` branch by `.github/workflows/site-web.yml`. The waitlist posts to the API (`POST /waitlist`) and retries while the API wakes up.
+- Sections: anti-fraud notice bar; navbar; hero; how it works; "money moves between members"; features grid; "missed payments can't hide" timeline; "one tradition, many names"; markets ticker; roadmap; "Our promise"; app preview; FAQ (English + Pidgin, now with "how is the order fair?"); waitlist; footer with disclosure. Plus `/verify`.
 
 ### Database (`db/migrations/`)
 - `20260930000000_waitlist.sql`: waitlist table.
@@ -119,24 +127,21 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 |---|---|---|
 | Group rules | Yes | Create, view, accept |
 | Vouching | Yes | Choose voucher on join; shown on member list |
-| Proof of payment | Columns exist | Toggle only; no real photo picked or uploaded |
-| Payout receipt / shortfall | `close_round` + API | No screen |
+| Proof of payment | Bank reference via API; photo column exists | Reference recorded; photo toggle only (no upload yet) |
 | Swaps, handovers | Functions exist | No screens |
-| Disputes | Tables exist | "Disputed" pill only |
-| Collected-then-stopped flag | View exists | Not shown |
+| Disputes | Opened automatically on short payouts; in the ledger | Open-dispute notice only; no dispute screen or votes |
+| Collected-then-stopped flag | View + API | Shown on the member list |
 | Sova Score | Function exists | Record tab computes an on-time rate on the phone instead |
 | Settings | — | Edit profile, bank details, change PIN are stubs |
 
 ## Not built
 
-- The app web build is not deployed on RumptyCloud yet (the `app-web` branch is ready).
-- Real photo upload (bucket, presigned URLs).
-- Tamper-evident ledger and the public verify page.
-- Provably fair payout draw.
+- Deployment of the app (`app-web` branch) and website (`site-web` branch) on RumptyCloud, and `CORS_ORIGINS` on the API for their addresses. Needs the console.
+- Real photo upload (bucket, presigned URLs). Needs a bucket from the console.
+- Draw animation in the app; dispute screens and votes; swaps and handovers screens; Sova Score card.
 - Notifications/reminders.
-- Voice prompts, local languages, offline use, SMS (website currently overclaims these).
-- Deployment of the app web build and the website to RumptyCloud (the API is live).
-- Root README with architecture and deployment guide; per-folder READMEs; docs/ledger.md; docs/fair-draw.md.
+- Voice prompts, local languages, offline use, SMS, USSD, collector mode (roadmap; labelled as such on the website).
+- Root README with architecture and deployment guide; per-folder READMEs for `app/` and `website/`.
 
 ## Phase plan
 
@@ -145,7 +150,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 0. Housekeeping ✅ | 2 Oct | This file, `CLAUDE.md`, `api/` skeleton with `/health`, CI on GitHub Actions |
 | 1. Database + API foundation ✅ | 3 Oct | Migration runner; schema fixes (payout amount, undrawn turns, invite codes); auth (OTP provider interface, test numbers, paid-SMS stub, demo login, JWT with refresh rotation, argon2id PINs, lockout, rate limits); seed script |
 | 2. Core loop live | 7–12 Oct | Circle lifecycle endpoints; app on the API; session persistence (Android + web); proof photos via presigned uploads; payout shortfall; auto-advance; app web build, website static export, honesty fixes and waitlist via API, all deployed |
-| 3. Ledger | 12–17 Oct | Append-only hash-chained ledger written by triggers; UPDATE/DELETE/TRUNCATE blocked; public chain endpoint; website "Verify this circle" recomputing in the browser; docs/ledger.md |
+| 3. Ledger ✅ (early, 4 Oct) | 12–17 Oct | Append-only hash-chained ledger written by triggers; UPDATE/DELETE/TRUNCATE blocked; public chain endpoint; website "Verify this circle" recomputing in the browser; docs/ledger.md |
 | 4. Fair draw + trust screens | 17–22 Oct | Commit-reveal draw with animation and verification; Sova Score card from the database; swaps, handovers, disputes with votes; collected-then-stopped flag |
 | 5. Settings + reminders | 22–25 Oct | Edit profile, bank details, change PIN; in-app notifications |
 | 6. Docs + polish | 25–28 Oct | Root README with Mermaid diagram and RumptyCloud deployment; folder READMEs; demo script |
