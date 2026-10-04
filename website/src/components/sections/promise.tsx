@@ -18,7 +18,7 @@ const promises = [
   },
   {
     title: "Every naira is accounted for",
-    body: "Both sides confirm each payment, every change is logged, and disputes are settled by the record, not by memory.",
+    body: "Both sides confirm each payment, short payouts open a dispute on their own, and disputes are settled by the record, not by memory.",
   },
 ];
 

@@ -7,19 +7,19 @@ const steps = [
   {
     icon: Users,
     title: "Start your circle",
-    body: "Add members by phone number, set the amount and how often you contribute: daily, weekly or monthly. Sova sets the payout order.",
+    body: "Set the amount, how often you pay and the group's rules, then share a 6-character invite code. When everyone has joined, Sova draws the payout order fairly.",
     tone: "outline",
   },
   {
     icon: CalendarClock,
     title: "Everyone contributes",
-    body: "Members pay each other the way they already do. Sova sends reminders before the day and an SMS receipt after, so no one argues about who paid.",
+    body: "Members pay each other the way they already do, then mark it in Sova. The collector confirms it arrived, so no one argues about who paid.",
     tone: "dark",
   },
   {
     icon: BadgeCheck,
     title: "Build your record",
-    body: "Each cycle you complete on time adds to your Sova record, which you own and can share, to earn an earlier turn next time.",
+    body: "Every payment you make on time builds your Sova record: a history of keeping your word that belongs to you.",
     tone: "blue",
   },
 ] as const;
@@ -34,7 +34,7 @@ export function HowItWorks() {
             Start. Contribute. <span className="text-electric">Build trust.</span>
           </>
         }
-        sub="Sova doesn't change how ajo works. It gives it the records, reminders and receipts it never had."
+        sub="Sova doesn't change how ajo works. It gives it the records and receipts it never had."
       />
 
       <div className="mt-16 grid items-stretch gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
