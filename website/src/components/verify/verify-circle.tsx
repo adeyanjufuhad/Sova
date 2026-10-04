@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight, CircleCheck, CircleX, Dices, Link2, Loader2, ShieldCheck } from "lucide-react";
 import { callApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -174,7 +174,6 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
 
 export function VerifyCircle() {
   const params = useSearchParams();
-  const router = useRouter();
   const id = params.get("c");
   // Settled results, tagged with the circle they belong to; anything else is still loading.
   const [state, setState] = useState<{ id: string; result?: Result; error?: string } | null>(null);
@@ -191,7 +190,8 @@ export function VerifyCircle() {
     };
   }, [id]);
 
-  const pick = (c: string) => router.push(`/verify/?c=${c}`);
+  // A full page load: static hosts serve /verify/ reliably, client-side transitions less so.
+  const pick = (c: string) => window.location.assign(`/verify/?c=${c}`);
   if (!id) return <Picker onPick={pick} />;
   if (state?.id !== id) {
     return (
