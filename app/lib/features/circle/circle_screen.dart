@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
@@ -163,6 +164,13 @@ class _CircleBody extends ConsumerWidget {
         const Eyebrow('Group rules'),
         const SizedBox(height: SovaSpacing.md),
         _RulesCard(circle: c, me: me),
+        // Only circles on the server have a public record to check.
+        if (apiUrl.isNotEmpty) ...[
+          const SizedBox(height: SovaSpacing.xl3),
+          const Eyebrow('Tamper-evident record'),
+          const SizedBox(height: SovaSpacing.md),
+          _VerifyCard(circleId: c.id),
+        ],
         const SizedBox(height: SovaSpacing.xl3),
         if (c.forming) ...[
           const Eyebrow('Invite members'),
@@ -409,6 +417,45 @@ class _RulesCard extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.chevron_right_rounded, color: SovaColors.textMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens the public page that rechecks this circle's hash chain and fair draw.
+class _VerifyCard extends StatelessWidget {
+  const _VerifyCard({required this.circleId});
+
+  final String circleId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => launchUrl(Uri.parse('$siteUrl/verify?c=$circleId'), mode: LaunchMode.externalApplication),
+        child: const Padding(
+          padding: EdgeInsets.all(SovaSpacing.lg),
+          child: Row(
+            children: [
+              Icon(Icons.verified_user_outlined, color: SovaColors.electric),
+              SizedBox(width: SovaSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Verify this circle', style: SovaText.label),
+                    Text(
+                      'Every payment and payout is chained with SHA-256. Anyone can recheck the record and the fair draw.',
+                      style: SovaText.caption,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.open_in_new_rounded, color: SovaColors.textMuted, size: 20),
             ],
           ),
         ),

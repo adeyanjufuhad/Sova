@@ -12,6 +12,9 @@ import 'sova_repository.dart';
 /// Without it the app runs on the in-memory demo backend.
 const apiUrl = String.fromEnvironment('SOVA_API_URL');
 
+/// The public website, home of the "Verify this circle" page.
+const siteUrl = String.fromEnvironment('SOVA_SITE_URL', defaultValue: 'https://sova.rumptycloud.app');
+
 final repositoryProvider = Provider<SovaRepository>(
   (ref) => apiUrl.isEmpty ? DemoRepository() : ApiRepository(ApiClient(baseUrl: apiUrl, store: createSessionStore())),
 );

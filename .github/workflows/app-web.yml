@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SOVA_API_URL: ${{ vars.SOVA_API_URL || 'https://sova-api.rumptycloud.app' }}
+      SOVA_SITE_URL: ${{ vars.SITE_URL || 'https://sova.rumptycloud.app' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +39,7 @@ jobs:
 
       - name: Build
         working-directory: app
-        run: flutter build web --release --dart-define=SOVA_API_URL="$SOVA_API_URL"
+        run: flutter build web --release --dart-define=SOVA_API_URL="$SOVA_API_URL" --dart-define=SOVA_SITE_URL="$SOVA_SITE_URL"
 
       - name: Publish to the app-web branch
         working-directory: app/build/web
