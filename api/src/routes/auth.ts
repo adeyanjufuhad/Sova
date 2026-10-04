@@ -33,6 +33,11 @@ const profileBody = z.object({
     .refine((v) => /\S+\s+\S+/.test(v), "Enter your first and last name."),
 });
 const pinBody = z.object({ pin: z.string() });
+const bankBody = z.object({
+  bankName: z.string().trim().min(2).max(80),
+  accountNumber: z.string().trim().regex(/^\d{10}$/, "Account numbers are 10 digits."),
+  accountName: z.string().trim().min(2, "Enter the name on the account.").max(80),
+});
 
 interface UserRow {
   id: string;
@@ -40,7 +45,12 @@ interface UserRow {
   full_name: string | null;
   pin_hash: string | null;
   is_demo: boolean;
+  bank_name: string | null;
+  account_number: string | null;
+  account_name: string | null;
 }
+
+const USER_COLUMNS = "id, phone, full_name, pin_hash, is_demo, bank_name, account_number, account_name";
 
 export const toUser = (u: UserRow) => ({
   id: u.id,
@@ -48,6 +58,7 @@ export const toUser = (u: UserRow) => ({
   fullName: u.full_name,
   hasPin: u.pin_hash !== null,
   isDemo: u.is_demo,
+  bank: u.account_number ? { bankName: u.bank_name, accountNumber: u.account_number, accountName: u.account_name } : null,
 });
 
 /** Per-IP limits for sensitive endpoints, on top of the per-phone limits in the database. */
@@ -62,7 +73,7 @@ export async function authRoutes(
   const auth = requireUser(tokens);
 
   const findUser = async (id: string) => {
-    const { rows } = await pool.query<UserRow>("select id, phone, full_name, pin_hash, is_demo from users where id = $1", [
+    const { rows } = await pool.query<UserRow>(`select ${USER_COLUMNS} from users where id = $1`, [
       id,
     ]);
     if (!rows[0]) throw new AppError(401, "unauthorized", "Please sign in again.");
@@ -81,7 +92,7 @@ export async function authRoutes(
     const { rows } = await pool.query<UserRow>(
       `insert into users (phone) values ($1)
        on conflict (phone) do update set phone = excluded.phone
-       returning id, phone, full_name, pin_hash, is_demo`,
+       returning ${USER_COLUMNS}`,
       [phone],
     );
     const user = rows[0]!;
@@ -91,7 +102,7 @@ export async function authRoutes(
   app.post("/auth/demo", { config: moderate }, async (req) => {
     if (!opts.demoEnabled) throw new AppError(404, "demo_disabled", "The demo is not available here.");
     const { rows } = await pool.query<UserRow>(
-      "select id, phone, full_name, pin_hash, is_demo from users where phone = $1 and is_demo",
+      `select ${USER_COLUMNS} from users where phone = $1 and is_demo`,
       [opts.demoPhone],
     );
     const user = rows[0];
@@ -116,10 +127,27 @@ export async function authRoutes(
   app.patch("/me", { preHandler: auth }, async (req) => {
     const { fullName } = profileBody.parse(req.body);
     const { rows } = await pool.query<UserRow>(
-      "update users set full_name = $2 where id = $1 returning id, phone, full_name, pin_hash, is_demo",
+      `update users set full_name = $2 where id = $1 returning ${USER_COLUMNS}`,
       [userIdOf(req), fullName],
     );
     return toUser(rows[0]!);
+  });
+
+  /** Where this person receives their payout. */
+  app.put("/me/bank", { preHandler: auth }, async (req) => {
+    const body = bankBody.parse(req.body);
+    const bank = await pool.query<{ name: string }>("select name from nigerian_banks where lower(name) = lower($1)", [body.bankName]);
+    if (!bank.rows[0]) throw new AppError(400, "unknown_bank", "Choose a bank from the list.");
+    const { rows } = await pool.query<UserRow>(
+      `update users set bank_name = $2, account_number = $3, account_name = $4 where id = $1 returning ${USER_COLUMNS}`,
+      [userIdOf(req), bank.rows[0].name, body.accountNumber, body.accountName],
+    );
+    return toUser(rows[0]!);
+  });
+
+  app.get("/banks", async () => {
+    const { rows } = await pool.query<{ id: number; name: string }>("select id, name from nigerian_banks order by name");
+    return { banks: rows };
   });
 
   /** First-time PIN. Changing an existing PIN needs the old one (Phase 5). */
@@ -128,7 +156,7 @@ export async function authRoutes(
     assertStrongPin(pin);
     const { rows } = await pool.query<UserRow>(
       `update users set pin_hash = $2 where id = $1 and pin_hash is null
-       returning id, phone, full_name, pin_hash, is_demo`,
+       returning ${USER_COLUMNS}`,
       [userIdOf(req), await hashPin(pin)],
     );
     if (!rows[0]) throw conflict("pin_already_set", "You already have a PIN.");

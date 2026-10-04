@@ -20,9 +20,20 @@ export const notFound = (what: string) => new AppError(404, "not_found", `${what
 export const forbidden = (message = "You are not allowed to do that.") => new AppError(403, "forbidden", message);
 export const conflict = (code: string, message: string) => new AppError(409, code, message);
 
+/**
+ * Database functions refuse with sova_fail(): SQLSTATE "SV" + HTTP status, the
+ * machine-readable code in HINT and a message meant for people.
+ */
+export function fromDatabase(err: unknown): AppError | null {
+  const e = err as { code?: unknown; hint?: unknown; message?: unknown };
+  if (typeof e.code !== "string" || !/^SV\d{3}$/.test(e.code)) return null;
+  return new AppError(Number(e.code.slice(2)), typeof e.hint === "string" ? e.hint : "refused", String(e.message));
+}
+
 /** All errors leave the API as { error: { code, message, details? } }. */
 export function registerErrorHandler(app: FastifyInstance) {
-  app.setErrorHandler((err: FastifyError | AppError | ZodError | Error, req, reply) => {
+  app.setErrorHandler((caught: FastifyError | AppError | ZodError | Error, req, reply) => {
+    const err = fromDatabase(caught) ?? caught;
     if (err instanceof AppError) {
       return reply.code(err.statusCode).send({ error: { code: err.code, message: err.message, details: err.details } });
     }

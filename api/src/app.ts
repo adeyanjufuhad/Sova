@@ -10,9 +10,10 @@ import { TokenService } from "./auth/tokens.js";
 import type { Config } from "./config.js";
 import { AppError, registerErrorHandler } from "./lib/errors.js";
 import { authRoutes } from "./routes/auth.js";
+import { circleRoutes } from "./routes/circles.js";
 import { healthRoutes } from "./routes/health.js";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 
 export interface AppOverrides {
   otpProvider?: OtpProvider;
@@ -88,6 +89,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
     demoEnabled: config.DEMO_LOGIN_ENABLED,
     demoPhone: config.DEMO_PHONE,
   });
+  await app.register(circleRoutes, { pool, tokens });
 
   return app;
 }
