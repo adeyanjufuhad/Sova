@@ -1,5 +1,7 @@
-import { hashPin } from "../auth/pin.js";
 import type pg from "pg";
+
+import { hashPin } from "../auth/pin.js";
+import { commitmentOf, drawOrder, newSeed } from "../lib/draw.js";
 
 /**
  * Realistic demo data so the product looks alive for the demo and judges.
@@ -12,6 +14,11 @@ import type pg from "pg";
  *  3. Ikeja Tech Hub Esusu  new; 4 of 8 joined; join with code T7KP9Q (turns not drawn yet)
  *  4. Church Adashe         completed; builds your history
  *  5. Yaba Traders Circle   payout shortfall -> open dispute; Musa collected then stopped paying
+ *
+ * Draws: the forming circle gets a fresh secret seed, like any new circle. The
+ * circles that already started need a scripted payout order for the story, so
+ * the seed script searches for a seed whose draw produces that order. Their
+ * draws still verify (commitment and order); real circles never do this.
  */
 
 export const DEMO_PHONE = "+2348000000000";
@@ -78,14 +85,26 @@ interface CircleSpec {
   size: number;
   /** In payout order; null position means "not drawn yet". */
   members: { key: string; position: number | null; vouchedBy?: string }[];
-  rules: { lateFee: number; graceDays: number; earlyExit: string; emergency?: string; notAccepted?: string[] };
+  rules: { lateFee: number; graceDays: number; earlyExit: string; emergency?: string };
+  status: "forming" | "active" | "completed";
+  adminCollectsLast?: boolean;
+}
+
+/** A seed whose draw reproduces the scripted order (see the note at the top). */
+function seedForOrder(order: string[], adminId: string, adminCollectsLast: boolean): string {
+  for (let attempt = 0; attempt < 1_000_000; attempt++) {
+    const seed = newSeed();
+    const drawn = drawOrder(seed, order, adminId, adminCollectsLast);
+    if (drawn.every((id, i) => id === order[i])) return seed;
+  }
+  throw new Error("no seed found for the scripted order");
 }
 
 async function addCircle(ctx: Ctx, c: CircleSpec): Promise<string> {
   const { rows } = await ctx.client.query<{ id: string }>(
-    `insert into groups (name, admin_id, member_count, contribution_amount, cycle_type, start_date, invite_code, status)
-     values ($1, $2, $3, $4, $5, $6, $7, 'active') returning id`,
-    [c.name, id(ctx, c.admin), c.size, c.amount, c.cycle, iso(day(c.start)), c.code],
+    `insert into groups (name, admin_id, member_count, contribution_amount, cycle_type, start_date, invite_code, status, admin_collects_last)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+    [c.name, id(ctx, c.admin), c.size, c.amount, c.cycle, iso(day(c.start)), c.code, c.status, c.adminCollectsLast ?? false],
   );
   const groupId = rows[0]!.id;
   for (const m of c.members) {
@@ -108,9 +127,18 @@ async function addCircle(ctx: Ctx, c: CircleSpec): Promise<string> {
     [groupId, c.rules.lateFee, c.rules.graceDays, c.rules.earlyExit, c.rules.emergency ?? null, id(ctx, c.admin)],
   );
   for (const m of c.members) {
-    if (c.rules.notAccepted?.includes(m.key)) continue;
     await ctx.client.query("insert into rule_acceptances (rules_id, user_id) values ($1, $2)", [rules.rows[0]!.id, id(ctx, m.key)]);
   }
+
+  const drawn = c.members.every((m) => m.position !== null);
+  const order = [...c.members].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((m) => id(ctx, m.key));
+  const seed = drawn ? seedForOrder(order, id(ctx, c.admin), c.adminCollectsLast ?? false) : newSeed();
+  await ctx.client.query("insert into circle_draws (group_id, commitment, seed, revealed_at) values ($1, $2, $3, $4)", [
+    groupId,
+    commitmentOf(seed),
+    seed,
+    drawn ? day(c.start - 1) : null,
+  ]);
   return groupId;
 }
 
@@ -227,6 +255,7 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
         earlyExit: "find_replacement",
         emergency: "If a member falls ill, the group can agree to move their turn earlier.",
       },
+      status: "active",
     };
     const officeId = await addCircle(ctx, office);
     await addRounds(ctx, officeId, office, 3, {
@@ -250,7 +279,8 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
         { key: "amina", position: 4 },
         { key: "david", position: 5, vouchedBy: "tolu" },
       ],
-      rules: { lateFee: 500, graceDays: 2, earlyExit: "refund_after_cycle", notAccepted: ["david"] },
+      rules: { lateFee: 500, graceDays: 2, earlyExit: "refund_after_cycle" },
+      status: "active",
     };
     const unilagId = await addCircle(ctx, unilag);
     await addRounds(ctx, unilagId, unilag, 2, {
@@ -279,9 +309,10 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
         earlyExit: "find_replacement",
         emergency: "Members can swap turns for emergencies if both agree.",
       },
+      status: "forming",
+      adminCollectsLast: true,
     };
     await addCircle(ctx, techHub);
-    await client.query("update groups set admin_collects_last = true where invite_code = 'T7KP9Q'");
 
     // 4. Church Adashe: completed four-person circle.
     const church: CircleSpec = {
@@ -299,10 +330,10 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
         { key: "blessing", position: 4 },
       ],
       rules: { lateFee: 0, graceDays: 2, earlyExit: "forfeit_fee" },
+      status: "completed",
     };
     const churchId = await addCircle(ctx, church);
     await addRounds(ctx, churchId, church, 4);
-    await client.query("update groups set status = 'completed' where id = $1", [churchId]);
 
     // 5. Yaba Traders Circle: Musa collected turn 1 then missed turn 2; Peter's payout came up short.
     const yaba: CircleSpec = {
@@ -320,6 +351,7 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
         { key: "sani", position: 4 },
       ],
       rules: { lateFee: 1000, graceDays: 1, earlyExit: "find_replacement" },
+      status: "active",
     };
     const yabaId = await addCircle(ctx, yaba);
     const yabaRounds = await addRounds(ctx, yabaId, yaba, 3, {
