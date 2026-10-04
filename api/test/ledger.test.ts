@@ -93,6 +93,11 @@ describe("ledger", () => {
     expect(firstBrokenEntry(tampered)).toBe(5);
   });
 
+  it("lists the demo circles for the verify page", async () => {
+    const res = await app.inject({ method: "GET", url: "/public/demo-circles" });
+    expect(res.json().circles.map((c: { name: string }) => c.name)).toContain("Yaba Traders Circle");
+  });
+
   it("answers 404 for unknown circles", async () => {
     const res = await app.inject({ method: "GET", url: "/public/circles/00000000-0000-0000-0000-000000000000/ledger" });
     expect(res.statusCode).toBe(404);
