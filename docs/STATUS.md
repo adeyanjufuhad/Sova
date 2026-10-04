@@ -136,7 +136,6 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- Deployment of the app (`app-web` branch) and website (`site-web` branch) on RumptyCloud, and `CORS_ORIGINS` on the API for their addresses. Needs the console.
 - Real photo upload (bucket, presigned URLs). Needs a bucket from the console.
 - Draw animation in the app; dispute screens and votes; swaps and handovers screens; Sova Score card.
 - Notifications/reminders.
@@ -160,7 +159,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - **Deployments** come from GitHub through the RumptyCloud GitHub App (granted only to `adeyanjufuhad/Sova`), from a chosen branch and root directory. Builds use Railpack. Auto-deploy on push is a checkbox.
 - **Settings per deployment:** root directory, build command, start command, application type (Static Site/SPA or Web Service/Backend), health-check path (default `/`), port (default 8080; apps reading `$PORT` get it automatically), environment variables (bulk `.env` paste; all stored as secrets), persistent volume, autoscaling.
 - **Sizes:** Free (5 apps, 0.5 vCPU, 512 MB, **always sleeps when idle**, ~8 s cold start), Tiny NGN 3.70/hr (~NGN 2,700/month), Starter NGN 7.40/hr, Scale, Pro. Scale-to-zero is optional only on paid sizes. CVE scan is a paid add-on ($0.50/deployment/month), turned off. Per-PR preview URLs are a paid add-on, off.
-- **Default domain:** `<name>.rumptycloud.app` (API: `sova-api.rumptycloud.app`). App and website will share the `rumptycloud.app` parent.
+- **Live addresses (4 Oct):** API `https://sova-api.rumptycloud.app`, app `https://sova-app.rumptycloud.app` (branch `app-web`), website `https://sova.rumptycloud.app` (branch `site-web`, verify page at `/verify`). All Free size, auto-deploy on push. `CORS_ORIGINS` on the API lists the app and website.
 - **Runtime gotcha:** the start command runs in `sh` without the image's PATH, so neither `npm` nor `node` is found. Working start command for the API:
   `export PATH="/mise/shims:$(echo /mise/installs/node/*/bin):$PATH"; exec node dist/server.js`
 - **Build:** `npm ci && npm run build` with root `api`; only that folder is in the build context, so `db/migrations` is not copied into the image (migrations run from a laptop as the admin user).
