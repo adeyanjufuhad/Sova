@@ -356,7 +356,7 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
     const yabaId = await addCircle(ctx, yaba);
     const yabaRounds = await addRounds(ctx, yabaId, yaba, 3, {
       activeLast: true,
-      overrides: { 2: { musa: "missing" }, 3: { musa: "missing", sani: "fully_confirmed" } },
+      overrides: { 2: { musa: "missing" }, 3: { musa: "missing", peter: "fully_confirmed", sani: "fully_confirmed" } },
       shortPayout: { 2: 20000 },
     });
     const dispute = await client.query<{ id: string }>(

@@ -37,6 +37,8 @@ describe("demo seed", () => {
       `select u.full_name from unfinished_obligations o join users u on u.id = o.user_id`,
     );
     expect(rows.map((r) => r.full_name)).toContain("Musa Kabir");
+    // Peter, whose payout came up short, is up to date.
+    expect(rows.map((r) => r.full_name)).not.toContain("Peter Ade");
   });
 
   it("leaves turns undrawn in the new circle", async () => {
