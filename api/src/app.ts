@@ -12,6 +12,7 @@ import { AppError, registerErrorHandler } from "./lib/errors.js";
 import { authRoutes } from "./routes/auth.js";
 import { circleRoutes } from "./routes/circles.js";
 import { healthRoutes } from "./routes/health.js";
+import { ledgerRoutes } from "./routes/ledger.js";
 import { waitlistRoutes } from "./routes/waitlist.js";
 
 export const VERSION = "0.4.0";
@@ -92,6 +93,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   });
   await app.register(circleRoutes, { pool, tokens });
   await app.register(waitlistRoutes, { pool });
+  await app.register(ledgerRoutes, { pool });
 
   return app;
 }
