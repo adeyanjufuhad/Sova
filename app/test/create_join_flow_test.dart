@@ -69,7 +69,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('Check everything'), findsOneWidget);
-    expect(find.text('₦25,000'), findsOneWidget); // 5 members x ₦5,000
+    expect(find.text('₦20,000'), findsOneWidget); // 4 other members x ₦5,000
     await tester.tap(find.text('Create circle'));
     await settle(tester);
     expect(find.textContaining('Tick the box'), findsOneWidget);
@@ -101,7 +101,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'ZZZZZZ');
     await settle(tester);
-    expect(find.textContaining('No circle has that code'), findsOneWidget);
+    expect(find.textContaining('No circle uses that code'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 't7kp9q');
     await settle(tester);

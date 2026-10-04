@@ -66,15 +66,13 @@ class _PayFormState extends ConsumerState<_PayForm> {
       context,
       title: 'Record ${naira(c.contributionAmount)} to ${widget.collector.firstName}',
       subtitle: 'Only do this after the money has left your account.',
-      onPin: (pin) async {
-        await repo.verifyPin(pin);
-        await repo.confirmMyPayment(
-          circleId: c.id,
-          roundId: widget.round.id,
-          bankReference: _reference.text.trim().isEmpty ? null : _reference.text.trim(),
-          hasProof: _hasProof,
-        );
-      },
+      onPin: (pin) => repo.confirmMyPayment(
+        circleId: c.id,
+        roundNumber: widget.round.number,
+        bankReference: _reference.text.trim().isEmpty ? null : _reference.text.trim(),
+        hasProof: _hasProof,
+        pin: pin,
+      ),
     );
     if (!mounted || !ok) return;
     refreshCircle(ref, c.id);

@@ -47,11 +47,11 @@ DateTime payoutDateFor(Circle c, int position) {
 ({Circle circle, DateTime date})? nextPayout(List<Circle> circles, String me) {
   ({Circle circle, DateTime date})? best;
   for (final c in circles) {
-    final mine = c.memberById(me);
-    if (mine == null) continue;
-    final done = c.rounds.any((r) => r.number == mine.position && r.status == RoundStatus.completed);
+    final position = c.memberById(me)?.position;
+    if (position == null) continue; // not a member, or turns not drawn yet
+    final done = c.rounds.any((r) => r.number == position && r.status == RoundStatus.completed);
     if (done) continue;
-    final date = payoutDateFor(c, mine.position);
+    final date = payoutDateFor(c, position);
     if (best == null || date.isBefore(best.date)) best = (circle: c, date: date);
   }
   return best;
@@ -90,15 +90,15 @@ List<PaymentItem> paymentItems(List<Circle> circles, String me) {
         }
       }
     }
-    final mine = c.memberById(me);
-    if (mine != null && !c.rounds.any((x) => x.number == mine.position && x.status == RoundStatus.completed)) {
+    final position = c.memberById(me)?.position;
+    if (position != null && !c.rounds.any((x) => x.number == position && x.status == RoundStatus.completed)) {
       items.add(PaymentItem(
         kind: PaymentKind.collect,
         circle: c,
         round: r?.collectorId == me ? r : null,
         amount: c.payout,
         counterparty: null,
-        date: payoutDateFor(c, mine.position),
+        date: payoutDateFor(c, position),
       ));
     }
   }

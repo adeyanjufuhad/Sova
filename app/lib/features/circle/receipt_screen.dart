@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
@@ -28,7 +27,7 @@ class ReceiptScreen extends ConsumerWidget {
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: e.toString()),
         data: (c) {
-          const me = DemoRepository.me;
+          final me = ref.watch(meProvider);
           final x = c.contributionFor(roundId, me);
           final round = c.rounds.where((r) => r.id == roundId).firstOrNull;
           if (x == null || round == null) return const ErrorView(message: 'We could not find this payment.');

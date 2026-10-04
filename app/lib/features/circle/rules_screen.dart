@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
 
@@ -22,10 +21,10 @@ class RulesScreen extends ConsumerStatefulWidget {
 class _RulesScreenState extends ConsumerState<RulesScreen> {
   bool _busy = false;
 
-  Future<void> _accept() async {
+  Future<void> _accept(int version) async {
     setState(() => _busy = true);
     try {
-      await ref.read(repositoryProvider).acceptRules(widget.circleId);
+      await ref.read(repositoryProvider).acceptRules(widget.circleId, version);
       refreshCircle(ref, widget.circleId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You accepted the group rules.')));
@@ -48,7 +47,8 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
         data: (c) {
           final rules = c.rules;
           if (rules == null) return const ErrorView(message: 'This circle has no written rules yet.');
-          final accepted = rules.acceptedBy.contains(DemoRepository.me);
+          final me = ref.watch(meProvider);
+          final accepted = rules.acceptedBy.contains(me);
           final pending = c.members.where((m) => !rules.acceptedBy.contains(m.userId)).toList();
 
           return ListView(
@@ -96,7 +96,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
               ),
               if (pending.isNotEmpty) ...[
                 const SizedBox(height: SovaSpacing.xs),
-                Text('Still to accept: ${pending.map((m) => m.userId == DemoRepository.me ? 'you' : m.firstName).join(', ')}',
+                Text('Still to accept: ${pending.map((m) => m.userId == me ? 'you' : m.firstName).join(', ')}',
                     style: SovaText.caption),
               ],
               const SizedBox(height: SovaSpacing.xl2),
@@ -109,7 +109,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
                 ),
                 const SizedBox(height: SovaSpacing.lg),
                 FilledButton(
-                  onPressed: _busy ? null : _accept,
+                  onPressed: _busy ? null : () => _accept(rules.version),
                   child: _busy
                       ? const SizedBox.square(
                           dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: SovaColors.white))

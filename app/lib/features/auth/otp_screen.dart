@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
 
@@ -162,8 +161,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   : TextButton(onPressed: _resend, child: const Text('Resend code')),
             ),
             const SizedBox(height: SovaSpacing.xl2),
-            // TODO: remove once real SMS codes are wired up.
-            NoticeBox('Demo mode: use the code ${DemoRepository.demoOtp}.', icon: Icons.science_outlined),
+            if (ref.read(repositoryProvider).otpHint case final hint?) NoticeBox(hint, icon: Icons.science_outlined),
           ],
         ),
       ),

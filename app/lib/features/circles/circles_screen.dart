@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
-import '../../data/demo_repository.dart';
 import '../../data/insights.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -87,7 +86,7 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
                       index: i,
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: SovaSpacing.md),
-                        child: CircleCard(circle: c, me: DemoRepository.me),
+                        child: CircleCard(circle: c, me: ref.watch(meProvider)),
                       ),
                     ),
                 ],
@@ -322,7 +321,7 @@ class CircleCard extends StatelessWidget {
                 ),
                 if (mine != null)
                   Text(
-                    'Your turn: ${shortDate(payoutDateFor(c, mine.position))}',
+                    _myTurnLabel(c, mine.position),
                     style: SovaText.caption.copyWith(color: SovaColors.electric, fontWeight: FontWeight.w700),
                   ),
               ],
@@ -332,4 +331,12 @@ class CircleCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Where the member stands in the payout order, in a few words.
+String _myTurnLabel(Circle c, int? position) {
+  if (position == null) return 'Turns drawn when full';
+  final collected = c.rounds.any((r) => r.number == position && r.status == RoundStatus.completed);
+  if (collected) return 'You collected (turn $position)';
+  return 'Your turn: ${shortDate(payoutDateFor(c, position))}';
 }

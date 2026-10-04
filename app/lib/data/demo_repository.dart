@@ -3,14 +3,17 @@ import 'dart:math';
 import 'models.dart';
 import 'sova_repository.dart';
 
-/// In-memory backend for building and testing the app before the API exists.
-/// The OTP is always [demoOtp] and the data resets when the app restarts.
+/// In-memory backend for tests and offline demos. It follows the same rules
+/// as the API (forming until full, turns drawn at the start, payout from the
+/// other members, PIN on money actions). The OTP is always [demoOtp]; data
+/// resets when the app restarts. Draws here are random, not commit-reveal.
 class DemoRepository implements SovaRepository {
   DemoRepository() {
     _seed();
   }
 
   static const demoOtp = '123456';
+  static const demoPin = '2580';
   static const me = 'me';
 
   final _random = Random();
@@ -25,6 +28,12 @@ class DemoRepository implements SovaRepository {
   String _reference() => 'SV-${1000 + _random.nextInt(9000)}';
 
   @override
+  String? get otpHint => 'Demo mode: use the code $demoOtp.';
+
+  @override
+  Future<Session?> restoreSession() async => null;
+
+  @override
   Future<void> requestOtp(String phone) => _latency();
 
   @override
@@ -33,6 +42,17 @@ class DemoRepository implements SovaRepository {
     if (code != demoOtp) throw const SovaException('That code is not correct. Check the SMS and try again.');
     return _session = Session(phone: phone, userId: me);
   }
+
+  @override
+  Future<Session> startDemo() async {
+    await _latency();
+    _pin = demoPin;
+    _renameMe('Ada Obi', '+2348000000000');
+    return _session = const Session(phone: '+2348000000000', userId: me, fullName: 'Ada Obi', hasPin: true, isDemo: true);
+  }
+
+  @override
+  Future<void> signOut() async => _session = null;
 
   @override
   Future<Session> saveProfile({required String fullName, required String pin}) async {
@@ -47,18 +67,22 @@ class DemoRepository implements SovaRepository {
   @override
   Future<void> verifyPin(String pin) async {
     await _latency();
+    _checkPin(pin);
+  }
+
+  void _checkPin(String pin) {
     final now = DateTime.now();
     if (_pinLockedUntil != null && _pinLockedUntil!.isAfter(now)) {
-      throw const SovaException('Too many wrong tries. Your PIN is locked for 15 minutes.');
+      throw const SovaException('Too many wrong tries. Your PIN is locked for 15 minutes.', code: 'pin_locked');
     }
     if (pin != _pin) {
       _pinFailures++;
       if (_pinFailures >= 5) {
         _pinFailures = 0;
         _pinLockedUntil = now.add(const Duration(minutes: 15));
-        throw const SovaException('Too many wrong tries. Your PIN is locked for 15 minutes.');
+        throw const SovaException('Too many wrong tries. Your PIN is locked for 15 minutes.', code: 'pin_locked');
       }
-      throw SovaException('Wrong PIN. ${5 - _pinFailures} tries left.');
+      throw SovaException('Wrong PIN. ${5 - _pinFailures} tries left.', code: 'wrong_pin');
     }
     _pinFailures = 0;
   }
@@ -74,81 +98,14 @@ class DemoRepository implements SovaRepository {
   Future<Circle> circle(String id) async {
     await _latency();
     final c = _circles[id];
-    if (c == null) throw const SovaException('This circle no longer exists.');
+    if (c == null || c.memberById(me) == null) throw const SovaException('Circle not found.');
     return c;
   }
 
   @override
-  Future<Contribution> confirmMyPayment({
-    required String circleId,
-    required String roundId,
-    String? bankReference,
-    bool hasProof = false,
-  }) async {
+  Future<Circle> createCircle(NewCircle d, {required String pin}) async {
     await _latency();
-    final c = _circles[circleId]!;
-    final existing = c.contributionFor(roundId, me);
-    if (existing != null && existing.status != ContributionStatus.pending) {
-      throw const SovaException('You have already recorded this payment.');
-    }
-    final contribution = Contribution(
-      id: 'c-${_random.nextInt(1000000000)}',
-      roundId: roundId,
-      userId: me,
-      amount: c.contributionAmount,
-      status: ContributionStatus.payerConfirmed,
-      bankReference: bankReference,
-      hasProof: hasProof,
-      payerConfirmedAt: DateTime.now(),
-      reference: _reference(),
-    );
-    _replaceContribution(c, contribution);
-    return contribution;
-  }
-
-  @override
-  Future<Contribution> confirmReceived({required String circleId, required String contributionId}) async {
-    await _latency();
-    final c = _circles[circleId]!;
-    final old = c.contributions.firstWhere((x) => x.id == contributionId);
-    final round = c.rounds.firstWhere((r) => r.id == old.roundId);
-    if (round.collectorId != me) throw const SovaException('Only this round\'s collector can confirm payments.');
-    final updated = Contribution(
-      id: old.id,
-      roundId: old.roundId,
-      userId: old.userId,
-      amount: old.amount,
-      status: ContributionStatus.fullyConfirmed,
-      bankReference: old.bankReference,
-      hasProof: old.hasProof,
-      payerConfirmedAt: old.payerConfirmedAt,
-      reference: old.reference ?? _reference(),
-    );
-    _replaceContribution(c, updated);
-    return updated;
-  }
-
-  @override
-  Future<void> acceptRules(String circleId) async {
-    await _latency();
-    final c = _circles[circleId]!;
-    final r = c.rules!;
-    _circles[circleId] = _copyCircle(
-      c,
-      rules: GroupRules(
-        version: r.version,
-        lateFee: r.lateFee,
-        graceDays: r.graceDays,
-        earlyExit: r.earlyExit,
-        emergencyPolicy: r.emergencyPolicy,
-        acceptedBy: {...r.acceptedBy, me},
-      ),
-    );
-  }
-
-  @override
-  Future<Circle> createCircle(NewCircle d) async {
-    await _latency();
+    _checkPin(pin);
     final name = d.name.trim();
     if (name.length < 2) throw const SovaException('Give your circle a name.');
     if (d.contributionAmount < 100) throw const SovaException('The contribution must be at least ₦100.');
@@ -162,14 +119,9 @@ class DemoRepository implements SovaRepository {
       cycle: d.cycle,
       startDate: d.startDate,
       inviteCode: _newInviteCode(),
-      members: [
-        Member(
-          userId: me,
-          name: _session?.fullName ?? 'You',
-          phone: _session?.phone ?? '',
-          position: d.adminCollectsFirst ? 1 : d.memberCount,
-        ),
-      ],
+      status: CircleStatus.forming,
+      adminCollectsLast: d.adminCollectsLast,
+      members: [Member(userId: me, name: _session?.fullName ?? 'You', phone: _session?.phone ?? '', position: null)],
       rounds: const [],
       contributions: const [],
       rules: GroupRules(
@@ -190,54 +142,167 @@ class DemoRepository implements SovaRepository {
     await _latency();
     final c = _byCode(code);
     if (c.memberById(me) != null) throw const SovaException('You are already in this circle.');
+    if (!c.forming) throw const SovaException('This circle has already started. Ask the admin about the next one.');
     if (c.members.length >= c.memberCount) throw const SovaException('This circle is already full.');
     return c;
   }
 
   @override
-  Future<Circle> joinCircle({required String code, required String voucherId}) async {
+  Future<Circle> joinCircle({
+    required String code,
+    String? voucherId,
+    required int rulesVersion,
+    required String pin,
+  }) async {
     await _latency();
-    final c = _byCode(code);
-    if (c.memberById(me) != null) throw const SovaException('You are already in this circle.');
-    if (c.members.length >= c.memberCount) throw const SovaException('This circle is already full.');
-    if (c.memberById(voucherId) == null) throw const SovaException('Choose the member who invited you.');
-
-    // Take the earliest free payout position.
-    final taken = c.members.map((m) => m.position).toSet();
-    final position = [for (var p = 1; p <= c.memberCount; p++) p].firstWhere((p) => !taken.contains(p));
+    _checkPin(pin);
+    final c = await findByInviteCode(code);
+    if (voucherId != null && c.memberById(voucherId) == null) {
+      throw const SovaException('The person vouching for you must already be in this circle.');
+    }
+    if (c.rules != null && c.rules!.version != rulesVersion) {
+      throw const SovaException('The rules changed while you were reading. Please read them again.');
+    }
     final joined = _copyCircle(
       c,
       members: [
         ...c.members,
-        Member(
-          userId: me,
-          name: _session?.fullName ?? 'You',
-          phone: _session?.phone ?? '',
-          position: position,
-          vouchedBy: voucherId,
-        ),
+        Member(userId: me, name: _session?.fullName ?? 'You', phone: _session?.phone ?? '', position: null, vouchedBy: voucherId),
       ],
-      rules: c.rules == null
-          ? null
-          : GroupRules(
-              version: c.rules!.version,
-              lateFee: c.rules!.lateFee,
-              graceDays: c.rules!.graceDays,
-              earlyExit: c.rules!.earlyExit,
-              emergencyPolicy: c.rules!.emergencyPolicy,
-              acceptedBy: {...c.rules!.acceptedBy, me},
-            ),
+      rules: c.rules == null ? null : _withAcceptance(c.rules!, me),
     );
-    _circles[c.id] = joined;
-    return joined;
+    return _circles[c.id] = _startIfReady(joined);
   }
+
+  @override
+  Future<Circle> acceptRules(String circleId, int version) async {
+    await _latency();
+    final c = await circle(circleId);
+    if (c.rules == null || c.rules!.version != version) {
+      throw const SovaException('The rules changed while you were reading. Please read them again.');
+    }
+    return _circles[circleId] = _startIfReady(_copyCircle(c, rules: _withAcceptance(c.rules!, me)));
+  }
+
+  @override
+  Future<Circle> confirmMyPayment({
+    required String circleId,
+    required int roundNumber,
+    String? bankReference,
+    bool hasProof = false,
+    required String pin,
+  }) async {
+    await _latency();
+    _checkPin(pin);
+    final c = await circle(circleId);
+    final round = c.rounds.where((r) => r.number == roundNumber).firstOrNull;
+    if (round == null || round.status == RoundStatus.pending) throw const SovaException('This turn has not started yet.');
+    if (round.collectorId == me) throw const SovaException("You collect this turn, so you don't pay into it.");
+    final existing = c.contributionFor(round.id, me);
+    if (existing?.status == ContributionStatus.fullyConfirmed) {
+      throw const SovaException('The collector already confirmed this payment.');
+    }
+    _replaceContribution(
+      c,
+      Contribution(
+        id: existing?.id ?? 'c-${_random.nextInt(1000000000)}',
+        roundId: round.id,
+        userId: me,
+        amount: c.contributionAmount,
+        status: ContributionStatus.payerConfirmed,
+        bankReference: bankReference ?? existing?.bankReference,
+        hasProof: hasProof || (existing?.hasProof ?? false),
+        payerConfirmedAt: existing?.payerConfirmedAt ?? DateTime.now(),
+        reference: existing?.reference ?? _reference(),
+      ),
+    );
+    return _circles[circleId]!;
+  }
+
+  @override
+  Future<Circle> confirmReceived({required String circleId, required String contributionId, required String pin}) async {
+    await _latency();
+    _checkPin(pin);
+    final c = await circle(circleId);
+    final old = c.contributions.firstWhere((x) => x.id == contributionId);
+    final round = c.rounds.firstWhere((r) => r.id == old.roundId);
+    if (round.collectorId != me) throw const SovaException('Only the collector for this turn can confirm payments.');
+    if (old.status != ContributionStatus.payerConfirmed) {
+      throw const SovaException("This member hasn't marked the payment as sent yet.");
+    }
+    _replaceContribution(
+      c,
+      Contribution(
+        id: old.id,
+        roundId: old.roundId,
+        userId: old.userId,
+        amount: old.amount,
+        status: ContributionStatus.fullyConfirmed,
+        bankReference: old.bankReference,
+        hasProof: old.hasProof,
+        payerConfirmedAt: old.payerConfirmedAt,
+        reference: old.reference ?? _reference(),
+      ),
+    );
+    return _circles[circleId]!;
+  }
+
+  @override
+  Future<PayoutResult> confirmPayout({
+    required String circleId,
+    required int roundNumber,
+    required int amount,
+    required String pin,
+  }) async {
+    await _latency();
+    _checkPin(pin);
+    final c = await circle(circleId);
+    final round = c.activeRound;
+    if (round == null || round.number != roundNumber) throw const SovaException('This is not the current turn.');
+    if (round.collectorId != me) throw const SovaException('Only the collector for this turn can confirm the payout.');
+    if (amount < 0) throw const SovaException('The amount cannot be negative.');
+
+    final shortfall = max(c.payout - amount, 0);
+    final next = c.membersByPosition.where((m) => m.position == round.number + 1).firstOrNull;
+    final rounds = [
+      for (final r in c.rounds)
+        r.id == round.id
+            ? Round(
+                id: r.id,
+                number: r.number,
+                collectorId: r.collectorId,
+                dueDate: r.dueDate,
+                status: RoundStatus.completed,
+                payoutReceived: amount,
+              )
+            : r,
+      if (next != null)
+        Round(
+          id: '${c.id}-r${round.number + 1}',
+          number: round.number + 1,
+          collectorId: next.userId,
+          dueDate: _step(c.cycle, round.dueDate),
+          status: RoundStatus.active,
+        ),
+    ];
+    final updated = _copyCircle(
+      c,
+      rounds: rounds,
+      status: next == null ? CircleStatus.completed : c.status,
+      openDisputes: c.openDisputes + (shortfall > 0 ? 1 : 0),
+    );
+    _circles[circleId] = updated;
+    return PayoutResult(shortfall: shortfall, nextRound: next == null ? null : round.number + 1, circle: updated);
+  }
+
+  // ---------------------------------------------------------------------------
 
   Circle _byCode(String code) {
     final clean = code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
     for (final c in _circles.values) {
       if (c.inviteCode == clean) return c;
     }
-    throw const SovaException('No circle has that code. Check it with the member who invited you.');
+    throw const SovaException('No circle uses that code. Check it and try again.');
   }
 
   /// Six characters without look-alikes (no 0/O, 1/I/L).
@@ -246,7 +311,52 @@ class DemoRepository implements SovaRepository {
     return String.fromCharCodes(List.generate(6, (_) => alphabet.codeUnitAt(_random.nextInt(alphabet.length))));
   }
 
-  // ---------------------------------------------------------------------------
+  GroupRules _withAcceptance(GroupRules r, String userId) => GroupRules(
+        version: r.version,
+        lateFee: r.lateFee,
+        graceDays: r.graceDays,
+        earlyExit: r.earlyExit,
+        emergencyPolicy: r.emergencyPolicy,
+        acceptedBy: {...r.acceptedBy, userId},
+      );
+
+  /// Full, and everyone accepted the rules: draw the turns and open turn 1.
+  Circle _startIfReady(Circle c) {
+    final accepted = c.rules?.acceptedBy ?? const {};
+    if (!c.forming || c.members.length < c.memberCount || c.members.any((m) => !accepted.contains(m.userId))) return c;
+
+    final order = [...c.members]..shuffle(_random);
+    if (c.adminCollectsLast) {
+      order.removeWhere((m) => m.userId == c.adminId);
+      order.add(c.memberById(c.adminId)!);
+    }
+    final today = DateTime.now();
+    final start = c.startDate.isBefore(DateTime(today.year, today.month, today.day))
+        ? DateTime(today.year, today.month, today.day)
+        : c.startDate;
+    return _copyCircle(
+      c,
+      status: CircleStatus.active,
+      members: [
+        for (final (i, m) in order.indexed)
+          Member(
+            userId: m.userId,
+            name: m.name,
+            phone: m.phone,
+            position: i + 1,
+            bank: m.bank,
+            vouchedBy: m.vouchedBy,
+          ),
+      ],
+      rounds: [Round(id: '${c.id}-r1', number: 1, collectorId: order.first.userId, dueDate: start, status: RoundStatus.active)],
+    );
+  }
+
+  DateTime _step(CycleType cycle, DateTime d) => switch (cycle) {
+        CycleType.daily => d.add(const Duration(days: 1)),
+        CycleType.weekly => d.add(const Duration(days: 7)),
+        CycleType.monthly => DateTime(d.year, d.month + 1, d.day),
+      };
 
   void _replaceContribution(Circle c, Contribution next) {
     final list = [
@@ -283,6 +393,8 @@ class DemoRepository implements SovaRepository {
     List<Round>? rounds,
     List<Contribution>? contributions,
     GroupRules? rules,
+    CircleStatus? status,
+    int? openDisputes,
   }) =>
       Circle(
         id: c.id,
@@ -293,17 +405,21 @@ class DemoRepository implements SovaRepository {
         cycle: c.cycle,
         startDate: c.startDate,
         inviteCode: c.inviteCode,
+        status: status ?? c.status,
+        adminCollectsLast: c.adminCollectsLast,
         members: members ?? c.members,
         rounds: rounds ?? c.rounds,
         contributions: contributions ?? c.contributions,
         rules: rules ?? c.rules,
+        draw: c.draw,
+        openDisputes: openDisputes ?? c.openDisputes,
       );
 
   void _seed() {
     final today = DateTime.now();
     DateTime day(int offset) => DateTime(today.year, today.month, today.day + offset);
 
-    // A weekly office esusu where you owe this round's payment.
+    // A weekly office esusu where you owe this turn's payment.
     const office = 'office-esusu';
     final officeMembers = [
       const Member(userId: 'ifeoma', name: 'Ifeoma Okeke', phone: '+2348031110001', position: 1),
@@ -320,8 +436,8 @@ class DemoRepository implements SovaRepository {
       const Member(userId: 'zainab', name: 'Zainab Bello', phone: '+2348031110006', position: 6, vouchedBy: 'ifeoma'),
     ];
     final officeRounds = [
-      Round(id: 'o-r1', number: 1, collectorId: 'ifeoma', dueDate: day(-12), status: RoundStatus.completed),
-      Round(id: 'o-r2', number: 2, collectorId: 'bayo', dueDate: day(-5), status: RoundStatus.completed),
+      Round(id: 'o-r1', number: 1, collectorId: 'ifeoma', dueDate: day(-12), status: RoundStatus.completed, payoutReceived: 100000),
+      Round(id: 'o-r2', number: 2, collectorId: 'bayo', dueDate: day(-5), status: RoundStatus.completed, payoutReceived: 100000),
       Round(id: 'o-r3', number: 3, collectorId: 'halima', dueDate: day(2), status: RoundStatus.active),
     ];
     const paidOn = {'o-r1': -13, 'o-r2': -6, 'o-r3': -1, 'c-r1': -22, 'c-r2': -1};
@@ -374,11 +490,13 @@ class DemoRepository implements SovaRepository {
       cycle: CycleType.weekly,
       startDate: day(10),
       inviteCode: 'T7KP9Q',
+      status: CircleStatus.forming,
+      adminCollectsLast: true,
       members: const [
-        Member(userId: 'kemi', name: 'Kemi Adebayo', phone: '+2348033330001', position: 8),
-        Member(userId: 'femi', name: 'Femi Lawal', phone: '+2348033330002', position: 1),
-        Member(userId: 'ngozi2', name: 'Ngozi Eze', phone: '+2348033330003', position: 2),
-        Member(userId: 'sani', name: 'Sani Musa', phone: '+2348033330004', position: 3, vouchedBy: 'kemi'),
+        Member(userId: 'kemi', name: 'Kemi Adebayo', phone: '+2348033330001', position: null),
+        Member(userId: 'femi', name: 'Femi Lawal', phone: '+2348033330002', position: null),
+        Member(userId: 'ngozi2', name: 'Ngozi Eze', phone: '+2348033330003', position: null),
+        Member(userId: 'sani', name: 'Sani Musa', phone: '+2348033330004', position: null, vouchedBy: 'kemi'),
       ],
       rounds: const [],
       contributions: const [],
@@ -392,7 +510,7 @@ class DemoRepository implements SovaRepository {
       ),
     );
 
-    // A monthly class ajo you run, where you collect this round.
+    // A monthly class ajo you run, where you collect this turn.
     const classAjo = 'class-ajo';
     _circles[classAjo] = Circle(
       id: classAjo,
@@ -417,7 +535,7 @@ class DemoRepository implements SovaRepository {
         const Member(userId: 'david', name: 'David Etim', phone: '+2348032220005', position: 5, vouchedBy: 'tolu'),
       ],
       rounds: [
-        Round(id: 'c-r1', number: 1, collectorId: 'tolu', dueDate: day(-21), status: RoundStatus.completed),
+        Round(id: 'c-r1', number: 1, collectorId: 'tolu', dueDate: day(-21), status: RoundStatus.completed, payoutReceived: 40000),
         Round(id: 'c-r2', number: 2, collectorId: me, dueDate: day(9), status: RoundStatus.active),
       ],
       contributions: [
@@ -430,7 +548,7 @@ class DemoRepository implements SovaRepository {
         lateFee: 500,
         graceDays: 2,
         earlyExit: EarlyExitPolicy.refundAfterCycle,
-        acceptedBy: {'tolu', me, 'emeka', 'amina'},
+        acceptedBy: {'tolu', me, 'emeka', 'amina', 'david'},
       ),
     );
   }

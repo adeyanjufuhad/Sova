@@ -21,7 +21,7 @@ const _slides = [
     'Your ajo.\nOn record.',
     'Every contribution gets a receipt and every member knows their turn. No more lost notebooks.',
     'Office Esusu',
-    '₦120,000',
+    '₦100,000',
     'Your turn · 4 of 6',
   ),
   _Slide(
@@ -63,7 +63,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     super.dispose();
   }
 
+  bool _startingDemo = false;
+
   void _start() => ref.read(authProvider.notifier).finishOnboarding();
+
+  /// Straight into the shared demo account, for judges and the curious.
+  Future<void> _tryDemo() async {
+    setState(() => _startingDemo = true);
+    try {
+      await ref.read(authProvider.notifier).startDemo();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _startingDemo = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -160,6 +174,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       const Text('Already have an account?', style: SovaText.bodySmall),
                       TextButton(onPressed: _start, child: const Text('Log in')),
                     ],
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _startingDemo ? null : _tryDemo,
+                    icon: _startingDemo
+                        ? const SizedBox.square(
+                            dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SovaColors.electric))
+                        : const Icon(Icons.play_circle_outline_rounded),
+                    label: const Text('Try the demo'),
                   ),
                 ],
               ),
