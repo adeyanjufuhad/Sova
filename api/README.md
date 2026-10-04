@@ -4,7 +4,7 @@ The backend for the Sova app and website: phone sign-in, circles, payments, the 
 
 Rules that guard the records (constraints, PIN lockout, round advancing, swaps, handovers, payout checks) live in the database (`../db/migrations`). The API wraps those functions instead of duplicating them.
 
-> Status: Phase 1 (auth, migrations, seed). Circle endpoints arrive in Phase 2. See `../docs/STATUS.md`.
+> Status: Phase 2 in progress (auth and the circle lifecycle are done; photo uploads next). See `../docs/STATUS.md`.
 
 ## Run locally
 
@@ -72,6 +72,30 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | PATCH | `/me` | bearer | `{ fullName }` (first and last name) |
 | POST | `/me/pin` | bearer | `{ pin }` sets the first PIN (4 digits, not trivial) |
 | POST | `/me/pin/verify` | bearer | `{ pin }` → `204`, `401` with attempts left, or `423` when locked |
+| PUT | `/me/bank` | bearer | `{ bankName, accountNumber, accountName }`: where this person receives payouts |
+| GET | `/banks` | none | Nigerian banks and fintechs to choose from |
+| GET | `/circles` | bearer | My circles, with the current turn and my payment status |
+| POST | `/circles` | bearer | Create: `{ name, contributionAmount, memberCount, cycleType, startDate, adminCollectsLast, rules, pin }` |
+| GET | `/circles/preview/:code` | bearer | Before joining: amounts, rules, members, draw commitment |
+| POST | `/circles/join` | bearer | `{ code, voucherId?, rulesVersion, pin }`; the last member to join starts the circle |
+| GET | `/circles/:id` | member | Detail: members and turns, rules, draw, current turn with each payment |
+| POST | `/circles/:id/rules/accept` | member | `{ version }` |
+| GET | `/circles/:id/rounds` | member | Every turn with payout received and payment counts |
+| POST | `/circles/:id/rounds/:n/pay` | member | `{ bankReference?, pin }`: "I sent my contribution" |
+| POST | `/contributions/:id/confirm` | collector | `{ pin }`: "the money arrived" |
+| POST | `/circles/:id/rounds/:n/payout` | collector | `{ amount, pin }` → `{ shortfall, disputeId, nextRound }`; closes the turn |
+
+Money actions need the PIN. Anyone outside a circle gets `404` for it, so ids reveal nothing.
+
+## How a circle runs
+
+1. **Forming.** The creator becomes the first member and accepts the rules. Sova picks a secret random seed and publishes its SHA-256 (the draw commitment).
+2. **Joining.** Members join with the 6-character code, accept the current rules version, and may name an existing member who vouches for them.
+3. **Start.** When the circle is full and everyone has accepted the rules, the database draws the turns (ordered by `SHA-256(seed + ":" + user_id)`, admin last if they pledged), reveals the seed and opens turn 1.
+4. **Each turn.** Members mark their payment as sent; the collector confirms each one, then confirms the payout received. The payout is contribution × (members − 1).
+5. **Shortfall.** If less arrived, a dispute opens automatically; either way the next turn opens and Sova Scores are recalculated. After the last turn the circle is completed.
+
+These rules are database functions (`join_circle`, `try_start_circle`, `run_draw`, `record_contribution`, `confirm_contribution`, `close_round`); they refuse with an `SVxxx` error that the API returns as `{ error: { code, message } }` with HTTP status `xxx`.
 
 ## How auth works
 

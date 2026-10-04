@@ -34,6 +34,22 @@ export function resolveSsl(
   return { connectionString: url.toString(), ssl };
 }
 
+/** Runs `fn` in one transaction: commits on success, rolls back on any error. */
+export async function inTransaction<T>(pool: pg.Pool, fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const result = await fn(client);
+    await client.query("commit");
+    return result;
+  } catch (err) {
+    await client.query("rollback");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 /** Connection pool, created only when DATABASE_URL is configured. */
 export function createPool(config: Pick<Config, "DATABASE_URL" | "DATABASE_SSL" | "DATABASE_CA_CERT">): pg.Pool | null {
   const resolved = resolveSsl(config);
