@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { DownloadButton } from "@/components/ui/download-button";
 import { Reveal } from "@/components/ui/reveal";
 import { AdirePattern } from "@/components/ui/adire";
+import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 const roles = [
@@ -27,13 +28,21 @@ export function Waitlist() {
     const form = new FormData(e.currentTarget);
     setStatus({ kind: "loading" });
     try {
-      const res = await fetch("/api/waitlist", {
+      const fields = Object.fromEntries(form) as Record<string, string>;
+      const res = await fetch(`${site.apiUrl}/waitlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...Object.fromEntries(form), role }),
+        body: JSON.stringify({
+          name: fields.name,
+          phone: fields.phone,
+          role,
+          city: fields.city || null,
+          groupSize: fields.group_size || null,
+          website: fields.website || null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
+      if (!res.ok) throw new Error(data.error?.message || "Something went wrong. Please try again.");
       setStatus({ kind: "done" });
     } catch (err) {
       setStatus({ kind: "error", message: err instanceof Error ? err.message : "Something went wrong." });
@@ -50,8 +59,8 @@ export function Waitlist() {
             Be first when Sova <span className="text-sky-300">goes live.</span>
           </h2>
           <p className="mt-5 max-w-md text-lg text-white/80">
-            We&apos;re opening Sova to a small group of traders, circles and collectors first. Join the list and
-            we&apos;ll text you when it&apos;s your turn.
+            We&apos;re opening Sova to a small group of circles first. Join the list and we&apos;ll contact you
+            when it&apos;s your turn. You can already try the live demo.
           </p>
           <div className="mt-8">
             <DownloadButton tone="blue" />
@@ -65,7 +74,7 @@ export function Waitlist() {
                 <CheckCircle2 className="size-14 text-electric" />
                 <p className="mt-5 font-display text-2xl font-semibold text-navy-900">You&apos;re on the list.</p>
                 <p className="mt-2 max-w-sm text-slate-600">
-                  Thank you! We&apos;ll send you an SMS as soon as Sova is ready for you.
+                  Thank you! We&apos;ll contact you on this number when Sova is ready for you.
                 </p>
               </div>
             ) : (
