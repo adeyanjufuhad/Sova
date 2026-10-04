@@ -191,7 +191,7 @@ export function VerifyCircle() {
     };
   }, [id]);
 
-  const pick = (c: string) => router.push(`/verify?c=${c}`);
+  const pick = (c: string) => router.push(`/verify/?c=${c}`);
   if (!id) return <Picker onPick={pick} />;
   if (state?.id !== id) {
     return (

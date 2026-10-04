@@ -50,7 +50,7 @@ The body is stored as text, not re-serialised, so a verifier hashes exactly the 
 GET /public/circles/:id/ledger
 ```
 
-returns the circle's name and status, the chain head, and every entry (`seq`, `kind`, `body`, `prevHash`, `hash`). The website's **Verify this circle** page (`/verify?c=<circle id>`) downloads it and recomputes every hash in the browser with the Web Crypto API, then re-checks the fair draw from the chain alone (see [fair-draw.md](fair-draw.md)).
+returns the circle's name and status, the chain head, and every entry (`seq`, `kind`, `body`, `prevHash`, `hash`). The website's **Verify this circle** page (`/verify/?c=<circle id>`) downloads it and recomputes every hash in the browser with the Web Crypto API, then re-checks the fair draw from the chain alone (see [fair-draw.md](fair-draw.md)).
 
 To check by hand:
 

@@ -4,6 +4,8 @@ import type { NextConfig } from "next";
 // static host. The waitlist form posts to the Sova API instead.
 const nextConfig: NextConfig = {
   output: "export",
+  // Write pages as verify/index.html: static hosts serve /verify/ from a folder.
+  trailingSlash: true,
   images: { unoptimized: true },
 };
 

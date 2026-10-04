@@ -436,7 +436,7 @@ class _VerifyCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => launchUrl(Uri.parse('$siteUrl/verify?c=$circleId'), mode: LaunchMode.externalApplication),
+        onTap: () => launchUrl(Uri.parse('$siteUrl/verify/?c=$circleId'), mode: LaunchMode.externalApplication),
         child: const Padding(
           padding: EdgeInsets.all(SovaSpacing.lg),
           child: Row(
