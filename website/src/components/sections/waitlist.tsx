@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { DownloadButton } from "@/components/ui/download-button";
 import { Reveal } from "@/components/ui/reveal";
 import { AdirePattern } from "@/components/ui/adire";
-import { site } from "@/lib/site";
+import { callApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const roles = [
@@ -14,29 +14,7 @@ const roles = [
   { value: "collector", label: "I'm a collector" },
 ] as const;
 
-/**
- * The API sleeps when idle and answers with a "waking" page (without CORS
- * headers, so the browser reports a network error) for a few seconds.
- * Retry until it answers in JSON.
- */
-async function postWhenAwake(url: string, body: object, attempts = 15): Promise<Response> {
-  for (let i = 0; ; i++) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (res.headers.get("content-type")?.includes("json")) return res;
-    } catch {
-      // Waking up, or offline: try again below.
-    }
-    if (i >= attempts) throw new Error("We couldn't reach Sova just now. Please check your connection and try again.");
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-}
-
-type Status ={ kind: "idle" } | { kind: "loading" } | { kind: "done" } | { kind: "error"; message: string };
+type Status = { kind: "idle" } | { kind: "loading" } | { kind: "done" } | { kind: "error"; message: string };
 
 const inputCls =
   "w-full rounded-xl border border-navy-900/15 bg-white px-4 py-3 text-navy-900 placeholder:text-slate-400 outline-none transition focus:border-electric focus:ring-2 focus:ring-electric/20";
@@ -51,16 +29,17 @@ export function Waitlist() {
     setStatus({ kind: "loading" });
     try {
       const fields = Object.fromEntries(form) as Record<string, string>;
-      const res = await postWhenAwake(`${site.apiUrl}/waitlist`, {
-        name: fields.name,
-        phone: fields.phone,
-        role,
-        city: fields.city || null,
-        groupSize: fields.group_size || null,
-        website: fields.website || null,
+      await callApi("/waitlist", {
+        method: "POST",
+        body: {
+          name: fields.name,
+          phone: fields.phone,
+          role,
+          city: fields.city || null,
+          groupSize: fields.group_size || null,
+          website: fields.website || null,
+        },
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error?.message || "Something went wrong. Please try again.");
       setStatus({ kind: "done" });
     } catch (err) {
       setStatus({ kind: "error", message: err instanceof Error ? err.message : "Something went wrong." });
