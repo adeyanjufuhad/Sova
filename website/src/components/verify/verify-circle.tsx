@@ -190,7 +190,8 @@ export function VerifyCircle() {
     };
   }, [id]);
 
-  // A full page load: static hosts serve /verify/ reliably, client-side transitions less so.
+  // A full page load on purpose: on the static host, client-side transitions to /verify/ failed.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   const pick = (c: string) => window.location.assign(`/verify/?c=${c}`);
   if (!id) return <Picker onPick={pick} />;
   if (state?.id !== id) {
