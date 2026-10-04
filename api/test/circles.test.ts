@@ -204,6 +204,12 @@ describe("circle lifecycle", () => {
     expect(history.body.rounds.map((r: { status: string }) => r.status)).toEqual(["completed", "completed", "completed"]);
     expect(history.body.rounds[1]).toMatchObject({ payoutReceived: 10000, paidCount: 1, confirmedCount: 1 });
 
+    // The detail carries the full history for receipts and the member's record.
+    const detail = (await call("bayo", "GET", `/circles/${circleId}`)).body;
+    expect(detail.rounds).toHaveLength(3);
+    expect(detail.contributions).toHaveLength(5); // 2 + 1 + 2 payments
+    expect(detail.contributions.every((x: { status: string }) => x.status === "fully_confirmed")).toBe(true);
+
     const scores = await db.pool.query("select count(distinct user_id)::int as n from scores");
     expect(scores.rows[0].n).toBe(3);
   });

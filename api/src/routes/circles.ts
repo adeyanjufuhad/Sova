@@ -349,7 +349,7 @@ export async function circleRoutes(app: FastifyInstance, opts: { pool: pg.Pool; 
   /** Everything a member sees on the circle screen. */
   async function circleDetail(circleId: string, me: string) {
     const g = await loadCircle(circleId, me);
-    const [members, rules, draw, round, disputes] = await Promise.all([
+    const [members, rules, draw, round, disputes, rounds, contributions] = await Promise.all([
       pool.query<{
         id: string;
         name: string | null;
@@ -395,6 +395,18 @@ export async function circleRoutes(app: FastifyInstance, opts: { pool: pg.Pool; 
         [circleId],
       ),
       pool.query<{ n: number }>("select count(*)::int as n from disputes where group_id = $1 and status = 'open'", [circleId]),
+      pool.query(
+        `select id, round_number as number, collector_id as "collectorId", due_date::text as "dueDate", status,
+                payout_received as "payoutReceived", payout_confirmed_at as "payoutConfirmedAt"
+           from rounds where group_id = $1 order by round_number`,
+        [circleId],
+      ),
+      pool.query(
+        `select id, round_id as "roundId", user_id as "userId", amount, status, bank_reference as "bankReference",
+                proof_url is not null as "hasProof", payer_confirmed_at as "paidAt", collector_confirmed_at as "confirmedAt"
+           from contributions where group_id = $1 order by created_at`,
+        [circleId],
+      ),
     ]);
 
     const current = round.rows[0];
@@ -415,6 +427,7 @@ export async function circleRoutes(app: FastifyInstance, opts: { pool: pg.Pool; 
       );
       const byUser = new Map(paid.map((c) => [c.user_id, c]));
       currentRound = {
+        id: current.id,
         number: current.number,
         dueDate: current.due_date,
         payoutAmount: g.contribution_amount * (g.member_count - 1),
@@ -464,6 +477,9 @@ export async function circleRoutes(app: FastifyInstance, opts: { pool: pg.Pool; 
       draw: d ? { commitment: d.commitment, revealedAt: d.revealed_at, seed: d.revealed_at ? d.seed : null } : null,
       currentRound,
       openDisputes: disputes.rows[0]!.n,
+      /** Full history, so the app can show receipts, activity and the member's record. */
+      rounds: rounds.rows,
+      contributions: contributions.rows,
     };
   }
 }
