@@ -54,6 +54,8 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 4 Oct | **Circle start:** a circle starts on its own once it is full and every member has accepted the current rules; if that happens after the planned start date, turn 1 is due today. |
 | 4 Oct | **Draw formula:** commitment = SHA-256(seed bytes); turn order by SHA-256(seed hex + ":" + user id), byte order; admin last if pledged. Built in Phase 2 (the circle can't start without it); Phase 4 adds the animation and the verify screen. |
 | 4 Oct | **Shortfall dispute:** one dispute per short payout, raised by the collector; the members who didn't pay that turn are its evidence (not one dispute per member). |
+| 4 Oct | **Web sessions:** the app keeps the refresh token in the tab's sessionStorage on the web (survives reloads, ends when the tab closes) and in secure storage on Android; access tokens stay in memory. Cookies would need the app and API on one domain we own. |
+| 4 Oct | **App web hosting:** GitHub Actions builds the Flutter web app and publishes it to the `app-web` branch; RumptyCloud serves that branch as a static site (its builder has no Flutter SDK). |
 | 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
 
 ## Built and working
@@ -80,6 +82,15 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Endpoints: banks, bank details, list/create/preview/join circles, circle detail (members, rules, draw, current turn with each payment), accept rules, turn history, pay, confirm, confirm payout. Money actions need the PIN; non-members get 404.
 - Shortfall opens a dispute and the circle still advances; the last turn completes the circle; Sova Scores are recalculated after every turn.
 - 47 API tests (13 new: full lifecycle, draw verification, collect-last pledge, seeded draws verify).
+
+### App on the API (Phase 2, in progress, 4 Oct)
+- `ApiRepository` + `ApiClient` (token refresh, waits out the host's wake-up page, readable errors). `SOVA_API_URL` at build time picks the API; without it the in-memory demo backend runs (kept for tests, same rules).
+- Sessions persist (Android secure storage; web sessionStorage). "Try the demo" on the welcome screen.
+- Models match the API: forming/active/completed, turns empty until the draw, payout = contribution × (members − 1), "collect last" pledge, open disputes.
+- Money actions send the PIN with the request. New payout confirmation screen with shortfall handling.
+- Checked in the browser against the API and the RumptyCloud database: demo sign-in, session kept after reload, confirm a payment with PIN, short payout → dispute → turn 3.
+- 28 Flutter tests (API client: wake page, token refresh, errors, JSON mapping).
+- `app-web` branch: built and published by `.github/workflows/app-web.yml` on every push that touches `app/`.
 
 ### Website (`website/`)
 - Sections: anti-fraud notice bar; navbar; hero (React Bits LightRays, phone mock, receipt card, trust row); how it works; "money moves between members" (Animated Beam); features grid; protection timeline; "one tradition, many names" (orbiting circles, pan-African names); Nigerian markets ticker; collectors band; "Our promise" charter; app preview (container scroll); FAQ (English + Pidgin); waitlist; footer with disclosure.
@@ -118,8 +129,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- The app does not talk to the API yet (circle endpoints exist).
-- Login in the app (the API side exists), session persistence across restarts.
+- The app web build is not deployed on RumptyCloud yet (the `app-web` branch is ready).
 - Real photo upload (bucket, presigned URLs).
 - Tamper-evident ledger and the public verify page.
 - Provably fair payout draw.
