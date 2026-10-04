@@ -1,0 +1,53 @@
+# Builds the Flutter web app and publishes it to the `app-web` branch, which
+# RumptyCloud serves as a static site (its builder has no Flutter SDK).
+# The API address comes from the repository variable SOVA_API_URL.
+name: App web build
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/app-web.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: app-web
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      SOVA_API_URL: ${{ vars.SOVA_API_URL || 'https://sova-api.rumptycloud.app' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.7
+          cache: true
+
+      - name: Test
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter test
+
+      - name: Build
+        working-directory: app
+        run: flutter build web --release --dart-define=SOVA_API_URL="$SOVA_API_URL"
+
+      - name: Publish to the app-web branch
+        working-directory: app/build/web
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init -q -b app-web
+          git config user.name "github-actions[bot]"
+          git config user.email "41898315+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Web build of ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" app-web
