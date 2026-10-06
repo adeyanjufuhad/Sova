@@ -126,6 +126,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Honest copy (4 Oct): only built features are described; reminders, voice, languages, offline, swaps, collector mode, USSD, Sova Score card and credit history are labelled "coming soon" or listed in the new Roadmap section (the Collectors section is gone). Payout maths corrected (contribution × (members − 1)). "Try the live demo" is the hero's main button.
 - Static export (`output: "export"`), published to the `site-web` branch by `.github/workflows/site-web.yml`. The waitlist posts to the API (`POST /waitlist`) and retries while the API wakes up.
 - Sections: anti-fraud notice bar; navbar; hero; how it works; "money moves between members"; features grid; "missed payments can't hide" timeline; "one tradition, many names"; markets ticker; roadmap; "Our promise"; app preview; FAQ (English + Pidgin, now with "how is the order fair?"); waitlist; footer with disclosure. Plus `/verify`.
+- Redesign pass (6 Oct): larger split section headlines; how it works as numbered rows; a live payout calculator (contribution × (members − 1), no projections); a navy "Don't trust us. Check." band showing example ledger entries with the real entry kinds and hash rule, linking to `/verify`; a navy closing footer with the demo link. Receipt photos are described as built; the ledger left the roadmap, swaps and handovers joined it (functions exist, no screens yet).
 
 ### Database (`db/migrations/`)
 - `20260930000000_waitlist.sql`: waitlist table.
