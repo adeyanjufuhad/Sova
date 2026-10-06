@@ -105,6 +105,16 @@ abstract interface class SovaRepository {
   Future<Dispute> settleDispute({required String disputeId, required String pin});
 
   Future<Dispute> commentOnDispute({required String disputeId, required String message});
+
+  /// The signed-in member's Sova Score, worked out live from their record.
+  Future<SovaScore> myScore();
+
+  /// Publishes a snapshot of the score behind a new private link, replacing
+  /// any live one. Refused until there is enough history.
+  Future<SovaScore> shareScore({required String pin});
+
+  /// Stops sharing: the link stops working straight away.
+  Future<SovaScore> stopSharingScore();
 }
 
 class SovaException implements Exception {

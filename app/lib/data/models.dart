@@ -427,3 +427,50 @@ class Dispute {
   /// "Ada O." for a payment dispute, or the missing members for a shortfall.
   String get payerNames => payers.isEmpty ? 'nobody' : payers.map((p) => p.firstName).join(', ');
 }
+
+/// A live link to a snapshot of the member's score. Anyone with the link can
+/// open the card on the website; the member can stop sharing at any time.
+class ScoreShare {
+  const ScoreShare({required this.token, required this.sharedAt, required this.score});
+
+  final String token;
+  final DateTime sharedAt;
+
+  /// The score as it was when the link was made.
+  final int score;
+}
+
+/// The member's Sova Score, worked out by the server from their whole record:
+/// 60% paying on time, 25% paying every turn, 15% finishing circles.
+class SovaScore {
+  const SovaScore({
+    required this.minimumPayments,
+    required this.score,
+    required this.band,
+    required this.onTimeRate,
+    required this.consistencyRate,
+    required this.completionRate,
+    required this.confirmedPayments,
+    required this.onTimePayments,
+    required this.activeCircles,
+    required this.completedCircles,
+    this.share,
+  });
+
+  /// Confirmed payments needed before a score is shown.
+  final int minimumPayments;
+
+  /// Null until the member has [minimumPayments] confirmed payments.
+  final int? score;
+  final String? band;
+  final double onTimeRate;
+  final double consistencyRate;
+  final double completionRate;
+  final int confirmedPayments;
+  final int onTimePayments;
+  final int activeCircles;
+  final int completedCircles;
+  final ScoreShare? share;
+
+  bool get ready => score != null;
+}
