@@ -45,8 +45,16 @@ const orbits: Orbit[] = [
 
 export function Circle() {
   return (
-    <section className="overflow-hidden pt-24 sm:pt-32">
+    <section className="relative overflow-hidden pt-24 sm:pt-32">
+      {/* Ghost watermark: the tradition's names, faint and oversized, behind the orbit. */}
+      <p
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[46%] select-none whitespace-nowrap text-center font-display text-[13vw] font-extrabold leading-none tracking-[-0.05em] text-navy-900/[0.035] lg:text-[11.5vw]"
+      >
+        ajo esusu adashe
+      </p>
       <SectionHeading
+        align="center"
         className="px-4"
         eyebrow="Across Africa"
         title="One tradition. Many names."
