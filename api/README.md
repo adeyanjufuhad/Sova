@@ -85,7 +85,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/circles/:id/rules/accept` | member | `{ version }` |
 | GET | `/circles/:id/rounds` | member | Every turn with payout received and payment counts |
 | POST | `/circles/:id/rounds/:n/pay` | member | `{ bankReference?, proofKey?, pin }`: "I sent my contribution" (with the uploaded photo, if any) |
-| POST | `/circles/:id/rounds/:n/proof` | member | `{ contentType, size }` → `{ key, uploadUrl }`: a 5-minute link to PUT a receipt photo (JPEG/PNG/WebP, ≤ 5 MB) straight to the private bucket |
+| POST | `/circles/:id/rounds/:n/proof` | member | Raw image body (`Content-Type: image/jpeg|png|webp`, ≤ 5 MB) → `{ key }`. The API checks the bytes really are an image and stores it in the private bucket |
 | POST | `/contributions/:id/confirm` | collector | `{ pin }`: "the money arrived" |
 | GET | `/contributions/:id/proof` | member | `{ url }`: a 5-minute link to view the payment's receipt photo |
 | POST | `/circles/:id/rounds/:n/payout` | collector | `{ amount, pin }` → `{ shortfall, disputeId, nextRound }`; closes the turn |

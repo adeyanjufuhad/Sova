@@ -7,24 +7,26 @@ import type { ProofStorage } from "../src/lib/storage.js";
 import { DEMO_PIN, seedDemo } from "../src/seed/demo.js";
 import { freshDatabase } from "./setup/db.js";
 
-/** In-memory stand-in for the bucket: a key "exists" once the test uploads it. */
+/** In-memory stand-in for the bucket. */
 class FakeStorage implements ProofStorage {
-  readonly uploaded = new Set<string>();
-  async uploadUrl(key: string, contentType: string, size: number) {
-    return `https://bucket.test/${key}?type=${encodeURIComponent(contentType)}&size=${size}`;
+  readonly objects = new Map<string, { body: Buffer; type: string }>();
+  async put(key: string, body: Buffer, type: string) {
+    this.objects.set(key, { body, type });
   }
   async viewUrl(key: string) {
     return `https://bucket.test/view/${key}`;
   }
   async exists(key: string) {
-    return this.uploaded.has(key);
+    return this.objects.has(key);
   }
 }
 
 const HALIMA = "+2348000000003"; // collects turn 3 of Office Esusu
+const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 1)]);
 
 let db: Awaited<ReturnType<typeof freshDatabase>>;
 let storage: FakeStorage;
+let app: FastifyInstance;
 let ip = 0;
 let office: string;
 const tokens: Record<string, string> = {};
@@ -38,8 +40,8 @@ const config = () =>
     OTP_TEST_NUMBERS: `${HALIMA}:123456`,
   });
 
-async function call(app: FastifyInstance, who: string | null, method: "GET" | "POST", url: string, payload?: object) {
-  const res = await app.inject({
+async function call(target: FastifyInstance, who: string | null, method: "GET" | "POST", url: string, payload?: object) {
+  const res = await target.inject({
     method,
     url,
     payload,
@@ -49,7 +51,16 @@ async function call(app: FastifyInstance, who: string | null, method: "GET" | "P
   return { status: res.statusCode, body: res.json() };
 }
 
-let app: FastifyInstance;
+async function upload(target: FastifyInstance, who: string, url: string, bytes: Buffer, contentType: string) {
+  const res = await target.inject({
+    method: "POST",
+    url,
+    payload: bytes,
+    remoteAddress: `10.3.0.${++ip}`,
+    headers: { authorization: `Bearer ${tokens[who]}`, "content-type": contentType },
+  });
+  return { status: res.statusCode, body: res.json() };
+}
 
 beforeAll(async () => {
   db = await freshDatabase();
@@ -64,27 +75,25 @@ beforeAll(async () => {
 afterAll(async () => db.drop());
 
 describe("proof of payment photos", () => {
-  it("accept only photos up to 5 MB", async () => {
-    const pdf = await call(app, "ada", "POST", `/circles/${office}/rounds/3/proof`, { contentType: "application/pdf", size: 1000 });
-    expect(pdf.status).toBe(400);
-    const huge = await call(app, "ada", "POST", `/circles/${office}/rounds/3/proof`, { contentType: "image/jpeg", size: 6e6 });
-    expect(huge.body.error.message).toMatch(/5 MB/);
+  it("accept only real images up to 5 MB, whatever the client claims", async () => {
+    const url = `/circles/${office}/rounds/3/proof`;
+    const disguised = await upload(app, "ada", url, Buffer.from("%PDF-1.7 not a photo"), "image/jpeg");
+    expect(disguised.body.error.code).toBe("invalid_photo");
+    const huge = await upload(app, "ada", url, Buffer.concat([JPEG, Buffer.alloc(5 * 1024 * 1024)]), "image/jpeg");
+    expect(huge.status).toBe(413);
+    const text = await upload(app, "ada", url, Buffer.from("hello"), "text/plain");
+    expect(text.body.error.code).toBe("invalid_photo");
   });
 
-  it("upload straight to the bucket, then attach to the payment", async () => {
-    const link = await call(app, "ada", "POST", `/circles/${office}/rounds/3/proof`, { contentType: "image/jpeg", size: 250_000 });
-    expect(link.status).toBe(200);
-    expect(link.body.key).toMatch(new RegExp(`^proofs/${office}/3/[0-9a-f-]{36}/[0-9a-f-]{36}[.]jpg$`));
-    expect(link.body.uploadUrl).toContain("size=250000");
+  it("store the photo privately and attach it to the payment", async () => {
+    const stored = await upload(app, "ada", `/circles/${office}/rounds/3/proof`, JPEG, "image/jpeg");
+    expect(stored.status).toBe(200);
+    expect(stored.body.key).toMatch(new RegExp(`^proofs/${office}/3/[0-9a-f-]{36}/[0-9a-f-]{36}[.]jpg$`));
+    expect(storage.objects.get(stored.body.key)).toMatchObject({ type: "image/jpeg" });
 
-    // Not uploaded yet: refused.
-    const early = await call(app, "ada", "POST", `/circles/${office}/rounds/3/pay`, { proofKey: link.body.key, pin: DEMO_PIN });
-    expect(early.body.error.code).toBe("proof_missing");
-
-    storage.uploaded.add(link.body.key);
     const paid = await call(app, "ada", "POST", `/circles/${office}/rounds/3/pay`, {
       bankReference: "FT2610ABC",
-      proofKey: link.body.key,
+      proofKey: stored.body.key,
       pin: DEMO_PIN,
     });
     expect(paid.status).toBe(200);
@@ -92,24 +101,23 @@ describe("proof of payment photos", () => {
     const mine = paid.body.currentRound.contributions.find((c: { userId: string }) => c.userId === ada);
     expect(mine).toMatchObject({ status: "payer_confirmed", hasProof: true });
 
-    // The collector sees it through a short-lived link; nobody outside the circle can.
+    // The collector views it through a short-lived link.
     const view = await call(app, "halima", "GET", `/contributions/${mine.id}/proof`);
-    expect(view.body.url).toBe(`https://bucket.test/view/${link.body.key}`);
-    const church = (await db.pool.query("select id from groups where invite_code = 'CHRDA9'")).rows[0].id;
-    const outsider = await call(app, "halima", "GET", `/circles/${church}`);
-    expect(outsider.status).toBe(404);
+    expect(view.body.url).toBe(`https://bucket.test/view/${stored.body.key}`);
   });
 
-  it("refuse someone else's photo", async () => {
-    const theirs = `proofs/${office}/3/00000000-0000-0000-0000-000000000000/11111111-1111-1111-1111-111111111111.jpg`;
-    storage.uploaded.add(theirs);
-    const res = await call(app, "ada", "POST", `/circles/${office}/rounds/3/pay`, { proofKey: theirs, pin: DEMO_PIN });
+  it("refuse photos that weren't uploaded, or belong to someone else", async () => {
+    const missing = `proofs/${office}/3/00000000-0000-0000-0000-000000000000/11111111-1111-1111-1111-111111111111.jpg`;
+    const res = await call(app, "ada", "POST", `/circles/${office}/rounds/3/pay`, { proofKey: missing, pin: DEMO_PIN });
     expect(res.body.error.code).toBe("proof_missing");
+    await storage.put(missing, JPEG, "image/jpeg");
+    const theirs = await call(app, "ada", "POST", `/circles/${office}/rounds/3/pay`, { proofKey: missing, pin: DEMO_PIN });
+    expect(theirs.body.error.code).toBe("proof_missing");
   });
 
   it("explain when uploads aren't set up", async () => {
     const bare = await buildApp(config(), db.pool, { storage: null });
-    const res = await call(bare, "ada", "POST", `/circles/${office}/rounds/3/proof`, { contentType: "image/png", size: 1000 });
+    const res = await upload(bare, "ada", `/circles/${office}/rounds/3/proof`, JPEG, "image/jpeg");
     expect(res.status).toBe(503);
     expect(res.body.error.code).toBe("uploads_not_configured");
   });

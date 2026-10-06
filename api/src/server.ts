@@ -1,7 +1,6 @@
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createPool } from "./db.js";
-import { createProofStorage, S3ProofStorage } from "./lib/storage.js";
 import { loadMigrations, migrate, resolveMigrationsDir } from "./migrate/runner.js";
 
 const config = loadConfig();
@@ -32,14 +31,4 @@ try {
 } catch (err) {
   app.log.fatal({ err }, "failed to start");
   process.exit(1);
-}
-
-// Let the app's own origins upload receipt photos straight to the bucket.
-// Best-effort: if the bucket refuses, uploads from browsers fail but the API runs.
-const storage = createProofStorage(config);
-if (storage instanceof S3ProofStorage && config.CORS_ORIGINS.length) {
-  storage
-    .allowBrowserUploads(config.CORS_ORIGINS)
-    .then(() => app.log.info({ origins: config.CORS_ORIGINS }, "bucket allows browser uploads"))
-    .catch((err: Error) => app.log.warn({ reason: err.name }, "could not set bucket CORS; browser uploads may fail"));
 }

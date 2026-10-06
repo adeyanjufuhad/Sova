@@ -137,12 +137,9 @@ class ApiRepository implements SovaRepository {
     required Uint8List bytes,
     required String contentType,
   }) async {
-    final link = await _api.post('/circles/$circleId/rounds/$roundNumber/proof', {
-      'contentType': contentType,
-      'size': bytes.length,
-    }) as Map<String, dynamic>;
-    await _api.upload(link['uploadUrl'] as String, bytes, (link['headers'] as Map).cast<String, String>());
-    return link['key'] as String;
+    final res = await _api.postBytes('/circles/$circleId/rounds/$roundNumber/proof', bytes, contentType)
+        as Map<String, dynamic>;
+    return res['key'] as String;
   }
 
   @override

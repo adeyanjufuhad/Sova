@@ -54,7 +54,7 @@ abstract interface class SovaRepository {
   Future<Circle> acceptRules(String circleId, int version);
 
   /// Uploads a photo of the payment receipt for this turn and returns its
-  /// key, to pass to [confirmMyPayment]. The photo goes straight to private
+  /// key, to pass to [confirmMyPayment]. The server keeps it in private
   /// storage; only members of the circle can view it.
   Future<String> uploadProof({
     required String circleId,
