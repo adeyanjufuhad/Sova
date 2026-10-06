@@ -69,11 +69,9 @@ typography:
     lineHeight: 1.35
   eyebrow:
     fontFamily: Plus Jakarta Sans, system-ui, sans-serif
-    fontSize: 11px
-    fontWeight: 700
+    fontSize: 13px
+    fontWeight: 600
     lineHeight: 1.3
-    letterSpacing: 1.4px
-    textTransform: uppercase
   money-lg:
     fontFamily: Plus Jakarta Sans, system-ui, sans-serif
     fontSize: 34px
@@ -154,7 +152,7 @@ African identity comes from **adire line patterns**: indigo resist-dye motifs dr
 - One accent: royal blue for every primary action. Sky `{colors.sky}` appears only on blue surfaces (eyebrows, small highlights).
 - Navy, not black. Body copy is slate `{colors.body}`; captions `{colors.mute}`.
 - Errors are navy or blue with an icon, never red: a missed payment is a fact on the record, not an alarm.
-- Plus Jakarta Sans for everything, with tabular figures for naira. Geist Mono only for hashes, references and small labels on the website.
+- Plus Jakarta Sans for everything, including labels and badges, with tabular figures for naira. Geist Mono only for hashes, record entry codes and receipt references on the website.
 - Hairline borders (navy at 10% / 20%), radius 12 px on controls and 20 px on cards.
 - Money always reads `₦120,000` (no kobo except on receipts: `₦120,000.00`). Phones read `0803 111 0001` and are stored as `+2348031110001`.
 
@@ -184,7 +182,7 @@ African identity comes from **adire line patterns**: indigo resist-dye motifs dr
 
 ## Typography
 
-**Plus Jakarta Sans** (bundled subset in the app with the ₦ sign and tabular figures; Google Fonts on the website) is the only text face. Hierarchy comes from weight (400 / 500 / 600 / 700 / 800) and colour, not from huge sizes: the app's largest text is 34 px. Headlines use slight negative tracking; eyebrows are 11 px, bold, upper-case with wide tracking and a small square marker.
+**Plus Jakarta Sans** (bundled subset in the app with the ₦ sign and tabular figures; Google Fonts on the website) is the only text face. Hierarchy comes from weight (400 / 500 / 600 / 700 / 800) and colour, not from huge sizes: the app's largest text is 34 px. Headlines use slight negative tracking. Eyebrows (small section labels) are 13–14 px semibold in sentence case, in royal blue (sky on blue), with no marker and no letter-spacing.
 
 Naira amounts always use **tabular figures** so columns of money line up. Hashes, seeds and references use tabular figures in the app and Geist Mono on the website.
 
@@ -216,6 +214,9 @@ The only exceptions are the website hero's subtle blue light rays and the faint 
 
 ### Buttons
 Primary: solid royal blue, white label, 12 px radius, 54 px tall, no shadow; pressed state scales to 0.97 with a light haptic in the app. Secondary: white with a navy 20% hairline. Text buttons for low-emphasis actions ("How it was drawn", "Raise a dispute").
+
+### Navigation bar (app)
+A floating pill at the bottom of the main tabs: white, fully rounded, a navy 20% hairline border, inset 16 px from the sides and 12 px from the bottom, no shadow. The selected tab has a pill-shaped royal-blue tint behind its icon.
 
 ### Cards
 White, 1 px navy-10% border, 20 px radius, 16 px padding. Cards exist to group a record (a member row list, a payment, a rule set), not for decoration.
