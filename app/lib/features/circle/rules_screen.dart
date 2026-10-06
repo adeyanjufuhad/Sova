@@ -24,11 +24,17 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
   Future<void> _accept(int version) async {
     setState(() => _busy = true);
     try {
-      await ref.read(repositoryProvider).acceptRules(widget.circleId, version);
+      final wasForming = ref.read(circleProvider(widget.circleId)).value?.forming ?? false;
+      final c = await ref.read(repositoryProvider).acceptRules(widget.circleId, version);
       refreshCircle(ref, widget.circleId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You accepted the group rules.')));
-      context.pop();
+      // The last acceptance starts the circle: show how the turns were drawn.
+      if (wasForming && !c.forming) {
+        context.pushReplacement('/circle/${widget.circleId}/draw');
+      } else {
+        context.pop();
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
