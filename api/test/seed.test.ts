@@ -28,8 +28,11 @@ describe("demo seed", () => {
     expect(byName["Office Esusu"]).toMatchObject({ members: 6, active: 1 });
     expect(byName["Ikeja Tech Hub Esusu"]).toMatchObject({ status: "forming", members: 4, active: 0 });
 
-    const disputes = await db.pool.query("select status from disputes");
-    expect(disputes.rows).toEqual([{ status: "open" }]);
+    const disputes = await db.pool.query("select kind, status from disputes order by created_at");
+    expect(disputes.rows).toEqual([
+      { kind: "shortfall", status: "open" },
+      { kind: "payment", status: "open" },
+    ]);
   });
 
   it("flags the member who collected then stopped paying", async () => {

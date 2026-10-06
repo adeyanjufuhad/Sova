@@ -68,11 +68,12 @@ describe("ledger", () => {
     expect(committedAt).toBeLessThan(entries.findIndex((e) => e.kind === "draw_revealed"));
   });
 
-  it("records payments, payouts and the automatic dispute", async () => {
+  it("records payments, payouts, the automatic dispute and the vote on Musa's payment", async () => {
     const { entries } = await ledger("YBTR4K");
     const payouts = bodies(entries, "payout_confirmed");
     expect(payouts.map((p) => p.shortfall)).toEqual([0, 10000]);
-    expect(bodies(entries, "dispute_opened")).toHaveLength(1);
+    expect(bodies(entries, "dispute_opened").map((d) => d.kind)).toEqual(["shortfall", "payment"]);
+    expect(bodies(entries, "dispute_vote")).toEqual([expect.objectContaining({ side: "collector", turn: 2 })]);
     expect(bodies(entries, "payment_confirmed").length).toBeGreaterThan(0);
   });
 
