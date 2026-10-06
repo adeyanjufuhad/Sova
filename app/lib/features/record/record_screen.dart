@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme/theme.dart';
 import '../../data/insights.dart';
 import '../../data/providers.dart';
+import '../../shared/widgets/app_shell.dart' show tabBarInset;
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 import '../home/home_screen.dart' show comingNext;
@@ -21,6 +22,7 @@ class RecordScreen extends ConsumerWidget {
     final circles = ref.watch(circlesProvider);
     return Scaffold(
       body: SafeArea(
+        bottom: false, // lists run behind the glass tab bar
         child: circles.when(
           loading: () => const SkeletonList(),
           error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circlesProvider)),
@@ -28,7 +30,7 @@ class RecordScreen extends ConsumerWidget {
             final s = recordStats(list, ref.watch(meProvider));
             final pct = (s.onTimeRate * 100).round();
             return ListView(
-              padding: const EdgeInsets.fromLTRB(SovaSpacing.screenH, SovaSpacing.lg, SovaSpacing.screenH, SovaSpacing.xl3),
+              padding: EdgeInsets.fromLTRB(SovaSpacing.screenH, SovaSpacing.lg, SovaSpacing.screenH, SovaSpacing.xl3 + tabBarInset(context)),
               children: [
                 Row(
                   children: [

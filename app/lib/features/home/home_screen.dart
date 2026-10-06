@@ -8,6 +8,7 @@ import '../../core/theme/theme.dart';
 import '../../data/insights.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../shared/widgets/app_shell.dart' show tabBarInset;
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
@@ -57,7 +58,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   _Header(circles: list, me: me, firstPay: firstPay, actionCount: items.where((i) => i.needsAction).length),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(SovaSpacing.screenH, SovaSpacing.xl2, SovaSpacing.screenH, SovaSpacing.xl3),
+                    padding: EdgeInsets.fromLTRB(
+                      SovaSpacing.screenH,
+                      SovaSpacing.xl2,
+                      SovaSpacing.screenH,
+                      SovaSpacing.xl3 + tabBarInset(context),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
