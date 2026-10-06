@@ -57,14 +57,11 @@ export function PayoutCalculator() {
                   <input
                     id={`${id}-amount`}
                     name="amount"
-                    type="number"
+                    type="text"
                     inputMode="numeric"
                     autoComplete="off"
-                    min={100}
-                    max={10_000_000}
-                    step={500}
-                    value={amount}
-                    onChange={(e) => setAmount(clamp(Number(e.target.value) || 0, 0, 10_000_000))}
+                    value={amount.toLocaleString("en-NG")}
+                    onChange={(e) => setAmount(clamp(Number(e.target.value.replace(/\D/g, "")) || 0, 0, 10_000_000))}
                     className="w-full bg-transparent px-2 py-3 font-display text-2xl font-bold text-navy-900 tabular-nums outline-none"
                   />
                 </span>
