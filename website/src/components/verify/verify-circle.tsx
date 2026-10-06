@@ -111,6 +111,13 @@ function describe(e: Checked): string {
         : `Dispute opened: ${d.reason}`;
     case "dispute_vote":
       return `${who(d.voter)} voted that the turn ${d.turn} payment ${d.side === "payer" ? "arrived" : "did not arrive"}`;
+    case "turns_swapped": {
+      const a = d.a as Person & { turn: number };
+      const b = d.b as Person & { turn: number };
+      return `${who(a)} and ${who(b)} swapped turns by agreement: ${who(a)} now collects turn ${a.turn}, ${who(b)} turn ${b.turn}`;
+    }
+    case "slot_handed_over":
+      return `${who(d.leaving)} handed their place (turn ${d.turn}) to ${who(d.replacement)}, approved by the admin`;
     case "dispute_resolved":
       return `Turn ${d.turn} dispute closed: ${d.note}`;
     case "circle_completed":
