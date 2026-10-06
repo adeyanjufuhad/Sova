@@ -37,6 +37,12 @@ const bankBody = z.object({
   bankName: z.string().trim().min(2).max(80),
   accountNumber: z.string().trim().regex(/^\d{10}$/, "Account numbers are 10 digits."),
   accountName: z.string().trim().min(2, "Enter the name on the account.").max(80),
+  /** Changing where payouts go is what a fraudster would try first, so it needs the PIN. */
+  pin: z.string().regex(/^\d{4}$/, "Your PIN is 4 digits."),
+});
+const changePinBody = z.object({
+  currentPin: z.string().regex(/^\d{4}$/, "Your PIN is 4 digits."),
+  newPin: z.string(),
 });
 
 interface UserRow {
@@ -134,8 +140,9 @@ export async function authRoutes(
   });
 
   /** Where this person receives their payout. */
-  app.put("/me/bank", { preHandler: auth }, async (req) => {
+  app.put("/me/bank", { preHandler: auth, config: moderate }, async (req) => {
     const body = bankBody.parse(req.body);
+    await verifyPin(pool, userIdOf(req), body.pin);
     const bank = await pool.query<{ name: string }>("select name from nigerian_banks where lower(name) = lower($1)", [body.bankName]);
     if (!bank.rows[0]) throw new AppError(400, "unknown_bank", "Choose a bank from the list.");
     const { rows } = await pool.query<UserRow>(
@@ -150,7 +157,7 @@ export async function authRoutes(
     return { banks: rows };
   });
 
-  /** First-time PIN. Changing an existing PIN needs the old one (Phase 5). */
+  /** First-time PIN. Changing an existing PIN goes through /me/pin/change. */
   app.post("/me/pin", { preHandler: auth, config: strict }, async (req) => {
     const { pin } = pinBody.parse(req.body);
     assertStrongPin(pin);
@@ -161,6 +168,17 @@ export async function authRoutes(
     );
     if (!rows[0]) throw conflict("pin_already_set", "You already have a PIN.");
     return toUser(rows[0]);
+  });
+
+  /** Changes the PIN: the current one must be right (wrong tries count towards the lockout). */
+  app.post("/me/pin/change", { preHandler: auth, config: strict }, async (req, reply) => {
+    const me = userIdOf(req);
+    const { currentPin, newPin } = changePinBody.parse(req.body);
+    assertStrongPin(newPin);
+    await verifyPin(pool, me, currentPin);
+    if (newPin === currentPin) throw new AppError(400, "same_pin", "Choose a PIN that's different from your current one.");
+    await pool.query("select change_pin($1, $2)", [me, await hashPin(newPin)]);
+    return reply.code(204).send();
   });
 
   app.post("/me/pin/verify", { preHandler: auth, config: strict }, async (req, reply) => {
