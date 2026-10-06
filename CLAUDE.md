@@ -13,6 +13,7 @@ Keep earlier decisions unless the owner changes them, and update `docs/STATUS.md
 
 ## Design rules (website and app)
 - Flat, white-first, blue accents. No gradients, neon, glows, glass, or large drop shadows; use hairline borders.
+  One owner-approved exception: the app's bottom tab bar is "liquid glass" (frosted blur, draggable lens, one soft shadow). Nowhere else.
 - Tokens: navy `#0B1A33`, royal blue `#1D4ED8`, mist `#F3F6FD`, sky `#7DC3E3`. Errors use blue/navy, not red.
 - Adire line patterns for African identity. Plus Jakarta Sans; tabular figures for naira.
 - Naira formatting: `₦120,000`. Nigerian phones normalised to `+234XXXXXXXXXX`.
