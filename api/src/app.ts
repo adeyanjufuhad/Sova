@@ -12,6 +12,7 @@ import { AppError, registerErrorHandler } from "./lib/errors.js";
 import { createProofStorage, type ProofStorage } from "./lib/storage.js";
 import { authRoutes } from "./routes/auth.js";
 import { circleRoutes } from "./routes/circles.js";
+import { disputeRoutes } from "./routes/disputes.js";
 import { healthRoutes } from "./routes/health.js";
 import { ledgerRoutes } from "./routes/ledger.js";
 import { waitlistRoutes } from "./routes/waitlist.js";
@@ -96,6 +97,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   });
   const storage = overrides.storage !== undefined ? overrides.storage : createProofStorage(config);
   await app.register(circleRoutes, { pool, tokens, storage });
+  await app.register(disputeRoutes, { pool, tokens });
   await app.register(waitlistRoutes, { pool });
   await app.register(ledgerRoutes, { pool });
 
