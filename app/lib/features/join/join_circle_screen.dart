@@ -63,11 +63,12 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
     }
     setState(() => _error = null);
     final repo = ref.read(repositoryProvider);
+    Circle? joined;
     final ok = await confirmWithPin(
       context,
       title: 'Join ${c.name}',
       subtitle: 'You accept the rules and agree to pay ${naira(c.contributionAmount)} every ${c.cycle.unit}.',
-      onPin: (pin) => repo.joinCircle(
+      onPin: (pin) async => joined = await repo.joinCircle(
         code: c.inviteCode,
         voucherId: _voucherId,
         rulesVersion: c.rules?.version ?? 1,
@@ -78,7 +79,8 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
     refreshCircle(ref, c.id);
     HapticFeedback.mediumImpact();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Welcome to ${c.name}.')));
-    context.go('/circle/${c.id}');
+    // Joining filled the circle and the turns were just drawn: show the draw.
+    context.go(joined?.forming == false ? '/circle/${c.id}/draw' : '/circle/${c.id}');
   }
 
   @override
