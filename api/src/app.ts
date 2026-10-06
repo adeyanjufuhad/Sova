@@ -16,7 +16,7 @@ import { healthRoutes } from "./routes/health.js";
 import { ledgerRoutes } from "./routes/ledger.js";
 import { waitlistRoutes } from "./routes/waitlist.js";
 
-export const VERSION = "0.4.0";
+export const VERSION = "0.5.0";
 
 export interface AppOverrides {
   otpProvider?: OtpProvider;
