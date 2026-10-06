@@ -9,6 +9,7 @@ import { OtpService, SmsProvider, TestNumbersProvider, type OtpProvider } from "
 import { TokenService } from "./auth/tokens.js";
 import type { Config } from "./config.js";
 import { AppError, registerErrorHandler } from "./lib/errors.js";
+import { createProofStorage, type ProofStorage } from "./lib/storage.js";
 import { authRoutes } from "./routes/auth.js";
 import { circleRoutes } from "./routes/circles.js";
 import { healthRoutes } from "./routes/health.js";
@@ -19,6 +20,8 @@ export const VERSION = "0.4.0";
 
 export interface AppOverrides {
   otpProvider?: OtpProvider;
+  /** Replaces the S3 bucket (tests). */
+  storage?: ProofStorage | null;
 }
 
 /**
@@ -91,7 +94,8 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
     demoEnabled: config.DEMO_LOGIN_ENABLED,
     demoPhone: config.DEMO_PHONE,
   });
-  await app.register(circleRoutes, { pool, tokens });
+  const storage = overrides.storage !== undefined ? overrides.storage : createProofStorage(config);
+  await app.register(circleRoutes, { pool, tokens, storage });
   await app.register(waitlistRoutes, { pool });
   await app.register(ledgerRoutes, { pool });
 

@@ -61,6 +61,16 @@ const schema = z
       .string()
       .regex(/^\+234[789][01]\d{8}$/)
       .default("+2348000000000"),
+
+    /**
+     * S3-compatible bucket for proof-of-payment photos (private: read through
+     * short-lived signed links). Uploads are switched off until all are set.
+     */
+    S3_ENDPOINT: z.url().optional().or(z.literal("").transform(() => undefined)),
+    S3_REGION: z.string().trim().default("auto"),
+    S3_BUCKET: z.string().trim().optional(),
+    S3_ACCESS_KEY_ID: z.string().trim().optional(),
+    S3_SECRET_ACCESS_KEY: z.string().trim().optional(),
   })
   .superRefine((c, ctx) => {
     if (c.NODE_ENV === "production" && !c.JWT_SECRET) {
