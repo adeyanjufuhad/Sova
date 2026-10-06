@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models.dart';
+import 'adire_painter.dart';
 
 class SovaLogo extends StatelessWidget {
   const SovaLogo({super.key, this.size = 32, this.onBlue = false, this.wordmark = true});
@@ -222,4 +223,70 @@ class SovaBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BackButton(onPressed: () => leaveScreen(context, fallback: fallback));
+}
+
+/// A designed empty list: an adire tile with an icon, what's missing, what to
+/// do about it, and up to two actions. Used instead of a bare notice when a
+/// whole screen or section has nothing to show yet.
+class EmptyState extends StatelessWidget {
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+    this.secondaryAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Widget? action;
+  final Widget? secondaryAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: SovaSpacing.xl, vertical: SovaSpacing.xl3),
+      decoration: BoxDecoration(
+        color: SovaColors.white,
+        borderRadius: BorderRadius.circular(SovaRadius.xl),
+        border: Border.all(color: SovaColors.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(SovaRadius.lg),
+            child: SizedBox.square(
+              dimension: 64,
+              child: ColoredBox(
+                color: SovaColors.electric,
+                child: CustomPaint(
+                  painter: AdirePainter(color: SovaColors.white.withValues(alpha: 0.18), tile: 48),
+                  child: Icon(icon, color: SovaColors.white, size: 28),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: SovaSpacing.lg),
+          Text(title, style: SovaText.h3, textAlign: TextAlign.center),
+          const SizedBox(height: SovaSpacing.xs),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Text(message, style: SovaText.bodySmall, textAlign: TextAlign.center),
+          ),
+          if (action != null) ...[
+            const SizedBox(height: SovaSpacing.xl),
+            SizedBox(width: double.infinity, child: action),
+          ],
+          if (secondaryAction != null) ...[
+            const SizedBox(height: SovaSpacing.sm),
+            SizedBox(width: double.infinity, child: secondaryAction),
+          ],
+        ],
+      ),
+    );
+  }
 }

@@ -67,7 +67,12 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                     onChanged: (f) => setState(() => _filter = f),
                   ),
                   const SizedBox(height: SovaSpacing.lg),
-                  if (items.isEmpty) const NoticeBox('No payments yet. They will appear here with their receipts.'),
+                  if (items.isEmpty)
+                    const EmptyState(
+                      icon: Icons.receipt_long_outlined,
+                      title: 'No payments yet',
+                      message: 'Payments you make and receive appear here, each with its receipt.',
+                    ),
                   for (final (gi, entry) in groups.entries.indexed) ...[
                     Padding(
                       padding: const EdgeInsets.only(top: SovaSpacing.md, bottom: SovaSpacing.xs),
