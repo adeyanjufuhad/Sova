@@ -52,7 +52,8 @@ class Eyebrow extends StatelessWidget {
       children: [
         Container(width: 6, height: 6, color: color),
         const SizedBox(width: SovaSpacing.sm),
-        Text(text.toUpperCase(), style: SovaText.eyebrow.copyWith(color: color)),
+        // Flexible so a long label wraps instead of overflowing on small phones.
+        Flexible(child: Text(text.toUpperCase(), style: SovaText.eyebrow.copyWith(color: color))),
       ],
     );
   }
