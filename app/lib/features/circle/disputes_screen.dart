@@ -10,6 +10,7 @@ import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/pin_pad.dart';
 
 /// Short title for a dispute, from the signed-in member's point of view.
@@ -34,7 +35,7 @@ class DisputesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Disputes')),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(disputesProvider(circleId))),
         data: (list) => RefreshIndicator(
           color: SovaColors.electric,
@@ -150,7 +151,7 @@ class DisputeScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(leading: SovaBackButton(fallback: '/circle/$circleId'), title: const Text('Dispute')),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(disputeProvider(disputeId))),
         data: (d) => RefreshIndicator(
           color: SovaColors.electric,

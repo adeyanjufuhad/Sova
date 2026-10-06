@@ -8,6 +8,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/pin_pad.dart';
 
 /// The collector says how much actually reached their account and closes the
@@ -24,7 +25,7 @@ class PayoutScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Confirm your payout')),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString()),
         data: (c) {
           final round = c.activeRound;

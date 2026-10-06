@@ -10,6 +10,7 @@ import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/pin_pad.dart';
 import 'disputes_screen.dart';
 
@@ -24,7 +25,7 @@ class CircleScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(leading: const SovaBackButton(), title: Text(async.value?.name ?? '')),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circleProvider(circleId))),
         data: (c) => RefreshIndicator(
           color: SovaColors.electric,

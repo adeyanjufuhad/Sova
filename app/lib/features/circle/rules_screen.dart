@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme/theme.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/polish.dart';
 
 /// The rules every member signs. Accepting is recorded with a timestamp, so
 /// disagreements later are settled by what was agreed.
@@ -48,7 +49,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Group rules')),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString()),
         data: (c) {
           final rules = c.rules;

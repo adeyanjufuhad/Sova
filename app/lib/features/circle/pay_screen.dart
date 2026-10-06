@@ -9,6 +9,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/pin_pad.dart';
 
 /// Sova never moves money: the member pays from their own bank app, then
@@ -24,7 +25,7 @@ class PayScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Record a payment')),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString()),
         data: (c) {
           final round = c.activeRound;
