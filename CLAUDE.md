@@ -17,6 +17,14 @@ Keep earlier decisions unless the owner changes them, and update `docs/STATUS.md
 - Adire line patterns for African identity. Plus Jakarta Sans; tabular figures for naira.
 - Naira formatting: `₦120,000`. Nigerian phones normalised to `+234XXXXXXXXXX`.
 - 21st.dev components (via the `21st` MCP) are React: use them directly on the website, as references only for Flutter. Strip gradients and shadows, recolour to the tokens.
+- `DESIGN.md` (root) is the full design system: tokens, components, do's and don'ts. Keep it in step with `app/lib/core/theme` and `website/src/app/globals.css`.
+
+## Design skills
+Project skills in `.claude/skills` (restore with `npx skills experimental_install`, pinned in `skills-lock.json`):
+`web-design-guidelines` (Vercel interface guidelines review), `redesign-existing-projects`, `design-taste-frontend` and `stitch-design-taste` (tasteskill).
+Use them for audits, states, accessibility and copy. Where they clash with the rules above, these rules win:
+keep Plus Jakarta Sans (not Geist/Satoshi), lucide icons on the website, flat surfaces (no glass, glows, grain, mesh gradients,
+diffusion shadows or perpetual motion), sentence case (not Title Case), and the blue/navy palette.
 
 ## Repository layout
 | Folder | What | Commands |
