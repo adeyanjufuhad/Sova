@@ -136,7 +136,6 @@ void main() {
 
     // In the outcome notice and as the last line of the history.
     expect(find.textContaining('Decided by the circle: 3 of 4 members voted that the money arrived.'), findsNWidgets(2));
-    expect(find.text('Closed: paid'), findsNothing); // the eyebrow is upper-case
-    expect(find.textContaining('CLOSED: PAID'), findsOneWidget);
+    expect(find.textContaining('Closed: paid'), findsOneWidget);
   });
 }

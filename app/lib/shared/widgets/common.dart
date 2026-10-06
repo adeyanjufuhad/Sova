@@ -38,7 +38,7 @@ class SovaLogo extends StatelessWidget {
   }
 }
 
-/// Small uppercase label with a square marker, like the website's eyebrows.
+/// Small section label in sentence case, like the website's eyebrows.
 class Eyebrow extends StatelessWidget {
   const Eyebrow(this.text, {super.key, this.onBlue = false});
 
@@ -48,15 +48,7 @@ class Eyebrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = onBlue ? SovaColors.sky : SovaColors.electric;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 6, height: 6, color: color),
-        const SizedBox(width: SovaSpacing.sm),
-        // Flexible so a long label wraps instead of overflowing on small phones.
-        Flexible(child: Text(text.toUpperCase(), style: SovaText.eyebrow.copyWith(color: color))),
-      ],
-    );
+    return Text(text, style: SovaText.eyebrow.copyWith(color: color));
   }
 }
 

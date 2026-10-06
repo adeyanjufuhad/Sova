@@ -76,13 +76,12 @@ abstract final class SovaText {
     color: SovaColors.textMuted,
   );
 
-  /// Small uppercase section label, like the website's eyebrows.
+  /// Small section label in sentence case, like the website's eyebrows.
   static const eyebrow = TextStyle(
     fontFamily: family,
-    fontSize: 11,
+    fontSize: 13,
     height: 1.3,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 1.4,
+    fontWeight: FontWeight.w600,
     color: SovaColors.electric,
   );
 

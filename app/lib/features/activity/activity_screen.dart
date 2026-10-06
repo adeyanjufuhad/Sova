@@ -76,7 +76,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   for (final (gi, entry) in groups.entries.indexed) ...[
                     Padding(
                       padding: const EdgeInsets.only(top: SovaSpacing.md, bottom: SovaSpacing.xs),
-                      child: Text(entry.key.toUpperCase(), style: SovaText.eyebrow.copyWith(color: SovaColors.textMuted)),
+                      child: Text(entry.key, style: SovaText.eyebrow.copyWith(color: SovaColors.textMuted)),
                     ),
                     for (final (i, a) in entry.value.indexed) StaggeredIn(index: gi + i, child: _ActivityRow(a)),
                   ],
