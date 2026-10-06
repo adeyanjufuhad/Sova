@@ -98,13 +98,21 @@ function describe(e: Checked): string {
     case "payment_marked":
       return `${who(d.payer)} marked ${naira(d.amount)} as sent for turn ${d.turn}`;
     case "payment_confirmed":
-      return `${who(d.collector)} confirmed ${who(d.payer)}'s ${naira(d.amount)} arrived`;
+      return d.decidedBy === "dispute"
+        ? `${who(d.payer)}'s ${naira(d.amount)} for turn ${d.turn} confirmed by the dispute's outcome`
+        : `${who(d.collector)} confirmed ${who(d.payer)}'s ${naira(d.amount)} arrived`;
     case "payout_confirmed":
       return Number(d.shortfall) > 0
         ? `${who(d.collector)} received ${naira(d.received)} of ${naira(d.expected)} for turn ${d.turn}: ${naira(d.shortfall)} short`
         : `${who(d.collector)} received the full ${naira(d.received)} for turn ${d.turn}`;
     case "dispute_opened":
-      return `Dispute opened: ${d.reason}`;
+      return d.kind === "payment"
+        ? `${who(d.raisedBy)} disputed ${who(d.payer)}'s turn ${d.turn} payment: ${d.reason}`
+        : `Dispute opened: ${d.reason}`;
+    case "dispute_vote":
+      return `${who(d.voter)} voted that the turn ${d.turn} payment ${d.side === "payer" ? "arrived" : "did not arrive"}`;
+    case "dispute_resolved":
+      return `Turn ${d.turn} dispute closed: ${d.note}`;
     case "circle_completed":
       return "Circle completed: every turn paid out";
     default:
