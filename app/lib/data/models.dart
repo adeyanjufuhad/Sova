@@ -312,3 +312,118 @@ class PayoutResult {
   final int? nextRound;
   final Circle circle;
 }
+
+/// A shortfall opens automatically when a payout comes up short; a payment
+/// dispute is about one payment marked as sent.
+enum DisputeKind { shortfall, payment }
+
+/// The two sides of a dispute: the payer (the money arrived) and the collector
+/// (it didn't).
+enum DisputeSide { payer, collector }
+
+enum DisputeStatus {
+  open('Open'),
+  resolvedForPayer('Closed: paid'),
+  resolvedForCollector('Closed: not paid'),
+  withdrawn('Withdrawn');
+
+  const DisputeStatus(this.label);
+  final String label;
+}
+
+/// The signed-in member's part in a dispute.
+enum DisputeRole { payer, collector, voter }
+
+/// Someone named in a dispute.
+class Person {
+  const Person({required this.id, required this.name});
+  final String id;
+  final String name;
+
+  String get firstName => name.split(' ').first;
+}
+
+class DisputePayment {
+  const DisputePayment({required this.contributionId, required this.amount, this.bankReference, this.hasProof = false, this.paidAt});
+  final String contributionId;
+  final int amount;
+  final String? bankReference;
+  final bool hasProof;
+  final DateTime? paidAt;
+}
+
+class DisputeVote {
+  const DisputeVote({required this.voter, required this.side, required this.at});
+  final Person voter;
+  final DisputeSide side;
+  final DateTime at;
+}
+
+/// One line of a dispute's history: opened, comment, evidence or resolved.
+class DisputeEvent {
+  const DisputeEvent({required this.actor, required this.kind, required this.at, this.message});
+  final Person actor;
+  final String kind;
+  final String? message;
+  final DateTime at;
+}
+
+class Dispute {
+  const Dispute({
+    required this.id,
+    required this.circleId,
+    required this.kind,
+    required this.status,
+    required this.turn,
+    required this.reason,
+    required this.createdAt,
+    required this.raisedBy,
+    required this.collector,
+    required this.payers,
+    required this.myRole,
+    required this.payerVotes,
+    required this.collectorVotes,
+    required this.eligibleVoters,
+    required this.canVote,
+    required this.canSettle,
+    this.payment,
+    this.resolutionNote,
+    this.resolvedAt,
+    this.myVote,
+    this.votes = const [],
+    this.timeline = const [],
+  });
+
+  final String id;
+  final String circleId;
+  final DisputeKind kind;
+  final DisputeStatus status;
+  final int turn;
+  final String reason;
+  final DateTime createdAt;
+  final Person raisedBy;
+  final Person collector;
+
+  /// The payer of a payment dispute, or everyone still missing for a shortfall.
+  final List<Person> payers;
+  final DisputePayment? payment;
+  final String? resolutionNote;
+  final DateTime? resolvedAt;
+  final DisputeRole myRole;
+  final int payerVotes;
+  final int collectorVotes;
+  final int eligibleVoters;
+  final DisputeSide? myVote;
+  final List<DisputeVote> votes;
+  final List<DisputeEvent> timeline;
+  final bool canVote;
+  final bool canSettle;
+
+  bool get open => status == DisputeStatus.open;
+
+  /// Votes one side needs: more than half of the members who may vote.
+  int get votesNeeded => eligibleVoters ~/ 2 + 1;
+
+  /// "Ada O." for a payment dispute, or the missing members for a shortfall.
+  String get payerNames => payers.isEmpty ? 'nobody' : payers.map((p) => p.firstName).join(', ');
+}

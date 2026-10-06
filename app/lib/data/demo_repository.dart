@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import '../core/format.dart';
 import 'fair_draw.dart';
 import 'models.dart';
 import 'sova_repository.dart';
@@ -23,6 +24,7 @@ class DemoRepository implements SovaRepository {
 
   /// Draw seeds stay secret here until the turns are drawn, as on the server.
   final _drawSeeds = <String, String>{};
+  final _disputes = <String, _DemoDispute>{};
   Session? _session;
   String? _pin;
   int _pinFailures = 0;
@@ -228,6 +230,7 @@ class DemoRepository implements SovaRepository {
     if (existing?.status == ContributionStatus.fullyConfirmed) {
       throw const SovaException('The collector already confirmed this payment.');
     }
+    if (existing?.status == ContributionStatus.disputed) throw const SovaException('This payment is under dispute.');
     _replaceContribution(
       c,
       Contribution(
@@ -270,6 +273,7 @@ class DemoRepository implements SovaRepository {
         reference: old.reference ?? _reference(),
       ),
     );
+    _settleShortfalls(circleId, old.roundId);
     return _circles[circleId]!;
   }
 
@@ -311,14 +315,257 @@ class DemoRepository implements SovaRepository {
           status: RoundStatus.active,
         ),
     ];
-    final updated = _copyCircle(
-      c,
-      rounds: rounds,
-      status: next == null ? CircleStatus.completed : c.status,
-      openDisputes: c.openDisputes + (shortfall > 0 ? 1 : 0),
-    );
-    _circles[circleId] = updated;
+    _circles[circleId] = _copyCircle(c, rounds: rounds, status: next == null ? CircleStatus.completed : c.status);
+    if (shortfall > 0) {
+      final id = 'd-${_random.nextInt(1000000000)}';
+      _disputes[id] = _DemoDispute(
+        id: id,
+        circleId: c.id,
+        roundId: round.id,
+        kind: DisputeKind.shortfall,
+        raisedBy: me,
+        reason: 'Turn ${round.number} payout was ${naira(shortfall)} short: '
+            'expected ${naira(c.payout)}, received ${naira(amount)}.',
+        createdAt: DateTime.now(),
+      )..events.add((me, 'opened', 'Opened automatically when the collector confirmed a short payout.', DateTime.now()));
+      _syncOpenDisputes(c.id);
+    }
+    final updated = _circles[circleId]!;
     return PayoutResult(shortfall: shortfall, nextRound: next == null ? null : round.number + 1, circle: updated);
+  }
+
+  @override
+  Future<List<Dispute>> disputes(String circleId) async {
+    await circle(circleId);
+    final list = _disputes.values.where((d) => d.circleId == circleId).toList()
+      ..sort((a, b) {
+        final byOpen = (b.status == DisputeStatus.open ? 1 : 0) - (a.status == DisputeStatus.open ? 1 : 0);
+        return byOpen != 0 ? byOpen : b.createdAt.compareTo(a.createdAt);
+      });
+    return [for (final d in list) _disputeView(d, withTimeline: false)];
+  }
+
+  @override
+  Future<Dispute> dispute(String id) async {
+    await _latency();
+    return _disputeView(_ownDispute(id));
+  }
+
+  @override
+  Future<Dispute> raiseDispute({required String contributionId, required String reason, required String pin}) async {
+    await _latency();
+    _checkPin(pin);
+    final c = _circles.values
+        .where((c) => c.memberById(me) != null && c.contributions.any((x) => x.id == contributionId))
+        .firstOrNull;
+    if (c == null) throw const SovaException('Payment not found.');
+    final x = c.contributions.firstWhere((x) => x.id == contributionId);
+    final round = c.rounds.firstWhere((r) => r.id == x.roundId);
+    if (me != round.collectorId && me != x.userId) {
+      throw const SovaException('Only the payer or the collector can dispute this payment.', code: 'not_party');
+    }
+    if (x.status == ContributionStatus.disputed) throw const SovaException('This payment is already under dispute.');
+    if (x.status != ContributionStatus.payerConfirmed) {
+      throw const SovaException('Only a payment marked as sent can be disputed.');
+    }
+    final text = reason.trim();
+    if (text.length < 3) throw const SovaException('Say what went wrong.');
+
+    final id = 'd-${_random.nextInt(1000000000)}';
+    _disputes[id] = _DemoDispute(
+      id: id,
+      circleId: c.id,
+      roundId: round.id,
+      kind: DisputeKind.payment,
+      contributionId: x.id,
+      raisedBy: me,
+      reason: text,
+      createdAt: DateTime.now(),
+    )..events.add((me, 'opened', text, DateTime.now()));
+    _setContributionStatus(c.id, x.id, ContributionStatus.disputed);
+    _syncOpenDisputes(c.id);
+    return _disputeView(_disputes[id]!);
+  }
+
+  @override
+  Future<Dispute> voteDispute({required String disputeId, required DisputeSide side, required String pin}) async {
+    await _latency();
+    final d = _ownDispute(disputeId);
+    _checkPin(pin);
+    if (d.status != DisputeStatus.open) throw const SovaException('This dispute is already closed.');
+    if (d.kind != DisputeKind.payment) {
+      throw const SovaException('A shortfall closes when the missing payments are confirmed; there is nothing to vote on.');
+    }
+    final view = _disputeView(d);
+    if (view.myRole != DisputeRole.voter) {
+      throw const SovaException('You are part of this dispute, so the other members decide it.',
+          code: 'party_cannot_vote');
+    }
+    d.votes[me] = (side, DateTime.now());
+    final count = d.votes.values.where((v) => v.$1 == side).length;
+    if (count * 2 > view.eligibleVoters) {
+      _resolve(
+        d,
+        side == DisputeSide.payer ? DisputeStatus.resolvedForPayer : DisputeStatus.resolvedForCollector,
+        me,
+        'Decided by the circle: $count of ${view.eligibleVoters} members voted that '
+        '${side == DisputeSide.payer ? 'the money arrived' : 'the money did not arrive'}.',
+      );
+    }
+    return _disputeView(d);
+  }
+
+  @override
+  Future<Dispute> settleDispute({required String disputeId, required String pin}) async {
+    await _latency();
+    final d = _ownDispute(disputeId);
+    _checkPin(pin);
+    if (d.status != DisputeStatus.open) throw const SovaException('This dispute is already closed.');
+    final role = _disputeView(d).myRole;
+    final name = _circles[d.circleId]!.memberById(me)!.firstName;
+    if (role == DisputeRole.collector) {
+      _resolve(d, DisputeStatus.resolvedForPayer, me,
+          d.kind == DisputeKind.payment ? '$name confirmed the money arrived.' : '$name marked the shortfall as settled.');
+    } else if (role == DisputeRole.payer && d.kind == DisputeKind.payment) {
+      _resolve(d, DisputeStatus.resolvedForCollector, me, '$name agreed the payment did not arrive and can pay again.');
+    } else {
+      throw const SovaException('Only the payer or the collector can settle this dispute.', code: 'not_party');
+    }
+    return _disputeView(d);
+  }
+
+  @override
+  Future<Dispute> commentOnDispute({required String disputeId, required String message}) async {
+    await _latency();
+    final d = _ownDispute(disputeId);
+    if (d.status != DisputeStatus.open) throw const SovaException('This dispute is already closed.');
+    final text = message.trim();
+    if (text.isEmpty) throw const SovaException('Write a message.');
+    d.events.add((me, 'comment', text, DateTime.now()));
+    return _disputeView(d);
+  }
+
+  _DemoDispute _ownDispute(String id) {
+    final d = _disputes[id];
+    if (d == null || _circles[d.circleId]?.memberById(me) == null) throw const SovaException('Dispute not found.');
+    return d;
+  }
+
+  /// The payment's payer, or for a shortfall everyone whose payment for that
+  /// turn is still not confirmed.
+  List<String> _payersOf(_DemoDispute d) {
+    final c = _circles[d.circleId]!;
+    if (d.kind == DisputeKind.payment) return [c.contributions.firstWhere((x) => x.id == d.contributionId).userId];
+    final round = c.rounds.firstWhere((r) => r.id == d.roundId);
+    return [
+      for (final m in c.members)
+        if (m.userId != round.collectorId && c.statusFor(round.id, m.userId) != ContributionStatus.fullyConfirmed)
+          m.userId,
+    ];
+  }
+
+  Dispute _disputeView(_DemoDispute d, {bool withTimeline = true}) {
+    final c = _circles[d.circleId]!;
+    final round = c.rounds.firstWhere((r) => r.id == d.roundId);
+    Person person(String id) => Person(id: id, name: c.memberById(id)?.name ?? 'Member');
+    final payers = _payersOf(d);
+    final role = round.collectorId == me
+        ? DisputeRole.collector
+        : payers.contains(me)
+            ? DisputeRole.payer
+            : DisputeRole.voter;
+    final open = d.status == DisputeStatus.open;
+    final x = d.contributionId == null ? null : c.contributions.firstWhere((x) => x.id == d.contributionId);
+    final votes = [for (final e in d.votes.entries) DisputeVote(voter: person(e.key), side: e.value.$1, at: e.value.$2)]
+      ..sort((a, b) => a.at.compareTo(b.at));
+    return Dispute(
+      id: d.id,
+      circleId: d.circleId,
+      kind: d.kind,
+      status: d.status,
+      turn: round.number,
+      reason: d.reason,
+      createdAt: d.createdAt,
+      resolvedAt: d.resolvedAt,
+      resolutionNote: d.resolutionNote,
+      raisedBy: person(d.raisedBy),
+      collector: person(round.collectorId),
+      payers: [for (final id in payers) person(id)],
+      payment: x == null
+          ? null
+          : DisputePayment(
+              contributionId: x.id,
+              amount: x.amount,
+              bankReference: x.bankReference,
+              hasProof: x.hasProof,
+              paidAt: x.payerConfirmedAt,
+            ),
+      myRole: role,
+      payerVotes: votes.where((v) => v.side == DisputeSide.payer).length,
+      collectorVotes: votes.where((v) => v.side == DisputeSide.collector).length,
+      // Everyone except the collector and the payer(s).
+      eligibleVoters: c.members.length - 1 - payers.length,
+      myVote: d.votes[me]?.$1,
+      votes: votes,
+      timeline: withTimeline
+          ? [for (final e in d.events) DisputeEvent(actor: person(e.$1), kind: e.$2, message: e.$3, at: e.$4)]
+          : const [],
+      canVote: open && d.kind == DisputeKind.payment && role == DisputeRole.voter,
+      canSettle: open && (role == DisputeRole.collector || (d.kind == DisputeKind.payment && role == DisputeRole.payer)),
+    );
+  }
+
+  void _resolve(_DemoDispute d, DisputeStatus status, String actor, String note) {
+    d
+      ..status = status
+      ..resolutionNote = note
+      ..resolvedAt = DateTime.now()
+      ..events.add((actor, 'resolved', note, DateTime.now()));
+    if (d.kind == DisputeKind.payment) {
+      final arrived = status == DisputeStatus.resolvedForPayer;
+      _setContributionStatus(
+          d.circleId, d.contributionId!, arrived ? ContributionStatus.fullyConfirmed : ContributionStatus.pending);
+      if (arrived) _settleShortfalls(d.circleId, d.roundId);
+    }
+    _syncOpenDisputes(d.circleId);
+  }
+
+  /// A shortfall closes by itself once nobody's payment for that turn is missing.
+  void _settleShortfalls(String circleId, String roundId) {
+    for (final d in _disputes.values.toList()) {
+      if (d.circleId == circleId &&
+          d.roundId == roundId &&
+          d.kind == DisputeKind.shortfall &&
+          d.status == DisputeStatus.open &&
+          _payersOf(d).isEmpty) {
+        final collector = _circles[circleId]!.rounds.firstWhere((r) => r.id == roundId).collectorId;
+        _resolve(d, DisputeStatus.resolvedForPayer, collector, 'Made up: every missing payment for this turn is now confirmed.');
+      }
+    }
+  }
+
+  void _setContributionStatus(String circleId, String contributionId, ContributionStatus status) {
+    final c = _circles[circleId]!;
+    final old = c.contributions.firstWhere((x) => x.id == contributionId);
+    _replaceContribution(
+      c,
+      Contribution(
+        id: old.id,
+        roundId: old.roundId,
+        userId: old.userId,
+        amount: old.amount,
+        status: status,
+        bankReference: old.bankReference,
+        hasProof: old.hasProof,
+        payerConfirmedAt: status == ContributionStatus.pending ? null : old.payerConfirmedAt,
+        reference: old.reference,
+      ),
+    );
+  }
+
+  void _syncOpenDisputes(String circleId) {
+    final open = _disputes.values.where((d) => d.circleId == circleId && d.status == DisputeStatus.open).length;
+    _circles[circleId] = _copyCircle(_circles[circleId]!, openDisputes: open);
   }
 
   // ---------------------------------------------------------------------------
@@ -589,5 +836,61 @@ class DemoRepository implements SovaRepository {
         acceptedBy: {'tolu', me, 'emeka', 'amina', 'david'},
       ),
     );
+
+    // Halima says Chuka's turn-3 payment never arrived. Ifeoma and Bayo voted
+    // that it did; your vote would make 3 of 4 and settle it.
+    const disputed = 'o-r3-chuka';
+    _setContributionStatus(office, disputed, ContributionStatus.disputed);
+    final raisedAt = day(-1).add(const Duration(hours: 9));
+    _disputes['d-office-chuka'] = _DemoDispute(
+      id: 'd-office-chuka',
+      circleId: office,
+      roundId: 'o-r3',
+      kind: DisputeKind.payment,
+      contributionId: disputed,
+      raisedBy: 'halima',
+      reason: 'Chuka marked ₦20,000 as sent, but nothing has reached my Moniepoint account.',
+      createdAt: raisedAt,
+    )
+      ..events.addAll([
+        ('halima', 'opened', 'Chuka marked ₦20,000 as sent, but nothing has reached my Moniepoint account.', raisedAt),
+        ('chuka', 'comment', 'I sent it from GTBank. The receipt photo is attached to my payment.',
+            raisedAt.add(const Duration(hours: 2))),
+      ])
+      ..votes['ifeoma'] = (DisputeSide.payer, raisedAt.add(const Duration(hours: 4)))
+      ..votes['bayo'] = (DisputeSide.payer, raisedAt.add(const Duration(hours: 6)));
+    _syncOpenDisputes(office);
   }
+}
+
+/// A dispute held in memory: who raised it, the votes and the history.
+class _DemoDispute {
+  _DemoDispute({
+    required this.id,
+    required this.circleId,
+    required this.roundId,
+    required this.kind,
+    required this.raisedBy,
+    required this.reason,
+    required this.createdAt,
+    this.contributionId,
+  });
+
+  final String id;
+  final String circleId;
+  final String roundId;
+  final DisputeKind kind;
+  final String? contributionId;
+  final String raisedBy;
+  final String reason;
+  final DateTime createdAt;
+  DisputeStatus status = DisputeStatus.open;
+  String? resolutionNote;
+  DateTime? resolvedAt;
+
+  /// Voter id -> their current side and when they chose it.
+  final votes = <String, (DisputeSide, DateTime)>{};
+
+  /// (actor id, kind, message, at)
+  final events = <(String, String, String?, DateTime)>[];
 }
