@@ -4,6 +4,8 @@ import { Ticker } from "@/components/sections/ticker";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { RecordFlow } from "@/components/sections/record-flow";
 import { Features } from "@/components/sections/features";
+import { LedgerBand } from "@/components/sections/ledger-band";
+import { PayoutCalculator } from "@/components/sections/payout-calculator";
 import { Circle } from "@/components/sections/circle";
 import { Protection } from "@/components/sections/protection";
 import { Roadmap } from "@/components/sections/roadmap";
@@ -20,9 +22,11 @@ export default function Home() {
       <main id="main">
         <Hero />
         <HowItWorks />
+        <PayoutCalculator />
         <RecordFlow />
         <Features />
         <Protection />
+        <LedgerBand />
         <Circle />
         <Ticker />
         <Roadmap />
