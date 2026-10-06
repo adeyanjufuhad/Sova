@@ -13,7 +13,8 @@ import { commitmentOf, drawOrder, newSeed } from "../lib/draw.js";
  *  2. Unilag Class of '24   monthly; you are admin and collecting; Emeka awaits confirmation
  *  3. Ikeja Tech Hub Esusu  new; 4 of 8 joined; join with code T7KP9Q (turns not drawn yet)
  *  4. Church Adashe         completed; builds your history
- *  5. Yaba Traders Circle   payout shortfall -> open dispute; Musa collected then stopped paying
+ *  5. Yaba Traders Circle   payout shortfall -> open dispute; Musa collected then stopped paying;
+ *                           the circle is voting on his late turn-2 payment (you cast the deciding vote)
  *
  * Draws: the forming circle gets a fresh secret seed, like any new circle. The
  * circles that already started need a scripted payout order for the story, so
@@ -423,6 +424,42 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
         },
       },
     });
+    // Musa then marks his turn-2 payment as sent, late; Peter says it never
+    // arrived, so the circle votes. Sani has voted; the demo member (Ada) holds
+    // the deciding vote. After turn 3's payments, so the record stays in order.
+    {
+      const turn2 = (
+        await client.query<{ id: string }>("select id from rounds where group_id = $1 and round_number = 2", [yabaId])
+      ).rows[0]!.id;
+      const markedAt = at(day(-2), 10);
+      const late = await client.query<{ id: string }>(
+        `insert into contributions (round_id, group_id, user_id, amount, payer_confirmed, payer_confirmed_at, status, bank_reference)
+         values ($1, $2, $3, $4, true, $5, 'payer_confirmed', 'FT2610038841') returning id`,
+        [turn2, yabaId, id(ctx, "musa"), yaba.amount, markedAt],
+      );
+      const reason = "Musa says he sent turn 2 by transfer, but nothing has reached my account.";
+      const dispute = await client.query<{ id: string }>(
+        `insert into disputes (group_id, contribution_id, round_id, raised_by, against_user_id, reason, kind, created_at)
+         values ($1, $2, $3, $4, $5, $6, 'payment', $7) returning id`,
+        [yabaId, late.rows[0]!.id, turn2, id(ctx, "peter"), id(ctx, "musa"), reason, at(markedAt, 4)],
+      );
+      await client.query("update contributions set status = 'disputed' where id = $1", [late.rows[0]!.id]);
+      const disputeId = dispute.rows[0]!.id;
+      await client.query(
+        "insert into dispute_votes (dispute_id, voter_id, side, created_at, updated_at) values ($1, $2, 'collector', $3, $3)",
+        [disputeId, id(ctx, "sani"), at(markedAt, 21)],
+      );
+      for (const [actor, kind, message, hours] of [
+        ["peter", "opened", reason, 4],
+        ["musa", "comment", "I sent it from my Moniepoint account. The reference is FT2610038841.", 6],
+        ["peter", "comment", "I have checked my statement twice. Nothing from Musa since turn 1.", 9],
+      ] as const) {
+        await client.query(
+          "insert into dispute_events (dispute_id, actor_id, kind, message, created_at) values ($1, $2, $3, $4, $5)",
+          [disputeId, id(ctx, actor), kind, message, at(markedAt, hours)],
+        );
+      }
+    }
 
     // Sova Scores from the database function, for everyone seeded.
     for (const userId of ctx.users.values()) {
