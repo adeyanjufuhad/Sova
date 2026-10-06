@@ -232,8 +232,26 @@ Inline information or error: blue tint background, blue 25% border, navy text, a
 - **Fair draw:** members start A to Z, their keys settle one by one, then the cards slide into turn order; the phone then rechecks the seed and the order.
 - **Dispute vote:** two outlined choices ("It arrived" / "It didn't arrive"), a tally bar per side and the number of votes needed.
 
+### Section heading (website)
+Split by default: eyebrow and a heavy headline (800, tight tracking, up to 60 px) on the left, the supporting sentence on the right, bottom-aligned; it stacks on phones. Centred only for narrow or radial sections (FAQ, the orbit of names). Headlines in half-width columns stop at 48 px.
+
+### Payout calculator (website)
+The signature interactive card: contribution, members and frequency in a white card with a hairline border, and the result in an adire panel below it: what you collect (contribution × (members − 1)), how long the cycle lasts, and that you pay in exactly what you collect. Arithmetic only, never projections.
+
+### Record band (website)
+A full-width navy band that shows the product as the visual: a mockup of the circle record (entry kinds and the hash rule, hashes labelled as examples) with a white "rechecked in your browser" card overlapping its corner. Depth comes from the overlap, not a shadow. One white button per band.
+
+### Ghost watermark (website)
+Oversized words (800 weight, navy at 3–4% opacity) behind a section to set its theme, such as "ajo esusu adashe" behind the orbit of names, with the orbit drawn as thin sky-blue rings. Decorative and hidden from screen readers.
+
+### Footer (website)
+Navy, opening with a large conversational headline and one white button, then the links, the safety note and the "not a bank, lender or wallet" disclosure.
+
+### Empty state (app)
+A white card with a 64 px adire tile holding a white icon, a short title, one sentence on what to do, and up to two full-width actions. Used when a whole list is empty (circles, activity, disputes) and for the "page not found" screen.
+
 ### Motion
-Short and purposeful: staggered entrances (60–80 ms apart), count-up for the next payout, 200–300 ms transitions on transform and opacity only. Every animation is skipped when the system asks for reduced motion.
+Short and purposeful: staggered entrances (60–80 ms apart), count-up for the next payout, 200–300 ms transitions on transform and opacity only. Buttons press to 0.98 scale; cards lift 2 px on hover. Every animation is skipped when the system asks for reduced motion.
 
 ## Do's and Don'ts
 
