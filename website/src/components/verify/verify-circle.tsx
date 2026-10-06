@@ -164,7 +164,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
             className="w-full min-w-0 py-3 text-navy-900 outline-none placeholder:text-slate-400"
           />
         </label>
-        <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-electric px-6 py-3 font-semibold text-white hover:bg-electric-400">
+        <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-electric px-6 py-3 font-semibold text-white transition hover:bg-electric-400 active:scale-[0.98]">
           Verify <ArrowRight className="size-4" />
         </button>
       </form>
