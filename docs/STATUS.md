@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 7 October 2026 (Devcenter Hacktober build phase, day 7).
+Last updated: 8 October 2026 (Devcenter Hacktober build phase, day 8).
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -58,6 +58,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 4 Oct | **App web hosting:** GitHub Actions builds the Flutter web app and publishes it to the `app-web` branch; RumptyCloud serves that branch as a static site (its builder has no Flutter SDK). |
 | 6 Oct | **Disputes (owner may change):** a payment marked as sent can be disputed by its payer or the turn's collector; it is frozen until decided. Every member except the payer and collector may vote "it arrived" / "it didn't arrive"; votes are open (in the ledger) and can change while open; more than half of the eligible voters decides. Either party can settle by agreeing with the other side. Outcome: arrived = payment confirmed; not arrived = back to unpaid. Shortfall disputes have no vote: they close when every missing payment for that turn is confirmed, or the collector marks them settled. Raising, voting and settling need the PIN. |
 | 6 Oct | **Design direction (owner):** visible redesign within Sova's look, borrowing patterns from Wise, Revolut, Stripe and Mastercard (no logos, colours or names). Section labels in sentence case with no square markers; Plus Jakarta Sans everywhere except hashes and references; the app's bottom navigation is a floating pill. Design skills installed (see CLAUDE.md); Sova's rules win where they clash. |
+| 8 Oct | **Swaps and handovers (owner may change):** a member asks another to trade turns; both turns must not have started; the other accepts (PIN) or declines; one pending request per member; an admin who pledged last can't swap. A member who hasn't collected (not the admin) can hand their place to someone with a Sova account: the replacement accepts the rules (PIN), then the admin approves (PIN); it takes effect when the current turn ends (straight away while forming). Pending requests are cancelled when a turn involved starts, or the member leaves. The leaving member's past payments are shown so the two can settle privately; Sova moves no money. Draw checks use the order as drawn (from the ledger). |
 | 7 Oct | **Liquid glass tab bar (owner):** the app's bottom navigation becomes iOS-style liquid glass with a draggable lens; the only glass, gradient and shadow allowed. Everything else stays flat. |
 | 7 Oct | **Sova Score (owner may change):** v1 formula kept (60% on time, 25% every turn paid, 15% circles finished). Shown only after 3 confirmed payments. Turns not yet due and payments sent back to unpaid don't count. Bands: Excellent 90+, Strong 75–89, Fair 50–74, Building under 50. Sharing publishes a snapshot behind a random link (PIN needed): first name + initial, score, rates and counts only; one live link at a time; stop sharing any time. Described as "your record, not a credit rating". |
 | 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
@@ -117,6 +118,12 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Verify page describes votes and outcomes.
 - Fixes: a back button on circles opened without a screen underneath; the layout test now really signs in (it had been stuck on the loading screen) and names any screen that overflows; long eyebrow labels wrap.
 
+### Swaps and handovers (Phase 4, 8 Oct)
+- Migration `20261008000000_swaps_handovers.sql` (applied to RumptyCloud; demo reseeded): `request_swap`, `respond_swap`, `cancel_swap`, `request_handover`, `respond_handover`, `decide_handover`, `complete_handover`, `cancel_handover`; a trigger on turns applies approved handovers as a turn ends and cancels requests when a turn starts. Ledger entries `turns_swapped`, `slot_handed_over` (plus `member_joined` for the replacement).
+- Endpoints: `GET /circles/:id/turn-changes`, `POST /circles/:id/swaps`, `POST /swaps/:id/accept|decline|cancel`, `POST /circles/:id/handovers`, `GET /me/handover-offers`, `POST /handovers/:id/accept|decline|approve|reject|cancel`. Circle detail now includes the drawn order. 6 new API tests (83 total).
+- App: "Swaps and handovers" screen (answer requests, ask to swap, hand over, history), a card on the circle screen that lights up when something waits on you, offers on Home with an accept screen; draw replay and checks use the drawn order and note later agreed changes. Flutter tests: 52.
+- Website verify page describes swaps and handovers. Demo: Zainab asks the demo member to swap turns in Office Esusu.
+
 ### Sova Score card (Phase 4, 7 Oct)
 - Migration `20261007000000_sova_score.sql` (applied to RumptyCloud): `sova_score_now` (live, no write), `calculate_sova_score` now records from it, `score_shares` snapshots, `share_sova_score` (refuses before 3 confirmed payments).
 - Endpoints: `GET /me/score`, `POST /me/score/share` (PIN), `POST /me/score/share/stop`, public `GET /public/scores/:token`. 6 new API tests (77 total).
@@ -164,7 +171,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 |---|---|---|
 | Group rules | Yes | Create, view, accept |
 | Vouching | Yes | Choose voucher on join; shown on member list |
-| Swaps, handovers | Functions exist | No screens |
+| Swaps, handovers | Rules, ledger | Done (requests, answers, approvals, offers) |
 | Disputes | Payment disputes with votes, shortfalls that settle themselves; in the ledger | Done (list, detail, vote, settle, comment) |
 | Collected-then-stopped flag | View + API | Shown on the member list |
 | Sova Score | Live score, shares | Done (Record tab card, share link, public page) |
@@ -172,7 +179,6 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- Swaps and handovers screens.
 - Notifications/reminders.
 - Voice prompts, local languages, offline use, SMS, USSD, collector mode (roadmap; labelled as such on the website).
 - Root README with architecture and deployment guide; per-folder READMEs for `app/` and `website/`.
