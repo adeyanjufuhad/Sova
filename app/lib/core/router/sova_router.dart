@@ -11,6 +11,8 @@ import '../../features/auth/profile_screen.dart';
 import '../../features/auth/welcome_screen.dart';
 import '../../features/circle/circle_screen.dart';
 import '../../features/circle/disputes_screen.dart';
+import '../../features/circle/handover_offer_screen.dart';
+import '../../features/circle/turns_screen.dart';
 import '../../features/circle/draw_screen.dart';
 import '../../features/circle/pay_screen.dart';
 import '../../features/circle/payout_screen.dart';
@@ -107,6 +109,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/create', parentNavigatorKey: _rootKey, builder: (_, _) => const CreateCircleScreen()),
       GoRoute(path: '/join', parentNavigatorKey: _rootKey, builder: (_, _) => const JoinCircleScreen()),
       GoRoute(
+        path: '/handover/:id',
+        parentNavigatorKey: _rootKey,
+        builder: (_, state) => HandoverOfferScreen(offerId: state.pathParameters['id']!),
+      ),
+      GoRoute(
         path: '/circle/:id',
         parentNavigatorKey: _rootKey,
         builder: (_, state) => CircleScreen(circleId: state.pathParameters['id']!),
@@ -115,6 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'rules', builder: (_, state) => RulesScreen(circleId: state.pathParameters['id']!)),
           GoRoute(path: 'payout', builder: (_, state) => PayoutScreen(circleId: state.pathParameters['id']!)),
           GoRoute(path: 'draw', builder: (_, state) => DrawScreen(circleId: state.pathParameters['id']!)),
+          GoRoute(path: 'turns', builder: (_, state) => TurnsScreen(circleId: state.pathParameters['id']!)),
           GoRoute(
             path: 'disputes',
             builder: (_, state) => DisputesScreen(circleId: state.pathParameters['id']!),

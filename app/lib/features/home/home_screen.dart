@@ -9,6 +9,7 @@ import '../../data/insights.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/app_shell.dart' show tabBarInset;
+import '../circle/handover_offer_screen.dart' show HandoverOffersCard;
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
@@ -67,6 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const HandoverOffersCard(),
                         SectionHeader('Payments', action: 'See all', onAction: () => context.go('/activity')),
                         const SizedBox(height: SovaSpacing.sm),
                         SegmentedChips<bool>(
