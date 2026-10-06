@@ -162,7 +162,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.7 }}
-            className="mt-6 font-display text-5xl font-extrabold leading-[1.02] tracking-tight text-navy-900 sm:text-6xl lg:text-7xl"
+            className="mt-6 font-display text-[3.4rem] font-extrabold leading-[0.95] tracking-[-0.04em] text-navy-900 sm:text-7xl lg:text-8xl"
           >
             Your ajo,
             <br />
@@ -190,14 +190,14 @@ export function Hero() {
               href={site.appUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="group inline-flex items-center gap-2 rounded-2xl bg-electric px-6 py-4 font-semibold text-white transition hover:bg-electric-400"
+              className="group inline-flex items-center gap-2 rounded-2xl bg-electric px-6 py-4 font-semibold text-white transition hover:bg-electric-400 active:scale-[0.98]"
             >
               Try the live demo
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </a>
             <a
               href="#waitlist"
-              className="inline-flex items-center gap-2 rounded-2xl border border-navy-900/15 bg-white px-6 py-4 font-semibold text-navy-900 transition hover:border-electric/40 hover:bg-mist"
+              className="inline-flex items-center gap-2 rounded-2xl border border-navy-900/15 bg-white px-6 py-4 font-semibold text-navy-900 transition hover:border-electric/40 hover:bg-mist active:scale-[0.98]"
             >
               Join the waitlist
             </a>
