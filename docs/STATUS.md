@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 2 October 2026 (Devcenter Hacktober build phase, day 2).
+Last updated: 6 October 2026 (Devcenter Hacktober build phase, day 6).
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -98,6 +98,13 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Uploads go through the API because the bucket refused browser (CORS) uploads; server-to-server needs no bucket rules.
 - Checked live: upload from the app's origin, attach, view the same bytes, and 403 without a signed link.
 
+### Fair draw in the app (Phase 4, started 6 Oct)
+- `lib/data/fair_draw.dart`: the draw rule in Dart (`commitmentOf`, `drawKey`, `drawOrder`, `checkDraw`), tested against reference values from `api/src/lib/draw.ts`.
+- Draw screen (`/circle/:id/draw`, "How it was drawn" next to the payout order): members start A to Z, each one's key settles, then the cards slide into turn order; the screen then rechecks on the phone that the seed matches the sealed fingerprint and that the order recomputes. Respects "remove animations". Shows the sealed fingerprint only while the circle is forming.
+- The member whose join or rules acceptance starts the circle lands on the draw screen.
+- The in-memory demo backend now uses the same commit-reveal draw (seeded circles use searched seeds so they verify).
+- Checked live: all four started demo circles on the API pass the same check. Flutter tests: 34.
+
 ### Tamper-evident ledger (Phase 3, done early, 4 Oct)
 - Migration `20261005000000_ledger.sql` (applied to RumptyCloud; demo data reseeded): per-circle hash chain `ledger_entries` written by triggers on circles, draws, members, vouches, rules, acceptances, turns, payments, payouts and disputes. `hash = SHA-256(prevHash|seq|kind|body)`.
 - Append-only: UPDATE/DELETE/TRUNCATE refused by triggers for every role; `sova_app` has no such privileges; a circle with a ledger can't be deleted. Only the demo seed may purge demo circles' ledgers, with an explicit session flag.
@@ -141,7 +148,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- Draw animation in the app; dispute screens and votes; swaps and handovers screens; Sova Score card.
+- Dispute screens and votes; swaps and handovers screens; Sova Score card.
 - Notifications/reminders.
 - Voice prompts, local languages, offline use, SMS, USSD, collector mode (roadmap; labelled as such on the website).
 - Root README with architecture and deployment guide; per-folder READMEs for `app/` and `website/`.
