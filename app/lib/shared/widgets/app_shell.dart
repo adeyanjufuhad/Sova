@@ -22,24 +22,37 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: shell,
-      bottomNavigationBar: DecoratedBox(
-        decoration: const BoxDecoration(border: Border(top: BorderSide(color: SovaColors.border))),
-        child: NavigationBar(
-          height: 68,
-          selectedIndex: shell.currentIndex,
-          onDestinationSelected: (i) {
-            HapticFeedback.selectionClick();
-            // Tapping the current tab again returns it to its first screen.
-            shell.goBranch(i, initialLocation: i == shell.currentIndex);
-          },
-          destinations: [
-            for (final (icon, selected, label) in _tabs)
-              NavigationDestination(
-                icon: Icon(icon, color: SovaColors.textMuted),
-                selectedIcon: Icon(selected, color: SovaColors.electric),
-                label: label,
-              ),
-          ],
+      // A floating pill: inset from the edges, hairline border, no shadow.
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(SovaSpacing.lg, 0, SovaSpacing.lg, SovaSpacing.md),
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: SovaColors.white,
+            borderRadius: BorderRadius.circular(SovaRadius.full),
+            border: Border.all(color: SovaColors.borderStrong),
+          ),
+          child: NavigationBar(
+            height: 64,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            selectedIndex: shell.currentIndex,
+            onDestinationSelected: (i) {
+              HapticFeedback.selectionClick();
+              // Tapping the current tab again returns it to its first screen.
+              shell.goBranch(i, initialLocation: i == shell.currentIndex);
+            },
+            destinations: [
+              for (final (icon, selected, label) in _tabs)
+                NavigationDestination(
+                  icon: Icon(icon, color: SovaColors.textMuted),
+                  selectedIcon: Icon(selected, color: SovaColors.electric),
+                  label: label,
+                ),
+            ],
+          ),
         ),
       ),
     );
