@@ -10,7 +10,7 @@ import type { TokenService } from "../auth/tokens.js";
 import { inTransaction } from "../db.js";
 import { commitmentOf, newInviteCode, newSeed } from "../lib/draw.js";
 import { AppError, notFound } from "../lib/errors.js";
-import type { ProofStorage } from "../lib/storage.js";
+import { sniffImage, type ProofStorage } from "../lib/storage.js";
 
 /** Today's date in Nigeria, as YYYY-MM-DD. */
 const todayInLagos = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date());
@@ -58,10 +58,7 @@ const payBody = z.object({
   pin,
 });
 const PROOF_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as const;
-const proofBody = z.object({
-  contentType: z.enum(Object.keys(PROOF_TYPES) as [keyof typeof PROOF_TYPES], { error: "Upload a JPEG, PNG or WebP photo." }),
-  size: z.number().int().min(1).max(5 * 1024 * 1024, "Photos can be up to 5 MB."),
-});
+const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 const pinBody = z.object({ pin });
 const payoutBody = z.object({ amount: naira(1_000_000_000), pin });
 
@@ -347,15 +344,23 @@ export async function circleRoutes(
     return circleDetail(id, me);
   });
 
-  /** A short-lived link to upload a receipt photo straight to the private bucket. */
-  app.post("/circles/:id/rounds/:number/proof", { config: limited }, async (req) => {
+  // Receipt photos arrive as the raw image body (Content-Type image/jpeg, image/png or image/webp).
+  app.addContentTypeParser(Object.keys(PROOF_TYPES), { parseAs: "buffer", bodyLimit: MAX_PROOF_BYTES }, (_req, body, done) =>
+    done(null, body),
+  );
+
+  /** Stores a receipt photo in the private bucket and returns its key, to attach when paying. */
+  app.post("/circles/:id/rounds/:number/proof", { config: limited, bodyLimit: MAX_PROOF_BYTES }, async (req) => {
     const me = userIdOf(req);
     const { id, number } = roundParam.parse(req.params);
-    const { contentType, size } = proofBody.parse(req.body);
+    // The file's own bytes decide its type, not what the client claims.
+    const type = Buffer.isBuffer(req.body) ? sniffImage(req.body) : null;
+    if (!type) throw new AppError(400, "invalid_photo", "Upload a JPEG, PNG or WebP photo (up to 5 MB).");
     await loadCircle(id, me);
     await roundId(id, number);
-    const key = `${proofPrefix(id, number, me)}${randomUUID()}.${PROOF_TYPES[contentType]}`;
-    return { key, uploadUrl: await requireStorage().uploadUrl(key, contentType, size), headers: { "Content-Type": contentType } };
+    const key = `${proofPrefix(id, number, me)}${randomUUID()}.${PROOF_TYPES[type]}`;
+    await requireStorage().put(key, req.body as Buffer, type);
+    return { key };
   });
 
   /** A short-lived link to view a payment's receipt photo, for members of the circle. */
