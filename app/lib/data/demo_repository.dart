@@ -1,13 +1,14 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'fair_draw.dart';
 import 'models.dart';
 import 'sova_repository.dart';
 
 /// In-memory backend for tests and offline demos. It follows the same rules
 /// as the API (forming until full, turns drawn at the start, payout from the
-/// other members, PIN on money actions). The OTP is always [demoOtp]; data
-/// resets when the app restarts. Draws here are random, not commit-reveal.
+/// other members, PIN on money actions, commit-reveal draw). The OTP is always
+/// [demoOtp]; data resets when the app restarts.
 class DemoRepository implements SovaRepository {
   DemoRepository() {
     _seed();
@@ -19,6 +20,9 @@ class DemoRepository implements SovaRepository {
 
   final _random = Random();
   final _circles = <String, Circle>{};
+
+  /// Draw seeds stay secret here until the turns are drawn, as on the server.
+  final _drawSeeds = <String, String>{};
   Session? _session;
   String? _pin;
   int _pinFailures = 0;
@@ -111,6 +115,8 @@ class DemoRepository implements SovaRepository {
     if (name.length < 2) throw const SovaException('Give your circle a name.');
     if (d.contributionAmount < 100) throw const SovaException('The contribution must be at least ₦100.');
     final id = 'circle-${_random.nextInt(1000000000)}';
+    final seed = [for (var i = 0; i < 32; i++) Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')].join();
+    _drawSeeds[id] = seed;
     final circle = Circle(
       id: id,
       name: name,
@@ -122,6 +128,7 @@ class DemoRepository implements SovaRepository {
       inviteCode: _newInviteCode(),
       status: CircleStatus.forming,
       adminCollectsLast: d.adminCollectsLast,
+      draw: DrawInfo(commitment: commitmentOf(seed)),
       members: [Member(userId: me, name: _session?.fullName ?? 'You', phone: _session?.phone ?? '', position: null)],
       rounds: const [],
       contributions: const [],
@@ -344,11 +351,10 @@ class DemoRepository implements SovaRepository {
     final accepted = c.rules?.acceptedBy ?? const {};
     if (!c.forming || c.members.length < c.memberCount || c.members.any((m) => !accepted.contains(m.userId))) return c;
 
-    final order = [...c.members]..shuffle(_random);
-    if (c.adminCollectsLast) {
-      order.removeWhere((m) => m.userId == c.adminId);
-      order.add(c.memberById(c.adminId)!);
-    }
+    final seed = _drawSeeds[c.id]!;
+    final order = [
+      for (final id in drawOrder(seed, c.members.map((m) => m.userId), c.adminId, c.adminCollectsLast)) c.memberById(id)!,
+    ];
     final today = DateTime.now();
     final start = c.startDate.isBefore(DateTime(today.year, today.month, today.day))
         ? DateTime(today.year, today.month, today.day)
@@ -356,6 +362,7 @@ class DemoRepository implements SovaRepository {
     return _copyCircle(
       c,
       status: CircleStatus.active,
+      draw: DrawInfo(commitment: c.draw!.commitment, seed: seed, revealedAt: DateTime.now()),
       members: [
         for (final (i, m) in order.indexed)
           Member(
@@ -413,6 +420,7 @@ class DemoRepository implements SovaRepository {
     List<Contribution>? contributions,
     GroupRules? rules,
     CircleStatus? status,
+    DrawInfo? draw,
     int? openDisputes,
   }) =>
       Circle(
@@ -430,13 +438,20 @@ class DemoRepository implements SovaRepository {
         rounds: rounds ?? c.rounds,
         contributions: contributions ?? c.contributions,
         rules: rules ?? c.rules,
-        draw: c.draw,
+        draw: draw ?? c.draw,
         openDisputes: openDisputes ?? c.openDisputes,
       );
 
   void _seed() {
     final today = DateTime.now();
     DateTime day(int offset) => DateTime(today.year, today.month, today.day + offset);
+
+    // Seeds searched to reproduce each started circle's scripted payout order
+    // (as the API's demo seed does), so their draws still verify.
+    DrawInfo revealed(String id, String seed, DateTime at) {
+      _drawSeeds[id] = seed;
+      return DrawInfo(commitment: commitmentOf(seed), seed: seed, revealedAt: at);
+    }
 
     // A weekly office esusu where you owe this turn's payment.
     const office = 'office-esusu';
@@ -480,6 +495,7 @@ class DemoRepository implements SovaRepository {
       cycle: CycleType.weekly,
       startDate: day(-12),
       inviteCode: 'K7QX2M',
+      draw: revealed(office, 'e4c573cbc70b5605bdec3cbb0572d47fa94260bf7e97bd2b8dc5b15a7c3db5ba', day(-12)),
       members: officeMembers,
       rounds: officeRounds,
       contributions: [
@@ -500,6 +516,7 @@ class DemoRepository implements SovaRepository {
     );
 
     // A circle you can join with code T7KP9Q (you are not a member yet).
+    _drawSeeds['tech-hub'] = '96cec7fef4945c050329e80a09b2c03f08994d5f8d3700209b7e3ff4a9d77e7e';
     _circles['tech-hub'] = Circle(
       id: 'tech-hub',
       name: 'Ikeja Tech Hub Esusu',
@@ -509,6 +526,7 @@ class DemoRepository implements SovaRepository {
       cycle: CycleType.weekly,
       startDate: day(10),
       inviteCode: 'T7KP9Q',
+      draw: DrawInfo(commitment: commitmentOf(_drawSeeds['tech-hub']!)),
       status: CircleStatus.forming,
       adminCollectsLast: true,
       members: const [
@@ -540,6 +558,7 @@ class DemoRepository implements SovaRepository {
       cycle: CycleType.monthly,
       startDate: day(-21),
       inviteCode: 'P4DN8R',
+      draw: revealed(classAjo, '1c0f12c0a5184d33dc2dae1dc6b76ae2a7aa1353e3cec869ac5d8453b41f39c4', day(-21)),
       members: [
         const Member(userId: 'tolu', name: 'Tolu Ajayi', phone: '+2348032220001', position: 1),
         const Member(
