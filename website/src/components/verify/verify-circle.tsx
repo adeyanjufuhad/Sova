@@ -136,7 +136,8 @@ function Tick({ ok, label }: { ok: boolean; label: string }) {
 
 function Picker({ onPick }: { onPick: (id: string) => void }) {
   const [value, setValue] = useState("");
-  const [demos, setDemos] = useState<{ id: string; name: string }[]>([]);
+  // null while loading; an empty list if they couldn't be fetched.
+  const [demos, setDemos] = useState<{ id: string; name: string }[] | null>(null);
   useEffect(() => {
     callApi("/public/demo-circles")
       .then((d) => setDemos(d.circles))
@@ -150,13 +151,17 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
   return (
     <div className="rounded-3xl border border-navy-900/10 bg-white p-6 sm:p-8">
       <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row">
-        <label className="flex flex-1 items-center gap-3 rounded-xl border border-navy-900/15 px-4 focus-within:border-electric">
+        <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-navy-900/15 px-4 focus-within:border-electric focus-within:ring-2 focus-within:ring-electric/20">
           <Link2 className="size-4 shrink-0 text-slate-400" />
           <input
+            name="circle"
+            aria-label="Circle verify link or id"
+            autoComplete="off"
+            spellCheck={false}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Paste a circle's verify link or id"
-            className="w-full py-3 text-navy-900 outline-none placeholder:text-slate-400"
+            placeholder="Paste a circle's verify link or id…"
+            className="w-full min-w-0 py-3 text-navy-900 outline-none placeholder:text-slate-400"
           />
         </label>
         <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-electric px-6 py-3 font-semibold text-white hover:bg-electric-400">
@@ -164,11 +169,17 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
         </button>
       </form>
       <p className="mt-6 text-sm text-slate-500">Or check one of the demo circles:</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {demos.length === 0 && <span className="text-sm text-slate-400">Loading demo circles…</span>}
-        {demos.map((c) => (
+      <div aria-live="polite" className="mt-3 flex flex-wrap gap-2">
+        {demos === null && <span className="text-sm text-slate-400">Loading demo circles…</span>}
+        {demos?.length === 0 && (
+          <span className="text-sm text-slate-500">
+            The demo circles couldn&apos;t be loaded. Paste a circle&apos;s link above, or reload the page to try again.
+          </span>
+        )}
+        {demos?.map((c) => (
           <button
             key={c.id}
+            type="button"
             onClick={() => onPick(c.id)}
             className="rounded-full border border-navy-900/15 px-4 py-2 text-sm text-navy-800 hover:border-electric hover:text-electric"
           >
