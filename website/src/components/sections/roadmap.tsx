@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ArrowRight, BadgeCheck, Bell, CloudOff, Landmark, Mic, Phone, Store } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, Bell, CloudOff, Landmark, Mic, Phone, Store } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { AdirePattern } from "@/components/ui/adire";
 
@@ -10,7 +10,6 @@ const next = [
   { icon: Phone, title: "USSD for basic phones", body: "Record and check payments without a smartphone or data." },
   { icon: Mic, title: "Voice and local languages", body: "Spoken prompts in Pidgin, Yoruba, Hausa and Igbo." },
   { icon: CloudOff, title: "Works offline", body: "Record payments without signal; sync when the network returns." },
-  { icon: BadgeCheck, title: "Shareable Sova Score", body: "A trust card built from your on-time record, shared only when you choose." },
   { icon: Landmark, title: "Savings history as credit history", body: "Let lenders see your record, with your permission. Sova itself will never lend." },
 ];
 
