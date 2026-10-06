@@ -89,7 +89,7 @@ const trust: Item[] = [
   {
     icon: ReceiptText,
     title: "Proof of payment",
-    body: "Record the bank reference with each payment, and the collector confirms with their PIN. Receipt photos are next.",
+    body: "Record the bank reference and attach a photo of the receipt. Only your circle can see it, and the collector confirms with their PIN.",
   },
   {
     icon: Handshake,
