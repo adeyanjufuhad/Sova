@@ -92,6 +92,12 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - 28 Flutter tests (API client: wake page, token refresh, errors, JSON mapping).
 - `app-web` branch: built and published by `.github/workflows/app-web.yml` on every push that touches `app/`.
 
+### Receipt photos (Phase 2, 6 Oct)
+- Private RumptyCloud bucket `sova-receipts` (S3-compatible, path-style); API env `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`.
+- The app sends the photo to `POST /circles/:id/rounds/:n/proof` (raw image, ≤ 5 MB); the API checks the bytes are a real JPEG/PNG/WebP and stores it under `proofs/<circle>/<turn>/<payer>/`. Paying attaches it (only your own, only if stored). Members view it through 5-minute signed links (`GET /contributions/:id/proof`).
+- Uploads go through the API because the bucket refused browser (CORS) uploads; server-to-server needs no bucket rules.
+- Checked live: upload from the app's origin, attach, view the same bytes, and 403 without a signed link.
+
 ### Tamper-evident ledger (Phase 3, done early, 4 Oct)
 - Migration `20261005000000_ledger.sql` (applied to RumptyCloud; demo data reseeded): per-circle hash chain `ledger_entries` written by triggers on circles, draws, members, vouches, rules, acceptances, turns, payments, payouts and disputes. `hash = SHA-256(prevHash|seq|kind|body)`.
 - Append-only: UPDATE/DELETE/TRUNCATE refused by triggers for every role; `sova_app` has no such privileges; a circle with a ledger can't be deleted. Only the demo seed may purge demo circles' ledgers, with an explicit session flag.
@@ -127,7 +133,6 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 |---|---|---|
 | Group rules | Yes | Create, view, accept |
 | Vouching | Yes | Choose voucher on join; shown on member list |
-| Proof of payment | Bank reference via API; photo column exists | Reference recorded; photo toggle only (no upload yet) |
 | Swaps, handovers | Functions exist | No screens |
 | Disputes | Opened automatically on short payouts; in the ledger | Open-dispute notice only; no dispute screen or votes |
 | Collected-then-stopped flag | View + API | Shown on the member list |
@@ -136,7 +141,6 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 ## Not built
 
-- Real photo upload (bucket, presigned URLs). Needs a bucket from the console.
 - Draw animation in the app; dispute screens and votes; swaps and handovers screens; Sova Score card.
 - Notifications/reminders.
 - Voice prompts, local languages, offline use, SMS, USSD, collector mode (roadmap; labelled as such on the website).
