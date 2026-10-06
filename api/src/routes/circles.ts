@@ -439,8 +439,12 @@ export async function circleRoutes(
         [circleId],
       ),
       pool.query(`select ${RULES_COLUMNS} from group_rules where group_id = $1 order by version desc limit 1`, [circleId]),
-      pool.query<{ commitment: string; seed: string; revealed_at: Date | null }>(
-        "select commitment, seed, revealed_at from circle_draws where group_id = $1",
+      // The order as drawn comes from the ledger, so it stays checkable after agreed swaps and handovers.
+      pool.query<{ commitment: string; seed: string; revealed_at: Date | null; order: { id: string; name: string }[] | null }>(
+        `select d.commitment, d.seed, d.revealed_at,
+                (select (l.body::jsonb)->'order' from ledger_entries l
+                  where l.group_id = d.group_id and l.kind = 'draw_revealed' order by l.seq limit 1) as order
+           from circle_draws d where d.group_id = $1`,
         [circleId],
       ),
       pool.query<{
@@ -539,7 +543,14 @@ export async function circleRoutes(
       })),
       rules: { ...rulesView(rules.rows[0]), acceptedByMe: members.rows.find((m) => m.id === me)?.accepted ?? false },
       // The seed stays secret until the draw; the commitment proves it was fixed in advance.
-      draw: d ? { commitment: d.commitment, revealedAt: d.revealed_at, seed: d.revealed_at ? d.seed : null } : null,
+      draw: d
+        ? {
+            commitment: d.commitment,
+            revealedAt: d.revealed_at,
+            seed: d.revealed_at ? d.seed : null,
+            order: d.revealed_at ? (d.order ?? null) : null,
+          }
+        : null,
       currentRound,
       openDisputes: disputes.rows[0]!.n,
       /** Full history, so the app can show receipts, activity and the member's record. */
