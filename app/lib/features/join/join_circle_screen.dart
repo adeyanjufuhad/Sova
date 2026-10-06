@@ -93,7 +93,7 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
           tooltip: c == null ? 'Close' : 'Back',
           icon: Icon(c == null ? Icons.close_rounded : Icons.arrow_back_rounded),
           onPressed: () => c == null
-              ? context.pop()
+              ? leaveScreen(context, fallback: '/home')
               : setState(() {
                   _circle = null;
                   _error = null;
