@@ -171,7 +171,7 @@ class _Part extends StatelessWidget {
               Expanded(child: Text(label, style: SovaText.label.copyWith(color: SovaColors.white))),
               Text('${(value * 100).round()}%', style: SovaText.label.copyWith(color: SovaColors.white)),
               const SizedBox(width: SovaSpacing.sm),
-              SizedBox(width: 56, child: Text('$weight% of score', style: muted, textAlign: TextAlign.right)),
+              SizedBox(width: 88, child: Text('$weight% of score', style: muted, textAlign: TextAlign.right, maxLines: 1)),
             ],
           ),
           const SizedBox(height: SovaSpacing.xs),
@@ -192,6 +192,8 @@ class _Part extends StatelessWidget {
 
 Future<void> showShareScoreSheet(BuildContext context) => showModalBottomSheet<void>(
       context: context,
+      // Above the tab bar, so the sheet's buttons are never hidden behind it.
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: SovaColors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(SovaRadius.xl2))),
