@@ -11,6 +11,7 @@ import 'package:sova/data/providers.dart';
 class _SignedIn extends AuthNotifier {
   @override
   AuthState build() => const AuthState(
+        restoring: false,
         onboarded: true,
         session: Session(phone: '+2348031234567', userId: 'me', fullName: 'Ada Obi', hasPin: true),
       );
@@ -63,8 +64,9 @@ void main() {
       ]) {
         router.go(location);
         await settle(tester);
-        // Any overflow is reported by the framework and fails the test with the widget's location.
-        expect(router.state.matchedLocation, isNot(SovaRoutes.welcome), reason: location);
+        // Any overflow is reported by the framework; name the screen it happened on.
+        expect(tester.takeException(), isNull, reason: 'layout error on $location');
+        expect(router.state.matchedLocation, location, reason: 'redirected away from $location');
       }
 
       // Unused import guard for GoRouter types.
