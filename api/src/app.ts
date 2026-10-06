@@ -15,6 +15,7 @@ import { circleRoutes } from "./routes/circles.js";
 import { disputeRoutes } from "./routes/disputes.js";
 import { scoreRoutes } from "./routes/score.js";
 import { turnRoutes } from "./routes/turns.js";
+import { notificationRoutes } from "./routes/notifications.js";
 import { healthRoutes } from "./routes/health.js";
 import { ledgerRoutes } from "./routes/ledger.js";
 import { waitlistRoutes } from "./routes/waitlist.js";
@@ -102,6 +103,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   await app.register(disputeRoutes, { pool, tokens });
   await app.register(scoreRoutes, { pool, tokens });
   await app.register(turnRoutes, { pool, tokens });
+  await app.register(notificationRoutes, { pool, tokens });
   await app.register(waitlistRoutes, { pool });
   await app.register(ledgerRoutes, { pool });
 
