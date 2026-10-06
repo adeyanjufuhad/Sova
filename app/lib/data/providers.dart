@@ -120,6 +120,15 @@ final scoreProvider = FutureProvider<SovaScore>((ref) {
   return ref.watch(repositoryProvider).myScore();
 });
 
+final turnChangesProvider = FutureProvider.family<TurnChanges, String>((ref, circleId) {
+  return ref.watch(repositoryProvider).turnChanges(circleId);
+});
+
+final handoverOffersProvider = FutureProvider<List<HandoverOffer>>((ref) {
+  ref.watch(meProvider);
+  return ref.watch(repositoryProvider).handoverOffers();
+});
+
 final disputesProvider = FutureProvider.family<List<Dispute>, String>((ref, circleId) {
   return ref.watch(repositoryProvider).disputes(circleId);
 });
@@ -134,4 +143,5 @@ void refreshCircle(WidgetRef ref, String id) {
   ref.invalidate(circlesProvider);
   ref.invalidate(scoreProvider);
   ref.invalidate(disputesProvider(id));
+  ref.invalidate(turnChangesProvider(id));
 }

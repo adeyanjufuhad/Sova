@@ -138,11 +138,15 @@ class GroupRules {
 /// The commit-reveal draw: [commitment] is public from the start; [seed] is
 /// revealed when the turns are drawn, so anyone can check the order.
 class DrawInfo {
-  const DrawInfo({required this.commitment, this.seed, this.revealedAt});
+  const DrawInfo({required this.commitment, this.seed, this.revealedAt, this.order});
 
   final String commitment;
   final String? seed;
   final DateTime? revealedAt;
+
+  /// Member ids and names in the order drawn (turn 1 first). Agreed swaps and
+  /// handovers change who holds a turn later, but the draw is checked against this.
+  final List<Person>? order;
 
   bool get revealed => seed != null;
 }
@@ -473,4 +477,138 @@ class SovaScore {
   final ScoreShare? share;
 
   bool get ready => score != null;
+}
+
+/// Someone in a swap or handover, with the turn they hold now (if any).
+class TurnPerson {
+  const TurnPerson({required this.id, required this.name, this.turn});
+  final String id;
+  final String name;
+  final int? turn;
+
+  String get firstName => name.split(' ').first;
+}
+
+enum SwapStatus {
+  pending('Waiting for an answer'),
+  accepted('Swapped'),
+  declined('Declined'),
+  cancelled('Cancelled');
+
+  const SwapStatus(this.label);
+  final String label;
+}
+
+/// A member asks another to trade payout turns.
+class SwapRequest {
+  const SwapRequest({
+    required this.id,
+    required this.status,
+    required this.createdAt,
+    required this.requester,
+    required this.target,
+    this.reason,
+    this.canAnswer = false,
+    this.canCancel = false,
+  });
+
+  final String id;
+  final SwapStatus status;
+  final DateTime createdAt;
+  final TurnPerson requester;
+  final TurnPerson target;
+  final String? reason;
+
+  /// The signed-in member was asked and can accept or decline.
+  final bool canAnswer;
+
+  /// The signed-in member asked and can withdraw it.
+  final bool canCancel;
+}
+
+enum HandoverStatus {
+  pending('Waiting for the replacement'),
+  accepted('Waiting for the admin'),
+  approved('Approved: takes effect when this turn ends'),
+  completed('Handed over'),
+  declined('Declined by the replacement'),
+  rejected('Not approved by the admin'),
+  cancelled('Cancelled');
+
+  const HandoverStatus(this.label);
+  final String label;
+
+  bool get open => this == pending || this == accepted || this == approved;
+}
+
+/// A member leaving early hands their place to someone outside the circle.
+class Handover {
+  const Handover({
+    required this.id,
+    required this.status,
+    required this.createdAt,
+    required this.leaving,
+    required this.replacement,
+    required this.paidIn,
+    this.reason,
+    this.canApprove = false,
+    this.canCancel = false,
+  });
+
+  final String id;
+  final HandoverStatus status;
+  final DateTime createdAt;
+  final TurnPerson leaving;
+  final TurnPerson replacement;
+
+  /// What the leaving member paid into earlier turns. They settle it with the
+  /// replacement themselves; Sova only keeps the record.
+  final int paidIn;
+  final String? reason;
+  final bool canApprove;
+  final bool canCancel;
+}
+
+class TurnChanges {
+  const TurnChanges({required this.swaps, required this.handovers});
+  final List<SwapRequest> swaps;
+  final List<Handover> handovers;
+
+  /// Things waiting on the signed-in member: swaps to answer, handovers to approve.
+  int get needsMe => swaps.where((s) => s.canAnswer).length + handovers.where((h) => h.canApprove).length;
+}
+
+/// A place offered to the signed-in person in a circle they aren't in yet.
+class HandoverOffer {
+  const HandoverOffer({
+    required this.id,
+    required this.createdAt,
+    required this.leavingName,
+    required this.paidIn,
+    required this.circleId,
+    required this.circleName,
+    required this.contributionAmount,
+    required this.payoutAmount,
+    required this.memberCount,
+    required this.cycle,
+    required this.rules,
+    this.turn,
+    this.reason,
+  });
+
+  final String id;
+  final DateTime createdAt;
+  final String leavingName;
+  final int paidIn;
+  final String circleId;
+  final String circleName;
+  final int contributionAmount;
+  final int payoutAmount;
+  final int memberCount;
+  final CycleType cycle;
+  final GroupRules rules;
+
+  /// The turn that comes with the place; null before the circle's draw.
+  final int? turn;
+  final String? reason;
 }

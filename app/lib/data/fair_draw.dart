@@ -44,13 +44,24 @@ class DrawCheck {
 }
 
 /// Rechecks [circle]'s draw from its revealed seed; null until the seed is revealed.
+/// It checks the order as drawn (from the record); agreed swaps and handovers
+/// change who holds a turn afterwards without affecting this check.
 DrawCheck? checkDraw(Circle circle) {
   final draw = circle.draw;
   final seed = draw?.seed;
   if (draw == null || seed == null) return null;
+  final drawn = draw.order?.map((p) => p.id).toList() ?? [for (final m in circle.membersByPosition) m.userId];
   return DrawCheck(
     seedMatchesCommitment: commitmentOf(seed) == draw.commitment.toLowerCase(),
-    recomputedOrder: drawOrder(seed, circle.members.map((m) => m.userId), circle.adminId, circle.adminCollectsLast),
-    recordedOrder: [for (final m in circle.membersByPosition) m.userId],
+    recomputedOrder: drawOrder(seed, drawn, circle.adminId, circle.adminCollectsLast),
+    recordedOrder: drawn,
   );
+}
+
+/// Whether turns changed hands after the draw (by agreed swaps or handovers).
+bool turnsChangedSinceDraw(Circle circle) {
+  final order = circle.draw?.order;
+  if (order == null) return false;
+  final now = [for (final m in circle.membersByPosition) m.userId];
+  return order.length != now.length || [for (var i = 0; i < now.length; i++) order[i].id != now[i]].any((d) => d);
 }

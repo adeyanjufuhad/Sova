@@ -115,6 +115,31 @@ abstract interface class SovaRepository {
 
   /// Stops sharing: the link stops working straight away.
   Future<SovaScore> stopSharingScore();
+
+  /// Swap requests and handovers in a circle, open ones first.
+  Future<TurnChanges> turnChanges(String circleId);
+
+  /// Asks [targetId] to trade turns. Both turns must not have started.
+  Future<TurnChanges> requestSwap({required String circleId, required String targetId, String? reason, required String pin});
+
+  /// The asked member accepts (PIN) or declines.
+  Future<TurnChanges> answerSwap({required String circleId, required String swapId, required bool accept, String? pin});
+
+  Future<TurnChanges> cancelSwap({required String circleId, required String swapId});
+
+  /// A member who hasn't collected names someone outside the circle to take their place.
+  Future<TurnChanges> requestHandover({required String circleId, required String phone, String? reason, required String pin});
+
+  /// The admin approves (PIN) or rejects once the replacement has accepted.
+  Future<TurnChanges> decideHandover({required String circleId, required String handoverId, required bool approve, String? pin});
+
+  Future<TurnChanges> cancelHandover({required String circleId, required String handoverId});
+
+  /// Places offered to the signed-in person.
+  Future<List<HandoverOffer>> handoverOffers();
+
+  /// The replacement accepts (agreeing to the rules, PIN) or declines.
+  Future<List<HandoverOffer>> answerHandover({required String handoverId, required bool accept, int? rulesVersion, String? pin});
 }
 
 class SovaException implements Exception {
