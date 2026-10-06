@@ -18,7 +18,7 @@ function LedgerMock() {
       <div className="overflow-hidden rounded-3xl border border-white/10 bg-navy-800">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <p className="text-sm font-semibold text-white">Circle record</p>
-          <p className="font-mono text-[11px] uppercase tracking-wider text-sky-300">Example</p>
+          <p className="text-xs font-semibold text-sky-300">Example</p>
         </div>
         <ol className="divide-y divide-white/10">
           {entries.map((e) => (

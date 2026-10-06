@@ -22,8 +22,8 @@ export function Roadmap() {
 
       <div className="relative mx-auto max-w-6xl">
         <Reveal className="max-w-2xl">
-          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-sky-300">
-            <span className="size-1.5 bg-sky-300" /> Roadmap
+          <p className="flex items-center gap-2 text-sm font-semibold text-sky-300">
+            Roadmap
           </p>
           <h2 className="mt-4 font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance text-white sm:text-6xl">
             What we&apos;re building next.

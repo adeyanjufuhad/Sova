@@ -38,7 +38,7 @@ export function Footer() {
             </div>
 
             <nav aria-label="Footer">
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-sky-300">Sova</p>
+              <p className="text-sm font-semibold text-sky-300">Sova</p>
               <ul className="mt-4 space-y-2.5 text-sm">
                 {[...site.nav, { label: "Join the waitlist", href: "#waitlist" }].map((n) => (
                   <li key={n.href}>
@@ -51,7 +51,7 @@ export function Footer() {
             </nav>
 
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-sky-300">Stay safe</p>
+              <p className="text-sm font-semibold text-sky-300">Stay safe</p>
               <p className="mt-4 flex gap-2 text-sm text-white/75">
                 <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-sky" />
                 Sova will never call or text to ask for your PIN, OTP or bank password. If someone does, it is not us.

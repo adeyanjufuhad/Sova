@@ -24,7 +24,7 @@ function IconTile({ icon: Icon }: { icon: React.ComponentType<{ className?: stri
 
 function Soon() {
   return (
-    <span className="ml-2 inline-block rounded-full bg-electric/10 px-2 py-0.5 align-middle font-mono text-[10px] font-medium uppercase tracking-wider text-electric">
+    <span className="ml-2 inline-block rounded-full bg-electric/10 px-2 py-0.5 align-middle text-[11px] font-semibold text-electric">
       Coming soon
     </span>
   );
@@ -59,7 +59,7 @@ function OrderVisual() {
     <ul className="mt-6 space-y-2.5">
       {rows.map((r, i) => (
         <li key={r.n} className="flex items-center gap-3">
-          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-electric/10 font-mono text-xs text-electric">
+          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-electric/10 text-xs font-semibold text-electric tabular-nums">
             {i + 1}
           </span>
           <div className="flex-1">

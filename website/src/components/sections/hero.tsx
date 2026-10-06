@@ -48,7 +48,7 @@ function PhoneMock() {
           </div>
 
           <div className="mx-3 mt-4 rounded-2xl bg-white/[0.04] p-3">
-            <p className="px-1 text-[11px] uppercase tracking-wider text-slate-500">This week</p>
+            <p className="px-1 text-[11px] font-semibold text-slate-500">This week</p>
             <ul className="mt-2 space-y-1.5">
               {members.map((m) => (
                 <li key={m.name} className="flex items-center justify-between rounded-xl px-2 py-1.5">
