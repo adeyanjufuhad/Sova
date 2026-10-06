@@ -133,6 +133,7 @@ Future<bool> confirmWithPin(
 }) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true, // above the tab bar
     isScrollControlled: true,
     backgroundColor: SovaColors.white,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(SovaRadius.xl2))),
