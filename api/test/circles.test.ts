@@ -74,11 +74,11 @@ describe("bank details", () => {
     const banks = await call("ada", "GET", "/banks");
     expect(banks.body.banks.map((b: { name: string }) => b.name)).toContain("OPay");
 
-    const saved = await call("ada", "PUT", "/me/bank", { bankName: "opay", accountNumber: "9061234567", accountName: "Ada Obi" });
+    const saved = await call("ada", "PUT", "/me/bank", { bankName: "opay", accountNumber: "9061234567", accountName: "Ada Obi", pin: PIN });
     expect(saved.status).toBe(200);
     expect(saved.body.bank).toEqual({ bankName: "OPay", accountNumber: "9061234567", accountName: "Ada Obi" });
 
-    const unknown = await call("ada", "PUT", "/me/bank", { bankName: "Bank of Nowhere", accountNumber: "9061234567", accountName: "Ada Obi" });
+    const unknown = await call("ada", "PUT", "/me/bank", { bankName: "Bank of Nowhere", accountNumber: "9061234567", accountName: "Ada Obi", pin: PIN });
     expect(unknown.body.error.code).toBe("unknown_bank");
   });
 });
