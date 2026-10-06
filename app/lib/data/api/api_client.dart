@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -39,6 +40,19 @@ class ApiClient {
   Future<dynamic> post(String path, [Object? body]) => _send('POST', path, body: body ?? const {});
   Future<dynamic> patch(String path, Object body) => _send('PATCH', path, body: body);
   Future<dynamic> put(String path, Object body) => _send('PUT', path, body: body);
+
+  /// PUTs [bytes] to a signed storage link (not the API: no auth header).
+  Future<void> upload(String url, Uint8List bytes, Map<String, String> headers) async {
+    final http.Response res;
+    try {
+      res = await _http.put(Uri.parse(url), headers: headers, body: bytes);
+    } on http.ClientException {
+      throw const SovaException('The photo could not be uploaded. Check your connection and try again.', code: 'offline');
+    }
+    if (res.statusCode >= 300) {
+      throw SovaException('The photo could not be uploaded (${res.statusCode}). Please try again.', code: 'upload_failed');
+    }
+  }
 
   /// Stores the pair returned by sign-in endpoints and returns the user JSON.
   Future<Map<String, dynamic>> startSession(Map<String, dynamic> response) async {

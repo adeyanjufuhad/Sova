@@ -276,6 +276,16 @@ class _ConfirmRowState extends ConsumerState<_ConfirmRow> {
     );
   }
 
+  /// Opens the receipt photo through a short-lived private link.
+  Future<void> _viewProof() async {
+    try {
+      final url = await ref.read(repositoryProvider).proofUrl(widget.contribution.id);
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final x = widget.contribution;
@@ -299,6 +309,12 @@ class _ConfirmRowState extends ConsumerState<_ConfirmRow> {
               ],
             ),
           ),
+          if (x.hasProof)
+            IconButton(
+              tooltip: 'View receipt photo',
+              icon: const Icon(Icons.receipt_long_outlined, color: SovaColors.electric),
+              onPressed: _viewProof,
+            ),
           TextButton(onPressed: _confirm, child: const Text('Confirm')),
         ],
       ),

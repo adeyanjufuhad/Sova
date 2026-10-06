@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'models.dart';
 
 /// Everything the app needs from the backend. [ApiRepository] talks to the
@@ -51,12 +53,25 @@ abstract interface class SovaRepository {
 
   Future<Circle> acceptRules(String circleId, int version);
 
+  /// Uploads a photo of the payment receipt for this turn and returns its
+  /// key, to pass to [confirmMyPayment]. The photo goes straight to private
+  /// storage; only members of the circle can view it.
+  Future<String> uploadProof({
+    required String circleId,
+    required int roundNumber,
+    required Uint8List bytes,
+    required String contentType,
+  });
+
+  /// A short-lived link to view a payment's receipt photo.
+  Future<String> proofUrl(String contributionId);
+
   /// The signed-in member says they've paid this turn's collector.
   Future<Circle> confirmMyPayment({
     required String circleId,
     required int roundNumber,
     String? bankReference,
-    bool hasProof = false,
+    String? proofKey,
     required String pin,
   });
 

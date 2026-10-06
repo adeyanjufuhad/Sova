@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
@@ -51,7 +52,44 @@ class _PayForm extends ConsumerStatefulWidget {
 
 class _PayFormState extends ConsumerState<_PayForm> {
   final _reference = TextEditingController();
-  bool _hasProof = false;
+
+  /// The receipt photo: shown as a thumbnail, uploaded as soon as it's picked.
+  Uint8List? _photo;
+  String? _proofKey;
+  bool _uploading = false;
+  String? _photoError;
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    final file = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 75);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    final type = file.mimeType ?? (file.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+    setState(() {
+      _photo = bytes;
+      _proofKey = null;
+      _uploading = true;
+      _photoError = null;
+    });
+    try {
+      final key = await ref.read(repositoryProvider).uploadProof(
+            circleId: widget.circle.id,
+            roundNumber: widget.round.number,
+            bytes: bytes,
+            contentType: type,
+          );
+      if (mounted) setState(() => _proofKey = key);
+    } catch (e) {
+      if (mounted) setState(() => _photoError = e.toString());
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  void _removePhoto() => setState(() {
+        _photo = null;
+        _proofKey = null;
+        _photoError = null;
+      });
 
   @override
   void dispose() {
@@ -60,6 +98,10 @@ class _PayFormState extends ConsumerState<_PayForm> {
   }
 
   Future<void> _submit() async {
+    if (_uploading) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Wait for the photo to finish uploading.')));
+      return;
+    }
     final c = widget.circle;
     final repo = ref.read(repositoryProvider);
     final ok = await confirmWithPin(
@@ -70,7 +112,7 @@ class _PayFormState extends ConsumerState<_PayForm> {
         circleId: c.id,
         roundNumber: widget.round.number,
         bankReference: _reference.text.trim().isEmpty ? null : _reference.text.trim(),
-        hasProof: _hasProof,
+        proofKey: _proofKey,
         pin: pin,
       ),
     );
@@ -137,13 +179,34 @@ class _PayFormState extends ConsumerState<_PayForm> {
         const SizedBox(height: SovaSpacing.xl2),
         const _Step(number: 3, title: 'Attach your receipt (recommended)'),
         const SizedBox(height: SovaSpacing.md),
-        // TODO: pick a real photo with image_picker once uploads are wired to the server.
-        OutlinedButton.icon(
-          onPressed: () => setState(() => _hasProof = !_hasProof),
-          icon: Icon(_hasProof ? Icons.check_circle_rounded : Icons.photo_camera_outlined,
-              color: _hasProof ? SovaColors.electric : null),
-          label: Text(_hasProof ? 'Receipt photo attached' : 'Add a photo of your receipt'),
-        ),
+        if (_photo == null)
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickPhoto(ImageSource.camera),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Take photo'),
+                ),
+              ),
+              const SizedBox(width: SovaSpacing.md),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickPhoto(ImageSource.gallery),
+                  icon: const Icon(Icons.image_outlined),
+                  label: const Text('Choose'),
+                ),
+              ),
+            ],
+          )
+        else
+          _PhotoPreview(
+            bytes: _photo!,
+            uploading: _uploading,
+            uploaded: _proofKey != null,
+            error: _photoError,
+            onRemove: _removePhoto,
+          ),
         const SizedBox(height: SovaSpacing.xl2),
         NoticeBox(
           'Only continue after the money has left your account. ${widget.collector.firstName} will confirm when it arrives, '
@@ -153,6 +216,64 @@ class _PayFormState extends ConsumerState<_PayForm> {
         const SizedBox(height: SovaSpacing.xl),
         FilledButton(onPressed: _submit, child: const Text('I have paid')),
       ],
+    );
+  }
+}
+
+class _PhotoPreview extends StatelessWidget {
+  const _PhotoPreview({
+    required this.bytes,
+    required this.uploading,
+    required this.uploaded,
+    required this.error,
+    required this.onRemove,
+  });
+
+  final Uint8List bytes;
+  final bool uploading;
+  final bool uploaded;
+  final String? error;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = uploading
+        ? 'Uploading…'
+        : uploaded
+            ? 'Receipt photo attached. Only your circle can see it.'
+            : (error ?? 'Not uploaded');
+    return Container(
+      padding: const EdgeInsets.all(SovaSpacing.md),
+      decoration: BoxDecoration(
+        border: Border.all(color: uploaded ? SovaColors.electric : SovaColors.border),
+        borderRadius: BorderRadius.circular(SovaRadius.lg),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(SovaRadius.md),
+            child: Image.memory(bytes, width: 64, height: 64, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: SovaSpacing.md),
+          Expanded(
+            child: Row(
+              children: [
+                if (uploading)
+                  const SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: SovaColors.electric),
+                  )
+                else
+                  Icon(uploaded ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                      size: 18, color: uploaded ? SovaColors.electric : SovaColors.navy900),
+                const SizedBox(width: SovaSpacing.sm),
+                Expanded(child: Text(status, style: SovaText.bodySmall)),
+              ],
+            ),
+          ),
+          IconButton(tooltip: 'Remove photo', onPressed: uploading ? null : onRemove, icon: const Icon(Icons.close_rounded)),
+        ],
+      ),
     );
   }
 }

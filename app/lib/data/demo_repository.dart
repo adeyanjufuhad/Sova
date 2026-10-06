@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'models.dart';
 import 'sova_repository.dart';
@@ -185,11 +186,29 @@ class DemoRepository implements SovaRepository {
   }
 
   @override
+  Future<String> uploadProof({
+    required String circleId,
+    required int roundNumber,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    await _latency();
+    if (bytes.length > 5 * 1024 * 1024) throw const SovaException('Photos can be up to 5 MB.');
+    return 'demo/$circleId/$roundNumber/${_random.nextInt(1000000000)}';
+  }
+
+  @override
+  Future<String> proofUrl(String contributionId) async {
+    await _latency();
+    throw const SovaException('Receipt photos are only stored when Sova runs on the server.');
+  }
+
+  @override
   Future<Circle> confirmMyPayment({
     required String circleId,
     required int roundNumber,
     String? bankReference,
-    bool hasProof = false,
+    String? proofKey,
     required String pin,
   }) async {
     await _latency();
@@ -211,7 +230,7 @@ class DemoRepository implements SovaRepository {
         amount: c.contributionAmount,
         status: ContributionStatus.payerConfirmed,
         bankReference: bankReference ?? existing?.bankReference,
-        hasProof: hasProof || (existing?.hasProof ?? false),
+        hasProof: proofKey != null || (existing?.hasProof ?? false),
         payerConfirmedAt: existing?.payerConfirmedAt ?? DateTime.now(),
         reference: existing?.reference ?? _reference(),
       ),
