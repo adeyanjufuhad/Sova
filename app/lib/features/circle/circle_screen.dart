@@ -178,6 +178,10 @@ class _CircleBody extends ConsumerWidget {
           const SizedBox(height: SovaSpacing.md),
           _DisputesCard(circle: c),
         ],
+        if (c.status != CircleStatus.completed) ...[
+          const SizedBox(height: SovaSpacing.md),
+          _TurnsCard(circle: c),
+        ],
         // Only circles on the server have a public record to check.
         if (apiUrl.isNotEmpty) ...[
           const SizedBox(height: SovaSpacing.xl3),
@@ -570,6 +574,61 @@ class _InviteCard extends StatelessWidget {
               icon: const Icon(Icons.copy_rounded),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Swaps and handovers: highlighted when something waits on the signed-in member.
+class _TurnsCard extends ConsumerWidget {
+  const _TurnsCard({required this.circle});
+
+  final Circle circle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final changes = ref.watch(turnChangesProvider(circle.id)).value;
+    final waiting = changes?.needsMe ?? 0;
+    final ask = changes?.swaps.where((s) => s.canAnswer).firstOrNull;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: waiting > 0
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(SovaRadius.lg),
+              side: const BorderSide(color: SovaColors.electric),
+            )
+          : null,
+      child: InkWell(
+        onTap: () => context.push('/circle/${circle.id}/turns'),
+        child: Padding(
+          padding: const EdgeInsets.all(SovaSpacing.lg),
+          child: Row(
+            children: [
+              Icon(Icons.swap_horiz_rounded, color: waiting > 0 ? SovaColors.electric : SovaColors.textMuted),
+              const SizedBox(width: SovaSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ask != null
+                          ? '${ask.requester.firstName} asks to swap turns'
+                          : waiting > 0
+                              ? 'A handover needs your approval'
+                              : 'Swaps and handovers',
+                      style: SovaText.label,
+                    ),
+                    Text(
+                      waiting > 0 ? 'See the request and answer it.' : 'Swap your turn, or hand your place to someone new.',
+                      style: SovaText.caption,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: SovaColors.textMuted),
+            ],
+          ),
         ),
       ),
     );
