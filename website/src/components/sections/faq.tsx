@@ -80,7 +80,7 @@ export function Faq() {
       <SectionHeading eyebrow="FAQ" title="Questions people ask us" />
 
       <div className="mt-10 flex justify-center">
-        <div role="tablist" aria-label="Language" className="inline-flex rounded-full border border-navy-900/10 bg-mist p-1">
+        <div role="group" aria-label="Language" className="inline-flex rounded-full border border-navy-900/10 bg-mist p-1">
           {(
             [
               ["en", "English"],
@@ -89,8 +89,8 @@ export function Faq() {
           ).map(([key, label]) => (
             <button
               key={key}
-              role="tab"
-              aria-selected={lang === key}
+              type="button"
+              aria-pressed={lang === key}
               onClick={() => setLang(key)}
               className={cn(
                 "rounded-full px-5 py-2 text-sm transition",
@@ -103,14 +103,17 @@ export function Faq() {
         </div>
       </div>
 
-      <ul className="mt-10 space-y-3">
+      {/* Nigerian Pidgin is tagged so screen readers and translators treat it as such. */}
+      <ul lang={lang === "pcm" ? "pcm" : undefined} className="mt-10 space-y-3">
         {faqs[lang].map((item, i) => {
           const isOpen = open === i;
           return (
             <li key={item.q} className="overflow-hidden rounded-2xl border border-navy-900/10 bg-white transition-colors hover:border-electric/25">
               <button
+                type="button"
                 onClick={() => setOpen(isOpen ? null : i)}
                 aria-expanded={isOpen}
+                aria-controls={`faq-${lang}-${i}`}
                 className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-6"
               >
                 <span className="font-medium text-navy-900">{item.q}</span>
@@ -119,6 +122,9 @@ export function Faq() {
                 />
               </button>
               <div
+                id={`faq-${lang}-${i}`}
+                // Collapsed answers stay out of the accessibility tree and tab order.
+                inert={!isOpen}
                 className={cn(
                   "grid transition-[grid-template-rows] duration-300",
                   isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
