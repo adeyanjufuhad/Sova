@@ -445,6 +445,66 @@ class DemoRepository implements SovaRepository {
     return _disputeView(d);
   }
 
+  /// The same rules as the database's sova_score_now: 60% on time, 25% paying
+  /// every turn that is over, 15% circles finished; shown after 3 confirmed payments.
+  @override
+  Future<SovaScore> myScore() async {
+    await _latency();
+    final today = DateTime.now();
+    final day = DateTime(today.year, today.month, today.day);
+    var confirmed = 0, onTime = 0, turns = 0, made = 0, active = 0, completed = 0;
+    for (final c in _circles.values.where((c) => c.memberById(me) != null)) {
+      if (c.status == CircleStatus.completed) completed++;
+      if (c.status != CircleStatus.completed && c.status != CircleStatus.forming) active++;
+      for (final r in c.rounds) {
+        final x = c.contributionFor(r.id, me);
+        if (x?.status == ContributionStatus.fullyConfirmed) {
+          confirmed++;
+          final paid = x!.payerConfirmedAt;
+          if (paid != null && !DateTime(paid.year, paid.month, paid.day).isAfter(r.dueDate)) onTime++;
+        }
+        final over = r.status == RoundStatus.completed || (r.status == RoundStatus.active && r.dueDate.isBefore(day));
+        if (r.collectorId != me && over) {
+          turns++;
+          if (x != null && (x.status == ContributionStatus.payerConfirmed || x.status == ContributionStatus.fullyConfirmed)) {
+            made++;
+          }
+        }
+      }
+    }
+    final onTimeRate = confirmed == 0 ? 0.0 : onTime / confirmed;
+    final consistency = turns == 0 ? 0.0 : made / turns;
+    final completion = active + completed == 0 ? 0.0 : completed / (active + completed);
+    final value = (100 * (0.60 * onTimeRate + 0.25 * consistency + 0.15 * completion)).round();
+    final ready = confirmed >= 3;
+    return SovaScore(
+      minimumPayments: 3,
+      score: ready ? value : null,
+      band: ready ? scoreBand(value) : null,
+      onTimeRate: onTimeRate,
+      consistencyRate: consistency,
+      completionRate: completion,
+      confirmedPayments: confirmed,
+      onTimePayments: onTime,
+      activeCircles: active,
+      completedCircles: completed,
+    );
+  }
+
+  @override
+  Future<SovaScore> shareScore({required String pin}) async {
+    await _latency();
+    _checkPin(pin);
+    throw const SovaException('Sharing your score needs the Sova server, so it works in the live app.');
+  }
+
+  @override
+  Future<SovaScore> stopSharingScore() => myScore();
+
+  /// Plain-words label for a score, as the API gives it.
+  static String scoreBand(int score) =>
+      score >= 90 ? 'Excellent' : score >= 75 ? 'Strong' : score >= 50 ? 'Fair' : 'Building';
+
   _DemoDispute _ownDispute(String id) {
     final d = _disputes[id];
     if (d == null || _circles[d.circleId]?.memberById(me) == null) throw const SovaException('Dispute not found.');

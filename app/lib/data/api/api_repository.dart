@@ -290,6 +290,41 @@ class ApiRepository implements SovaRepository {
   Future<Dispute> commentOnDispute({required String disputeId, required String message}) async =>
       _dispute(await _api.post('/disputes/$disputeId/comments', {'message': message}) as Map<String, dynamic>);
 
+  @override
+  Future<SovaScore> myScore() async => _score(await _api.get('/me/score') as Map<String, dynamic>);
+
+  @override
+  Future<SovaScore> shareScore({required String pin}) async =>
+      _score(await _api.post('/me/score/share', {'pin': pin}) as Map<String, dynamic>);
+
+  @override
+  Future<SovaScore> stopSharingScore() async =>
+      _score(await _api.post('/me/score/share/stop') as Map<String, dynamic>);
+
+  static SovaScore _score(Map<String, dynamic> j) {
+    final share = j['share'] as Map<String, dynamic>?;
+    double rate(String k) => (j[k] as num).toDouble();
+    return SovaScore(
+      minimumPayments: j['minimumPayments'] as int,
+      score: j['score'] as int?,
+      band: j['band'] as String?,
+      onTimeRate: rate('onTimeRate'),
+      consistencyRate: rate('consistencyRate'),
+      completionRate: rate('completionRate'),
+      confirmedPayments: j['confirmedPayments'] as int,
+      onTimePayments: j['onTimePayments'] as int,
+      activeCircles: j['activeCircles'] as int,
+      completedCircles: j['completedCircles'] as int,
+      share: share == null
+          ? null
+          : ScoreShare(
+              token: share['token'] as String,
+              sharedAt: _time(share['sharedAt']),
+              score: share['score'] as int,
+            ),
+    );
+  }
+
   static Person _person(Map<String, dynamic> p) => Person(id: p['id'] as String, name: p['name'] as String);
 
   static DateTime _time(Object? v) => DateTime.parse(v as String).toLocal();
