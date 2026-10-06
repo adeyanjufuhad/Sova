@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 6 October 2026 (Devcenter Hacktober build phase, day 6).
+Last updated: 7 October 2026 (Devcenter Hacktober build phase, day 7).
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -57,6 +57,8 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 4 Oct | **Web sessions:** the app keeps the refresh token in the tab's sessionStorage on the web (survives reloads, ends when the tab closes) and in secure storage on Android; access tokens stay in memory. Cookies would need the app and API on one domain we own. |
 | 4 Oct | **App web hosting:** GitHub Actions builds the Flutter web app and publishes it to the `app-web` branch; RumptyCloud serves that branch as a static site (its builder has no Flutter SDK). |
 | 6 Oct | **Disputes (owner may change):** a payment marked as sent can be disputed by its payer or the turn's collector; it is frozen until decided. Every member except the payer and collector may vote "it arrived" / "it didn't arrive"; votes are open (in the ledger) and can change while open; more than half of the eligible voters decides. Either party can settle by agreeing with the other side. Outcome: arrived = payment confirmed; not arrived = back to unpaid. Shortfall disputes have no vote: they close when every missing payment for that turn is confirmed, or the collector marks them settled. Raising, voting and settling need the PIN. |
+| 6 Oct | **Design direction (owner):** visible redesign within Sova's look, borrowing patterns from Wise, Revolut, Stripe and Mastercard (no logos, colours or names). Section labels in sentence case with no square markers; Plus Jakarta Sans everywhere except hashes and references; the app's bottom navigation is a floating pill. Design skills installed (see CLAUDE.md); Sova's rules win where they clash. |
+| 7 Oct | **Sova Score (owner may change):** v1 formula kept (60% on time, 25% every turn paid, 15% circles finished). Shown only after 3 confirmed payments. Turns not yet due and payments sent back to unpaid don't count. Bands: Excellent 90+, Strong 75–89, Fair 50–74, Building under 50. Sharing publishes a snapshot behind a random link (PIN needed): first name + initial, score, rates and counts only; one live link at a time; stop sharing any time. Described as "your record, not a credit rating". |
 | 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
 
 ## Built and working
@@ -114,6 +116,18 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Verify page describes votes and outcomes.
 - Fixes: a back button on circles opened without a screen underneath; the layout test now really signs in (it had been stuck on the loading screen) and names any screen that overflows; long eyebrow labels wrap.
 
+### Sova Score card (Phase 4, 7 Oct)
+- Migration `20261007000000_sova_score.sql` (applied to RumptyCloud): `sova_score_now` (live, no write), `calculate_sova_score` now records from it, `score_shares` snapshots, `share_sova_score` (refuses before 3 confirmed payments).
+- Endpoints: `GET /me/score`, `POST /me/score/share` (PIN), `POST /me/score/share/stop`, public `GET /public/scores/:token`. 6 new API tests (77 total).
+- App: score card at the top of the Record tab (score, band, the three parts with their weights, progress for newcomers) and a share sheet that shows exactly what is shared, then Copy / Share / Open / Stop sharing / New link. Flutter tests: 47.
+- Website: `/score/?t=…` shows a shared card, checked by Sova, with how the score is made; inactive links say so. Not indexed by search engines.
+- Fixed a false tip on the Record tab (paying early does not change the payout order; the draw does).
+
+### Redesign (6 Oct)
+- Website: split, heavier section headings; payout calculator; how-it-works as numbered rows; navy tamper-evident record band; names watermark behind the orbit; navy footer; press/hover feedback; skip link, focus ring and form fixes from the Vercel guidelines. Honesty fixes: receipt photos described as built; the live ledger and the Sova Score taken off the roadmap.
+- App: designed empty states, a friendly not-found page, skeleton loaders on circle screens, floating pill navigation, sentence-case labels.
+- `DESIGN.md` describes the whole system.
+
 ### Tamper-evident ledger (Phase 3, done early, 4 Oct)
 - Migration `20261005000000_ledger.sql` (applied to RumptyCloud; demo data reseeded): per-circle hash chain `ledger_entries` written by triggers on circles, draws, members, vouches, rules, acceptances, turns, payments, payouts and disputes. `hash = SHA-256(prevHash|seq|kind|body)`.
 - Append-only: UPDATE/DELETE/TRUNCATE refused by triggers for every role; `sova_app` has no such privileges; a circle with a ledger can't be deleted. Only the demo seed may purge demo circles' ledgers, with an explicit session flag.
@@ -152,12 +166,12 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | Swaps, handovers | Functions exist | No screens |
 | Disputes | Payment disputes with votes, shortfalls that settle themselves; in the ledger | Done (list, detail, vote, settle, comment) |
 | Collected-then-stopped flag | View + API | Shown on the member list |
-| Sova Score | Function exists | Record tab computes an on-time rate on the phone instead |
+| Sova Score | Live score, shares | Done (Record tab card, share link, public page) |
 | Settings | — | Edit profile, bank details, change PIN are stubs |
 
 ## Not built
 
-- Swaps and handovers screens; Sova Score card.
+- Swaps and handovers screens.
 - Notifications/reminders.
 - Voice prompts, local languages, offline use, SMS, USSD, collector mode (roadmap; labelled as such on the website).
 - Root README with architecture and deployment guide; per-folder READMEs for `app/` and `website/`.
