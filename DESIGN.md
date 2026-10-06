@@ -215,8 +215,8 @@ The only exceptions are the website hero's subtle blue light rays and the faint 
 ### Buttons
 Primary: solid royal blue, white label, 12 px radius, 54 px tall, no shadow; pressed state scales to 0.97 with a light haptic in the app. Secondary: white with a navy 20% hairline. Text buttons for low-emphasis actions ("How it was drawn", "Raise a dispute").
 
-### Navigation bar (app)
-A floating pill at the bottom of the main tabs: white, fully rounded, a navy 20% hairline border, inset 16 px from the sides and 12 px from the bottom, no shadow. The selected tab has a pill-shaped royal-blue tint behind its icon.
+### Navigation bar (app): liquid glass
+The one exception to the flat rules, at the owner's request. A floating pill inset 16 px from the sides and 12 px from the bottom, 66 px tall: frosted glass (content behind it is blurred, white at 70–84% with a bright 1 px edge) and one soft shadow (navy 10%, 24 px blur). A glass lens (royal blue to sky tint, white edge) sits over the current tab, inset 5 px. The lens can be dragged along the bar: it grows 12% while held, icons take the brand colour as it passes, and on release it springs to the nearest tab and opens it. Tap works too. Content scrolls behind the bar; tab lists end with extra space so nothing stays hidden. Motion is skipped when reduced motion is on.
 
 ### Cards
 White, 1 px navy-10% border, 20 px radius, 16 px padding. Cards exist to group a record (a member row list, a payment, a rule set), not for decoration.
@@ -264,7 +264,7 @@ Short and purposeful: staggered entrances (60–80 ms apart), count-up for the n
 - Keep adire patterns thin, low-opacity and behind content.
 
 ### Don't
-- Don't use gradients, neon, glows, glass, or large drop shadows.
+- Don't use gradients, neon, glows, glass, or large drop shadows (the app's glass tab bar is the single exception).
 - Don't use red for errors or missed payments.
 - Don't show anything that looks like a wallet, balance or money held by Sova.
 - Don't swap Plus Jakarta Sans for another face, or use emojis in the interface.
