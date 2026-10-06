@@ -52,7 +52,7 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <a
               href="#waitlist"
-              className="hidden rounded-xl bg-electric px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-electric-400 sm:inline-flex"
+              className="hidden rounded-xl bg-electric px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-electric-400 active:scale-[0.98] sm:inline-flex"
             >
               Join the waitlist
             </a>

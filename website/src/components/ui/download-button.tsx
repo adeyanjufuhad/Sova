@@ -26,7 +26,7 @@ export function DownloadButton({
       href={live ? site.playStoreUrl : "#waitlist"}
       {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className={cn(
-        "group inline-flex items-center gap-3 rounded-2xl border px-5 py-3 text-left transition",
+        "group inline-flex items-center gap-3 rounded-2xl border px-5 py-3 text-left transition active:scale-[0.98]",
         tone === "light"
           ? "border-navy-900/15 bg-white text-navy-900 hover:border-electric/40 hover:bg-mist"
           : "border-white/20 bg-white/10 text-white hover:bg-white/15",
