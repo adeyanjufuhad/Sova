@@ -56,6 +56,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 4 Oct | **Shortfall dispute:** one dispute per short payout, raised by the collector; the members who didn't pay that turn are its evidence (not one dispute per member). |
 | 4 Oct | **Web sessions:** the app keeps the refresh token in the tab's sessionStorage on the web (survives reloads, ends when the tab closes) and in secure storage on Android; access tokens stay in memory. Cookies would need the app and API on one domain we own. |
 | 4 Oct | **App web hosting:** GitHub Actions builds the Flutter web app and publishes it to the `app-web` branch; RumptyCloud serves that branch as a static site (its builder has no Flutter SDK). |
+| 6 Oct | **Disputes (owner may change):** a payment marked as sent can be disputed by its payer or the turn's collector; it is frozen until decided. Every member except the payer and collector may vote "it arrived" / "it didn't arrive"; votes are open (in the ledger) and can change while open; more than half of the eligible voters decides. Either party can settle by agreeing with the other side. Outcome: arrived = payment confirmed; not arrived = back to unpaid. Shortfall disputes have no vote: they close when every missing payment for that turn is confirmed, or the collector marks them settled. Raising, voting and settling need the PIN. |
 | 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
 
 ## Built and working
@@ -105,6 +106,14 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - The in-memory demo backend now uses the same commit-reveal draw (seeded circles use searched seeds so they verify).
 - Checked live: all four started demo circles on the API pass the same check. Flutter tests: 34.
 
+### Disputes with votes (Phase 4, 6 Oct)
+- Migration `20261006000000_dispute_votes.sql` (applied to RumptyCloud; demo data reseeded): `disputes.kind` (shortfall/payment), `dispute_votes`, and database functions `raise_payment_dispute`, `cast_dispute_vote`, `concede_dispute`, `add_dispute_comment`, `resolve_dispute`, `settle_shortfalls` (trigger on confirmed payments). Ledger entries `dispute_vote` and `dispute_resolved`; a payment confirmed by a dispute's outcome is marked `decidedBy: "dispute"`.
+- Endpoints: `GET /circles/:id/disputes`, `GET /disputes/:id`, `POST /contributions/:id/dispute`, `POST /disputes/:id/vote|settle|comments`. 8 new API tests (71 total).
+- App: disputes list and dispute screen (question, who is involved, payment evidence with receipt photo, vote tally and buttons, settle, timeline, comments). Collectors raise "It hasn't arrived" from the confirm row; payers raise "Not being confirmed?" under their payment. Demo backend follows the same rules. Flutter tests: 41.
+- Demo: in Yaba Traders Circle, Peter disputes Musa's late turn-2 payment and Sani has voted; the demo member casts the deciding vote. The offline demo has the same in Office Esusu.
+- Verify page describes votes and outcomes.
+- Fixes: a back button on circles opened without a screen underneath; the layout test now really signs in (it had been stuck on the loading screen) and names any screen that overflows; long eyebrow labels wrap.
+
 ### Tamper-evident ledger (Phase 3, done early, 4 Oct)
 - Migration `20261005000000_ledger.sql` (applied to RumptyCloud; demo data reseeded): per-circle hash chain `ledger_entries` written by triggers on circles, draws, members, vouches, rules, acceptances, turns, payments, payouts and disputes. `hash = SHA-256(prevHash|seq|kind|body)`.
 - Append-only: UPDATE/DELETE/TRUNCATE refused by triggers for every role; `sova_app` has no such privileges; a circle with a ledger can't be deleted. Only the demo seed may purge demo circles' ledgers, with an explicit session flag.
@@ -141,14 +150,14 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | Group rules | Yes | Create, view, accept |
 | Vouching | Yes | Choose voucher on join; shown on member list |
 | Swaps, handovers | Functions exist | No screens |
-| Disputes | Opened automatically on short payouts; in the ledger | Open-dispute notice only; no dispute screen or votes |
+| Disputes | Payment disputes with votes, shortfalls that settle themselves; in the ledger | Done (list, detail, vote, settle, comment) |
 | Collected-then-stopped flag | View + API | Shown on the member list |
 | Sova Score | Function exists | Record tab computes an on-time rate on the phone instead |
 | Settings | — | Edit profile, bank details, change PIN are stubs |
 
 ## Not built
 
-- Dispute screens and votes; swaps and handovers screens; Sova Score card.
+- Swaps and handovers screens; Sova Score card.
 - Notifications/reminders.
 - Voice prompts, local languages, offline use, SMS, USSD, collector mode (roadmap; labelled as such on the website).
 - Root README with architecture and deployment guide; per-folder READMEs for `app/` and `website/`.
