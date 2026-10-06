@@ -85,7 +85,7 @@ void main() {
 
     await tester.tap(find.text('Go to circle'));
     await settle(tester);
-    expect(find.text('Waiting for members'.toUpperCase()), findsOneWidget);
+    expect(find.text('Waiting for members'), findsOneWidget);
     expect(find.text('1 of 5 joined'), findsOneWidget);
   });
 
@@ -125,7 +125,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('Ikeja Tech Hub Esusu'), findsWidgets);
-    expect(find.text('Waiting for members'.toUpperCase()), findsOneWidget);
+    expect(find.text('Waiting for members'), findsOneWidget);
     expect(find.text('5 of 8 joined'), findsOneWidget);
   });
 }
