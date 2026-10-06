@@ -65,13 +65,14 @@ export function Waitlist() {
         </Reveal>
 
         <Reveal delay={0.1} className="relative">
-          <div className="relative rounded-3xl bg-white p-6 sm:p-8">
+          {/* Announces the result to screen readers when the form is replaced. */}
+          <div aria-live="polite" className="relative rounded-3xl bg-white p-6 sm:p-8">
             {status.kind === "done" ? (
               <div className="flex flex-col items-center py-10 text-center">
                 <CheckCircle2 className="size-14 text-electric" />
                 <p className="mt-5 font-display text-2xl font-semibold text-navy-900">You&apos;re on the list.</p>
                 <p className="mt-2 max-w-sm text-slate-600">
-                  Thank you! We&apos;ll contact you on this number when Sova is ready for you.
+                  Thank you. We&apos;ll contact you on this number when Sova is ready for you.
                 </p>
               </div>
             ) : (
@@ -101,7 +102,7 @@ export function Waitlist() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block">
                     <span className="mb-1.5 block text-sm text-slate-600">Full name</span>
-                    <input name="name" required maxLength={80} autoComplete="name" placeholder="Adaeze Okafor" className={inputCls} />
+                    <input name="name" required maxLength={80} autoComplete="name" placeholder="Adaeze Okafor…" className={inputCls} />
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-sm text-slate-600">Phone number</span>
@@ -111,19 +112,34 @@ export function Waitlist() {
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
-                      placeholder="0803 000 0000"
+                      placeholder="0803 000 0000…"
                       className={inputCls}
                     />
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-sm text-slate-600">City or market</span>
-                    <input name="city" maxLength={80} placeholder="Balogun, Lagos" className={inputCls} />
+                    <input
+                      name="city"
+                      maxLength={80}
+                      autoComplete="address-level2"
+                      placeholder="Balogun, Lagos…"
+                      className={inputCls}
+                    />
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-sm text-slate-600">
                       {role === "collector" ? "Traders you collect from" : "People in your circle"}
                     </span>
-                    <input name="group_size" type="number" min={1} max={5000} placeholder="12" className={inputCls} />
+                    <input
+                      name="group_size"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={5000}
+                      autoComplete="off"
+                      placeholder="12…"
+                      className={cn(inputCls, "tabular-nums")}
+                    />
                   </label>
                 </div>
 
@@ -142,7 +158,10 @@ export function Waitlist() {
                   className="group flex w-full items-center justify-center gap-2 rounded-xl bg-electric px-6 py-4 font-medium text-white transition hover:bg-electric-400 disabled:opacity-60"
                 >
                   {status.kind === "loading" ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Joining…
+                    </>
                   ) : (
                     <>
                       Join the waitlist
