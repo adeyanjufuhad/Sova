@@ -55,6 +55,8 @@ Validated at startup (`src/config.ts`); an invalid value stops the server with a
 | `OTP_TTL_SECONDS` | `300` | Code lifetime |
 | `DEMO_LOGIN_ENABLED` | `false` | Enables `POST /auth/demo` |
 | `DEMO_PHONE` | `+2348000000000` | Seeded demo account |
+| `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` | none, `auto`, none | Private bucket for receipt photos |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none | Bucket access key; photo uploads are off until set |
 
 ## Endpoints
 
@@ -82,8 +84,10 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | GET | `/circles/:id` | member | Detail: members and turns, rules, draw, current turn with each payment |
 | POST | `/circles/:id/rules/accept` | member | `{ version }` |
 | GET | `/circles/:id/rounds` | member | Every turn with payout received and payment counts |
-| POST | `/circles/:id/rounds/:n/pay` | member | `{ bankReference?, pin }`: "I sent my contribution" |
+| POST | `/circles/:id/rounds/:n/pay` | member | `{ bankReference?, proofKey?, pin }`: "I sent my contribution" (with the uploaded photo, if any) |
+| POST | `/circles/:id/rounds/:n/proof` | member | `{ contentType, size }` → `{ key, uploadUrl }`: a 5-minute link to PUT a receipt photo (JPEG/PNG/WebP, ≤ 5 MB) straight to the private bucket |
 | POST | `/contributions/:id/confirm` | collector | `{ pin }`: "the money arrived" |
+| GET | `/contributions/:id/proof` | member | `{ url }`: a 5-minute link to view the payment's receipt photo |
 | POST | `/circles/:id/rounds/:n/payout` | collector | `{ amount, pin }` → `{ shortfall, disputeId, nextRound }`; closes the turn |
 
 Money actions need the PIN. Anyone outside a circle gets `404` for it, so ids reveal nothing.

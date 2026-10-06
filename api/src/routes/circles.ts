@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { FastifyInstance } from "fastify";
 import type pg from "pg";
 import { z } from "zod";
@@ -8,6 +10,7 @@ import type { TokenService } from "../auth/tokens.js";
 import { inTransaction } from "../db.js";
 import { commitmentOf, newInviteCode, newSeed } from "../lib/draw.js";
 import { AppError, notFound } from "../lib/errors.js";
+import type { ProofStorage } from "../lib/storage.js";
 
 /** Today's date in Nigeria, as YYYY-MM-DD. */
 const todayInLagos = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date());
@@ -48,7 +51,17 @@ const joinBody = codeParam.extend({ voucherId: uuid.nullish(), rulesVersion: z.n
 const idParam = z.object({ id: uuid });
 const roundParam = z.object({ id: uuid, number: z.coerce.number().int().positive() });
 const acceptBody = z.object({ version: z.number().int().positive() });
-const payBody = z.object({ bankReference: z.string().trim().min(1).max(60).nullish(), pin });
+const payBody = z.object({
+  bankReference: z.string().trim().min(1).max(60).nullish(),
+  /** Key returned by the proof upload endpoint, once the photo is uploaded. */
+  proofKey: z.string().max(200).nullish(),
+  pin,
+});
+const PROOF_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as const;
+const proofBody = z.object({
+  contentType: z.enum(Object.keys(PROOF_TYPES) as [keyof typeof PROOF_TYPES], { error: "Upload a JPEG, PNG or WebP photo." }),
+  size: z.number().int().min(1).max(5 * 1024 * 1024, "Photos can be up to 5 MB."),
+});
 const pinBody = z.object({ pin });
 const payoutBody = z.object({ amount: naira(1_000_000_000), pin });
 
@@ -109,8 +122,18 @@ const RULES_COLUMNS = "id, version, late_fee, grace_days, early_exit_policy, eme
 /** Moderate per-IP limit: stops guessing invite codes and PINs by brute force. */
 const limited = { rateLimit: { max: 30, timeWindow: "1 minute" } };
 
-export async function circleRoutes(app: FastifyInstance, opts: { pool: pg.Pool; tokens: TokenService }) {
-  const { pool } = opts;
+export async function circleRoutes(
+  app: FastifyInstance,
+  opts: { pool: pg.Pool; tokens: TokenService; storage: ProofStorage | null },
+) {
+  const { pool, storage } = opts;
+
+  const requireStorage = () => {
+    if (!storage) throw new AppError(503, "uploads_not_configured", "Photo uploads aren't set up yet. Add the bank reference instead.");
+    return storage;
+  };
+  /** Proof photos live under proofs/<circle>/<turn>/<payer>/; a member can only attach their own. */
+  const proofPrefix = (circleId: string, number: number, userId: string) => `proofs/${circleId}/${number}/${userId}/`;
   app.addHook("preHandler", requireUser(opts.tokens));
 
   /** Everyone in a circle needs a name (others must recognise them) and a PIN. */
@@ -308,9 +331,45 @@ export async function circleRoutes(app: FastifyInstance, opts: { pool: pg.Pool; 
     const { id, number } = roundParam.parse(req.params);
     const body = payBody.parse(req.body);
     await loadCircle(id, me);
+    if (body.proofKey) {
+      const valid = new RegExp(`^${proofPrefix(id, number, me)}[0-9a-f-]{36}[.](jpg|png|webp)$`).test(body.proofKey);
+      if (!valid || !(await requireStorage().exists(body.proofKey))) {
+        throw new AppError(400, "proof_missing", "We couldn't find that photo. Please attach it again.");
+      }
+    }
     await verifyPin(pool, me, body.pin);
-    await pool.query("select record_contribution($1, $2, $3, null)", [me, await roundId(id, number), body.bankReference ?? null]);
+    await pool.query("select record_contribution($1, $2, $3, $4)", [
+      me,
+      await roundId(id, number),
+      body.bankReference ?? null,
+      body.proofKey ?? null,
+    ]);
     return circleDetail(id, me);
+  });
+
+  /** A short-lived link to upload a receipt photo straight to the private bucket. */
+  app.post("/circles/:id/rounds/:number/proof", { config: limited }, async (req) => {
+    const me = userIdOf(req);
+    const { id, number } = roundParam.parse(req.params);
+    const { contentType, size } = proofBody.parse(req.body);
+    await loadCircle(id, me);
+    await roundId(id, number);
+    const key = `${proofPrefix(id, number, me)}${randomUUID()}.${PROOF_TYPES[contentType]}`;
+    return { key, uploadUrl: await requireStorage().uploadUrl(key, contentType, size), headers: { "Content-Type": contentType } };
+  });
+
+  /** A short-lived link to view a payment's receipt photo, for members of the circle. */
+  app.get("/contributions/:id/proof", async (req) => {
+    const me = userIdOf(req);
+    const { id } = idParam.parse(req.params);
+    const { rows } = await pool.query<{ proof_url: string | null }>(
+      `select c.proof_url from contributions c join group_members m on m.group_id = c.group_id and m.user_id = $2
+        where c.id = $1`,
+      [id, me],
+    );
+    if (!rows[0]) throw notFound("Payment");
+    if (!rows[0].proof_url) throw new AppError(404, "no_proof", "No photo was attached to this payment.");
+    return { url: await requireStorage().viewUrl(rows[0].proof_url) };
   });
 
   app.post("/contributions/:id/confirm", { config: limited }, async (req) => {
