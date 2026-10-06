@@ -98,8 +98,8 @@ const trust: Item[] = [
   },
   {
     icon: Gavel,
-    title: "Short payouts can't hide",
-    body: "If a payout comes up short, Sova opens a dispute automatically and flags anyone who collected and then stopped paying.",
+    title: "Disputes the circle decides",
+    body: "A short payout opens a dispute automatically. If a payment is disputed, the members not involved vote on whether the money arrived, and every vote goes on the record.",
   },
   {
     icon: ArrowLeftRight,
