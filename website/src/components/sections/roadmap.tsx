@@ -1,10 +1,10 @@
-import { ArrowRight, BadgeCheck, Bell, CloudOff, Landmark, Mic, Phone, ShieldCheck, Store } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, BadgeCheck, Bell, CloudOff, Landmark, Mic, Phone, Store } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { AdirePattern } from "@/components/ui/adire";
 
 // What's next, honestly labelled. Nothing here is built yet.
 const next = [
-  { icon: ShieldCheck, title: "Tamper-evident ledger", body: "Every payment chained to the last, with a public page anyone can use to check a circle's record." },
+  { icon: ArrowLeftRight, title: "Swap turns, hand over a slot", body: "Swap your turn with a willing member, or hand your place to someone the admin approves." },
   { icon: Bell, title: "Reminders", body: "In-app reminders before your day first; SMS and WhatsApp later." },
   { icon: Store, title: "Collector mode", body: "For alajo and market collectors: a daily list of who's owing across many groups." },
   { icon: Phone, title: "USSD for basic phones", body: "Record and check payments without a smartphone or data." },
@@ -25,7 +25,7 @@ export function Roadmap() {
           <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-sky-300">
             <span className="size-1.5 bg-sky-300" /> Roadmap
           </p>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-balance text-white sm:text-5xl">
+          <h2 className="mt-4 font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance text-white sm:text-6xl">
             What we&apos;re building next.
           </h2>
           <p className="mt-4 text-lg text-white/75">
