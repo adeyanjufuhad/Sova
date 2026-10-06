@@ -1,4 +1,4 @@
-import { HeadObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadObjectCommand, PutBucketCorsCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import type { Config } from "../config.js";
@@ -42,6 +42,29 @@ export class S3ProofStorage implements ProofStorage {
 
   viewUrl(key: string) {
     return getSignedUrl(this.s3, new GetObjectCommand({ Bucket: this.bucket, Key: key }), { expiresIn: VIEW_TTL_SECONDS });
+  }
+
+  /**
+   * Lets the app upload and show photos straight from the browser: allows
+   * PUT and GET from the app's own origins (the bucket stays private; links
+   * are still signed).
+   */
+  async allowBrowserUploads(origins: string[]) {
+    await this.s3.send(
+      new PutBucketCorsCommand({
+        Bucket: this.bucket,
+        CORSConfiguration: {
+          CORSRules: [
+            {
+              AllowedOrigins: origins,
+              AllowedMethods: ["PUT", "GET"],
+              AllowedHeaders: ["content-type"],
+              MaxAgeSeconds: 3000,
+            },
+          ],
+        },
+      }),
+    );
   }
 
   async exists(key: string) {
