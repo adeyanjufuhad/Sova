@@ -9,7 +9,7 @@ import { commitmentOf, drawOrder, newSeed } from "../lib/draw.js";
  * seed deletes and recreates only those people and their circles.
  *
  * Circles, from the demo member's point of view:
- *  1. Office Esusu          weekly, mid-cycle; you still owe this turn
+ *  1. Office Esusu          weekly, mid-cycle; you still owe this turn; Zainab asks to swap turns with you
  *  2. Unilag Class of '24   monthly; you are admin and collecting; Emeka awaits confirmation
  *  3. Ikeja Tech Hub Esusu  new; 4 of 8 joined; join with code T7KP9Q (turns not drawn yet)
  *  4. Church Adashe         completed; builds your history
@@ -300,6 +300,11 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
       activeLast: true,
       overrides: { 3: { ifeoma: "fully_confirmed", bayo: "fully_confirmed", chuka: "payer_confirmed" } },
     });
+    // Zainab (turn 6) asks Ada (turn 4) to swap; both turns are still open.
+    await client.query(
+      "insert into swap_requests (group_id, requester_id, target_id, reason, created_at) values ($1, $2, $3, $4, $5)",
+      [officeId, id(ctx, "zainab"), id(ctx, "ada"), "My shop rent is due before my turn. Could we swap?", at(day(-1), 15)],
+    );
 
     // 2. Unilag Class of '24 Ajo: Ada is admin and collecting turn 2.
     const unilag: CircleSpec = {

@@ -184,6 +184,9 @@ begin
     update handover_requests set status = 'declined', responded_at = now() where id = h.id;
     return 'declined';
   end if;
+  if exists (select 1 from group_members where group_id = h.group_id and user_id = p_user_id) then
+    perform sova_fail(409, 'already_member', 'You are already in this circle.');
+  end if;
   if (select version from group_rules where group_id = h.group_id order by version desc limit 1) is distinct from p_rules_version then
     perform sova_fail(409, 'rules_changed', 'The rules changed while you were reading. Please read them again.');
   end if;
