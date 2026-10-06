@@ -6,10 +6,10 @@ import '../../core/format.dart';
 import '../../core/theme/theme.dart';
 import '../../data/insights.dart';
 import '../../data/providers.dart';
-import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 import '../home/home_screen.dart' show comingNext;
+import 'score_card.dart';
 
 /// The member's own savings record: the thing that earns trust (and, later,
 /// better payout positions and credit), shown like a banking insights page.
@@ -52,43 +52,12 @@ class RecordScreen extends ConsumerWidget {
                 const SizedBox(height: SovaSpacing.xl),
                 StaggeredIn(
                   index: 0,
-                  child: AdirePanel(
-                    radius: SovaRadius.xl2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: ScoreCard(
+                    footer: Row(
                       children: [
-                        const Eyebrow('On-time payments', onBlue: true),
-                        const SizedBox(height: SovaSpacing.md),
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.end,
-                          spacing: SovaSpacing.md,
-                          children: [
-                            TweenAnimationBuilder<double>(
-                              tween: Tween(begin: 0, end: pct.toDouble()),
-                              duration: const Duration(milliseconds: 900),
-                              curve: Curves.easeOutCubic,
-                              builder: (_, v, _) => Text(
-                                '${v.round()}%',
-                                style: SovaText.moneyLarge.copyWith(color: SovaColors.white, fontSize: 44),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: SovaSpacing.sm),
-                              child: Text(
-                                '${s.onTimePayments} of ${s.confirmedPayments} payments',
-                                style: SovaText.bodySmall.copyWith(color: SovaColors.white.withValues(alpha: 0.8)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: SovaSpacing.lg),
-                        Row(
-                          children: [
-                            _Stat(label: 'Contributed', child: Money(s.totalContributed, style: _statStyle)),
-                            _Stat(label: 'Active circles', child: Text('${s.circlesActive}', style: _statStyle)),
-                            _Stat(label: 'Turns collected', child: Text('${s.turnsCollected}', style: _statStyle)),
-                          ],
-                        ),
+                        _Stat(label: 'Contributed', child: Money(s.totalContributed, style: _statStyle)),
+                        _Stat(label: 'Active circles', child: Text('${s.circlesActive}', style: _statStyle)),
+                        _Stat(label: 'Turns collected', child: Text('${s.turnsCollected}', style: _statStyle)),
                       ],
                     ),
                   ),
@@ -130,7 +99,7 @@ class RecordScreen extends ConsumerWidget {
                         child: Text(
                           pct == 100
                               ? 'Every payment on time. Your record is yours: share it with a lender or landlord only when you choose.'
-                              : 'Paying before the due date lifts your record and moves you up the payout order.',
+                              : 'Paying on or before the due date lifts your Sova Score. Turns are still decided by the fair draw.',
                           style: SovaText.bodySmall.copyWith(color: SovaColors.navy900),
                         ),
                       ),
