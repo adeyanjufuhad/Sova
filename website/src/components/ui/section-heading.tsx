@@ -24,11 +24,10 @@ export function SectionHeading({
   const eyebrowEl = (
     <p
       className={cn(
-        "inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em]",
+        "inline-flex items-center gap-2 text-sm font-semibold",
         tone === "dark" ? "text-sky-300" : "text-electric",
       )}
     >
-      <span className={cn("size-1.5", tone === "dark" ? "bg-sky-300" : "bg-electric")} />
       {eyebrow}
     </p>
   );

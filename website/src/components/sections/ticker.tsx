@@ -26,7 +26,7 @@ export function Ticker() {
           {markets.map((m) => (
             <span key={m} className="flex items-center gap-10 whitespace-nowrap text-sm font-medium text-slate-600">
               {m}
-              <span className="size-1.5 rotate-45 bg-electric" />
+              <span className="size-1.5 rounded-full bg-electric/40" />
             </span>
           ))}
         </Marquee>

@@ -268,7 +268,7 @@ export function VerifyCircle() {
           <ol className="mt-6 divide-y divide-navy-900/5 rounded-2xl border border-navy-900/10">
             {draw.order.map((m, i) => (
               <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-electric/10 font-mono text-xs text-electric">{i + 1}</span>
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-electric/10 text-xs font-semibold text-electric tabular-nums">{i + 1}</span>
                 <span className="flex-1 text-navy-800">{m.name}</span>
                 <span className="font-mono text-xs text-slate-400">{m.key.slice(0, 10)}…</span>
               </li>

@@ -26,8 +26,8 @@ export default function VerifyPage() {
       </header>
 
       <main id="main" className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
-        <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric">
-          <span className="size-1.5 bg-electric" /> Verify a circle
+        <p className="inline-flex items-center gap-2 text-sm font-semibold text-electric">
+          Verify a circle
         </p>
         <h1 className="mt-4 font-display text-4xl font-bold tracking-tight text-navy-900 sm:text-5xl">
           Don&apos;t trust us. Check.

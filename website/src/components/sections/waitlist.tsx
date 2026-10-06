@@ -51,7 +51,7 @@ export function Waitlist() {
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 overflow-hidden rounded-[2rem] bg-electric p-6 sm:p-12 lg:grid-cols-[1fr_1.1fr] lg:p-16">
         <AdirePattern id="waitlist-adire" className="text-white/[0.08]" />
         <Reveal className="relative">
-          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-sky-300"><span className="size-1.5 bg-sky-300" /> Early access</p>
+          <p className="flex items-center gap-2 text-sm font-semibold text-sky-300">Early access</p>
           <h2 className="mt-4 font-display text-4xl font-bold tracking-tight text-balance text-white sm:text-6xl">
             Be first when Sova <span className="text-sky-300">goes live.</span>
           </h2>

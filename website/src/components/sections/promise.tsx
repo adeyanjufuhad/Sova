@@ -27,8 +27,8 @@ export function SovaPromise() {
     <section id="promise" className="scroll-mt-24 bg-mist px-4 py-24 sm:py-32">
       <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1fr_1.25fr]">
         <Reveal className="lg:sticky lg:top-32 lg:self-start">
-          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric">
-            <span className="size-1.5 bg-electric" /> Our promise
+          <p className="flex items-center gap-2 text-sm font-semibold text-electric">
+            Our promise
           </p>
           <h2 className="mt-4 font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance text-navy-900 sm:text-5xl">
             Trust is the whole product.
@@ -61,7 +61,7 @@ export function SovaPromise() {
             <ol className="divide-y divide-navy-900/10">
               {promises.map((p, i) => (
                 <li key={p.title} className="flex gap-5 px-6 py-6 sm:px-8">
-                  <span className="font-mono text-sm font-semibold text-electric">0{i + 1}</span>
+                  <span className="text-sm font-bold text-electric tabular-nums">0{i + 1}</span>
                   <div>
                     <h3 className="text-lg font-bold text-navy-900">{p.title}</h3>
                     <p className="mt-1.5 text-slate-600">{p.body}</p>

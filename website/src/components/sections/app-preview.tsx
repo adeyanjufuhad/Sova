@@ -77,11 +77,11 @@ function GroupScreen() {
           </div>
         ))}
       </div>
-      <p className="pt-1 text-[10px] uppercase tracking-wider text-slate-400">Payout order</p>
+      <p className="pt-1 text-[10px] font-semibold text-slate-400">Payout order</p>
       {members.map((m, i) => (
         <div key={m.n} className="flex items-center justify-between">
           <span className="flex items-center gap-2.5">
-            <span className="grid size-7 place-items-center rounded-full bg-electric/10 font-mono text-[11px] text-electric">
+            <span className="grid size-7 place-items-center rounded-full bg-electric/10 text-[11px] font-semibold text-electric tabular-nums">
               {i + 1}
             </span>
             <span className="text-sm text-navy-900">{m.n}</span>
@@ -130,7 +130,7 @@ export function AppPreview() {
       <ContainerScroll
         titleComponent={
           <>
-            <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric"><span className="size-1.5 bg-electric" /> The Sova app</p>
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-electric">The Sova app</p>
             <h2 className="mt-4 font-display text-4xl font-bold tracking-tight text-navy-900 md:text-6xl">
               Your whole circle,
               <br />

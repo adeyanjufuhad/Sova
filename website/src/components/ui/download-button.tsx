@@ -43,7 +43,7 @@ export function DownloadButton({
       {!live && (
         <span
           className={cn(
-            "ml-1 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+            "ml-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
             tone === "light" ? "bg-electric/10 text-electric" : "bg-white/15 text-white",
           )}
         >
