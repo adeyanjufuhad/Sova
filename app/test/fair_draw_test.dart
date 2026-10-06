@@ -59,12 +59,25 @@ void main() {
             contributions: c.contributions,
             draw: d,
           );
-      // Swap turns 1 and 2.
+      // An agreed swap after the draw changes who holds a turn, not the draw.
       final swapped = [
         for (final m in c.members)
           Member(userId: m.userId, name: m.name, phone: m.phone, position: switch (m.position) { 1 => 2, 2 => 1, final p => p }),
       ];
-      final moved = checkDraw(withDraw(c.draw!, swapped))!;
+      final agreed = withDraw(c.draw!, swapped);
+      expect(checkDraw(agreed)!.passed, isTrue);
+      expect(turnsChangedSinceDraw(agreed), isTrue);
+      expect(turnsChangedSinceDraw(c), isFalse);
+
+      // A record whose drawn order was altered fails.
+      final order = c.draw!.order!;
+      final altered = DrawInfo(
+        commitment: c.draw!.commitment,
+        seed: c.draw!.seed,
+        revealedAt: c.draw!.revealedAt,
+        order: [order[1], order[0], ...order.skip(2)],
+      );
+      final moved = checkDraw(withDraw(altered, c.members))!;
       expect(moved.seedMatchesCommitment, isTrue);
       expect(moved.orderMatches, isFalse);
 

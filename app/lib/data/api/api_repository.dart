@@ -325,6 +325,101 @@ class ApiRepository implements SovaRepository {
     );
   }
 
+  @override
+  Future<TurnChanges> turnChanges(String circleId) async =>
+      _turnChanges(await _api.get('/circles/$circleId/turn-changes') as Map<String, dynamic>);
+
+  @override
+  Future<TurnChanges> requestSwap({required String circleId, required String targetId, String? reason, required String pin}) async =>
+      _turnChanges(await _api.post('/circles/$circleId/swaps', {'targetId': targetId, 'reason': reason, 'pin': pin})
+          as Map<String, dynamic>);
+
+  @override
+  Future<TurnChanges> answerSwap({required String circleId, required String swapId, required bool accept, String? pin}) async =>
+      _turnChanges(await _api.post('/swaps/$swapId/${accept ? 'accept' : 'decline'}', accept ? {'pin': pin} : null)
+          as Map<String, dynamic>);
+
+  @override
+  Future<TurnChanges> cancelSwap({required String circleId, required String swapId}) async =>
+      _turnChanges(await _api.post('/swaps/$swapId/cancel') as Map<String, dynamic>);
+
+  @override
+  Future<TurnChanges> requestHandover({required String circleId, required String phone, String? reason, required String pin}) async =>
+      _turnChanges(await _api.post('/circles/$circleId/handovers', {'phone': phone, 'reason': reason, 'pin': pin})
+          as Map<String, dynamic>);
+
+  @override
+  Future<TurnChanges> decideHandover({required String circleId, required String handoverId, required bool approve, String? pin}) async =>
+      _turnChanges(await _api.post('/handovers/$handoverId/${approve ? 'approve' : 'reject'}', approve ? {'pin': pin} : null)
+          as Map<String, dynamic>);
+
+  @override
+  Future<TurnChanges> cancelHandover({required String circleId, required String handoverId}) async =>
+      _turnChanges(await _api.post('/handovers/$handoverId/cancel') as Map<String, dynamic>);
+
+  @override
+  Future<List<HandoverOffer>> handoverOffers() async =>
+      _offers(await _api.get('/me/handover-offers') as Map<String, dynamic>);
+
+  @override
+  Future<List<HandoverOffer>> answerHandover({required String handoverId, required bool accept, int? rulesVersion, String? pin}) async =>
+      _offers(await _api.post(
+        '/handovers/$handoverId/${accept ? 'accept' : 'decline'}',
+        accept ? {'rulesVersion': rulesVersion, 'pin': pin} : null,
+      ) as Map<String, dynamic>);
+
+  static TurnPerson _turnPerson(Map<String, dynamic> p) =>
+      TurnPerson(id: p['id'] as String, name: p['name'] as String, turn: p['turn'] as int?);
+
+  static TurnChanges _turnChanges(Map<String, dynamic> j) => TurnChanges(
+        swaps: [
+          for (final s in (j['swaps'] as List).cast<Map<String, dynamic>>())
+            SwapRequest(
+              id: s['id'] as String,
+              status: SwapStatus.values.byName(s['status'] as String),
+              createdAt: _time(s['createdAt']),
+              requester: _turnPerson(s['requester'] as Map<String, dynamic>),
+              target: _turnPerson(s['target'] as Map<String, dynamic>),
+              reason: s['reason'] as String?,
+              canAnswer: s['canAnswer'] as bool,
+              canCancel: s['canCancel'] as bool,
+            ),
+        ],
+        handovers: [
+          for (final h in (j['handovers'] as List).cast<Map<String, dynamic>>())
+            Handover(
+              id: h['id'] as String,
+              status: HandoverStatus.values.byName(h['status'] as String),
+              createdAt: _time(h['createdAt']),
+              leaving: _turnPerson(h['leaving'] as Map<String, dynamic>),
+              replacement: _turnPerson(h['replacement'] as Map<String, dynamic>),
+              paidIn: h['paidIn'] as int,
+              reason: h['reason'] as String?,
+              canApprove: h['canApprove'] as bool,
+              canCancel: h['canCancel'] as bool,
+            ),
+        ],
+      );
+
+  static List<HandoverOffer> _offers(Map<String, dynamic> j) => [
+        for (final o in (j['offers'] as List).cast<Map<String, dynamic>>())
+          HandoverOffer(
+            id: o['id'] as String,
+            createdAt: _time(o['createdAt']),
+            leavingName: (o['leaving'] as Map<String, dynamic>)['name'] as String,
+            paidIn: o['paidIn'] as int,
+            turn: o['turn'] as int?,
+            reason: o['reason'] as String?,
+            circleId: (o['circle'] as Map<String, dynamic>)['id'] as String,
+            circleName: (o['circle'] as Map<String, dynamic>)['name'] as String,
+            contributionAmount: (o['circle'] as Map<String, dynamic>)['contributionAmount'] as int,
+            payoutAmount: (o['circle'] as Map<String, dynamic>)['payoutAmount'] as int,
+            memberCount: (o['circle'] as Map<String, dynamic>)['memberCount'] as int,
+            cycle: _cycle((o['circle'] as Map<String, dynamic>)['cycleType']),
+            rules: _rules(o['rules'] as Map<String, dynamic>, const {}),
+          ),
+      ];
+
   static Person _person(Map<String, dynamic> p) => Person(id: p['id'] as String, name: p['name'] as String);
 
   static DateTime _time(Object? v) => DateTime.parse(v as String).toLocal();
@@ -401,6 +496,9 @@ class ApiRepository implements SovaRepository {
         commitment: d['commitment'] as String,
         seed: d['seed'] as String?,
         revealedAt: d['revealedAt'] == null ? null : DateTime.parse(d['revealedAt'] as String).toLocal(),
+        order: d['order'] == null
+            ? null
+            : [for (final p in (d['order'] as List).cast<Map<String, dynamic>>()) _person(p)],
       );
 
   static CycleType _cycle(Object? v) => CycleType.values.byName(v as String);

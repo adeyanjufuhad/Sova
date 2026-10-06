@@ -25,6 +25,8 @@ class DemoRepository implements SovaRepository {
   /// Draw seeds stay secret here until the turns are drawn, as on the server.
   final _drawSeeds = <String, String>{};
   final _disputes = <String, _DemoDispute>{};
+  final _swaps = <_DemoSwap>[];
+  final _handovers = <_DemoHandover>[];
   Session? _session;
   String? _pin;
   int _pinFailures = 0;
@@ -293,7 +295,10 @@ class DemoRepository implements SovaRepository {
     if (amount < 0) throw const SovaException('The amount cannot be negative.');
 
     final shortfall = max(c.payout - amount, 0);
-    final next = c.membersByPosition.where((m) => m.position == round.number + 1).firstOrNull;
+    // Approved handovers take effect as this turn ends, before the next collector is chosen.
+    _onTurnEnded(c.id);
+    final ended = _circles[circleId]!;
+    final next = ended.membersByPosition.where((m) => m.position == round.number + 1).firstOrNull;
     final rounds = [
       for (final r in c.rounds)
         r.id == round.id
@@ -315,7 +320,8 @@ class DemoRepository implements SovaRepository {
           status: RoundStatus.active,
         ),
     ];
-    _circles[circleId] = _copyCircle(c, rounds: rounds, status: next == null ? CircleStatus.completed : c.status);
+    _circles[circleId] = _copyCircle(ended, rounds: rounds, status: next == null ? CircleStatus.completed : c.status);
+    if (next != null) _onTurnStarted(circleId, next.userId);
     if (shortfall > 0) {
       final id = 'd-${_random.nextInt(1000000000)}';
       _disputes[id] = _DemoDispute(
@@ -501,6 +507,286 @@ class DemoRepository implements SovaRepository {
   @override
   Future<SovaScore> stopSharingScore() => myScore();
 
+  // Swaps and handovers: the same rules as the database (request_swap,
+  // respond_swap, request_handover, decide_handover...).
+
+  bool _turnOpen(Circle c, int? position) =>
+      position == null ||
+      !c.rounds.any((r) => r.number == position && (r.status == RoundStatus.active || r.status == RoundStatus.completed));
+
+  TurnChanges _turnChangesOf(String circleId) {
+    final c = _circles[circleId]!;
+    TurnPerson person(String id, String name) => TurnPerson(id: id, name: name, turn: c.memberById(id)?.position);
+    final swaps = _swaps.where((s) => s.circleId == circleId).toList()
+      ..sort((a, b) => (a.status == SwapStatus.pending) == (b.status == SwapStatus.pending)
+          ? b.createdAt.compareTo(a.createdAt)
+          : (a.status == SwapStatus.pending ? -1 : 1));
+    final handovers = _handovers.where((h) => h.circleId == circleId).toList()
+      ..sort((a, b) => a.status.open == b.status.open ? b.createdAt.compareTo(a.createdAt) : (a.status.open ? -1 : 1));
+    return TurnChanges(
+      swaps: [
+        for (final s in swaps)
+          SwapRequest(
+            id: s.id,
+            status: s.status,
+            createdAt: s.createdAt,
+            requester: person(s.requester, s.requesterName),
+            target: person(s.target, s.targetName),
+            reason: s.reason,
+            canAnswer: s.status == SwapStatus.pending && s.target == me,
+            canCancel: s.status == SwapStatus.pending && s.requester == me,
+          ),
+      ],
+      handovers: [
+        for (final h in handovers)
+          Handover(
+            id: h.id,
+            status: h.status,
+            createdAt: h.createdAt,
+            leaving: TurnPerson(id: h.leaving.userId, name: h.leaving.name, turn: h.position ?? c.memberById(h.leaving.userId)?.position),
+            replacement: TurnPerson(id: h.replacement.userId, name: h.replacement.name),
+            paidIn: c.contributions
+                .where((x) => x.userId == h.leaving.userId && x.status == ContributionStatus.fullyConfirmed)
+                .fold(0, (t, x) => t + x.amount),
+            reason: h.reason,
+            canApprove: h.status == HandoverStatus.accepted && c.adminId == me,
+            canCancel: h.status.open && h.leaving.userId == me,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Future<TurnChanges> turnChanges(String circleId) async {
+    if (_circles[circleId]?.memberById(me) == null) throw const SovaException('Circle not found.');
+    return _turnChangesOf(circleId);
+  }
+
+  @override
+  Future<TurnChanges> requestSwap({required String circleId, required String targetId, String? reason, required String pin}) async {
+    final c = await circle(circleId);
+    _checkPin(pin);
+    if (c.status != CircleStatus.active) throw const SovaException('Turns can only be swapped once the circle has started.');
+    final target = c.memberById(targetId);
+    if (target == null || targetId == me) throw const SovaException('Choose another member.');
+    if (c.adminCollectsLast && (c.adminId == me || c.adminId == targetId)) {
+      throw const SovaException("The admin pledged to collect last, so their turn can't be swapped.", code: 'pledged_last');
+    }
+    if (!_turnOpen(c, c.memberById(me)!.position)) {
+      throw const SovaException("Your turn has already started, so it can't be swapped.", code: 'turn_started');
+    }
+    if (!_turnOpen(c, target.position)) {
+      throw const SovaException("Their turn has already started, so it can't be swapped.", code: 'turn_started');
+    }
+    if (_swaps.any((s) => s.circleId == circleId && s.requester == me && s.status == SwapStatus.pending)) {
+      throw const SovaException('You already have a swap request waiting. Cancel it first.', code: 'already_asked');
+    }
+    _swaps.add(_DemoSwap(
+      id: 's-${_random.nextInt(1000000000)}',
+      circleId: circleId,
+      requester: me,
+      requesterName: c.memberById(me)!.name,
+      target: targetId,
+      targetName: target.name,
+      reason: (reason?.trim().isEmpty ?? true) ? null : reason!.trim(),
+      createdAt: DateTime.now(),
+    ));
+    return _turnChangesOf(circleId);
+  }
+
+  @override
+  Future<TurnChanges> answerSwap({required String circleId, required String swapId, required bool accept, String? pin}) async {
+    final c = await circle(circleId);
+    final s = _swaps.firstWhere((s) => s.id == swapId, orElse: () => throw const SovaException('Swap request not found.'));
+    if (s.target != me) throw const SovaException('Only the member who was asked can answer.', code: 'not_target');
+    if (s.status != SwapStatus.pending) throw const SovaException('This request has already been answered.');
+    if (!accept) {
+      s.status = SwapStatus.declined;
+      return _turnChangesOf(circleId);
+    }
+    _checkPin(pin ?? '');
+    final a = c.memberById(s.requester), b = c.memberById(s.target);
+    if (a == null || b == null) throw const SovaException('Both people must still be in the circle.');
+    if (!_turnOpen(c, a.position) || !_turnOpen(c, b.position)) {
+      throw const SovaException('One of these turns has already started.', code: 'turn_started');
+    }
+    _circles[circleId] = _copyCircle(c, members: [
+      for (final m in c.members)
+        m.userId == a.userId
+            ? _withPosition(m, b.position)
+            : m.userId == b.userId
+                ? _withPosition(m, a.position)
+                : m,
+    ]);
+    s.status = SwapStatus.accepted;
+    return _turnChangesOf(circleId);
+  }
+
+  Member _withPosition(Member m, int? position) => Member(
+        userId: m.userId,
+        name: m.name,
+        phone: m.phone,
+        position: position,
+        bank: m.bank,
+        vouchedBy: m.vouchedBy,
+        owesAfterCollecting: m.owesAfterCollecting,
+      );
+
+  @override
+  Future<TurnChanges> cancelSwap({required String circleId, required String swapId}) async {
+    await circle(circleId);
+    final s = _swaps.firstWhere((s) => s.id == swapId && s.requester == me,
+        orElse: () => throw const SovaException('Swap request not found.'));
+    if (s.status != SwapStatus.pending) throw const SovaException('This request has already been answered.');
+    s.status = SwapStatus.cancelled;
+    return _turnChangesOf(circleId);
+  }
+
+  @override
+  Future<TurnChanges> requestHandover({required String circleId, required String phone, String? reason, required String pin}) async {
+    final c = await circle(circleId);
+    _checkPin(pin);
+    if (c.adminId == me) throw const SovaException("The admin can't hand over their place yet.", code: 'admin_cannot_leave');
+    if (!_turnOpen(c, c.memberById(me)!.position)) {
+      throw const SovaException('You have already collected or are collecting, so you need to finish the cycle.',
+          code: 'turn_started');
+    }
+    final number = normalisePhone(phone);
+    final replacement = number == null
+        ? null
+        : _circles.values.expand((x) => x.members).where((m) => m.phone == number).firstOrNull;
+    if (replacement == null) {
+      throw const SovaException('Nobody with that number uses Sova yet. Ask them to sign up first.', code: 'no_account');
+    }
+    if (c.memberById(replacement.userId) != null) {
+      throw const SovaException('That person is already in this circle.', code: 'already_member');
+    }
+    if (_handovers.any((h) => h.circleId == circleId && h.leaving.userId == me && h.status.open)) {
+      throw const SovaException('You already have a handover in progress. Cancel it first.', code: 'already_asked');
+    }
+    _handovers.add(_DemoHandover(
+      id: 'h-${_random.nextInt(1000000000)}',
+      circleId: circleId,
+      leaving: c.memberById(me)!,
+      replacement: replacement,
+      reason: (reason?.trim().isEmpty ?? true) ? null : reason!.trim(),
+      createdAt: DateTime.now(),
+    ));
+    return _turnChangesOf(circleId);
+  }
+
+  @override
+  Future<TurnChanges> decideHandover({required String circleId, required String handoverId, required bool approve, String? pin}) async {
+    final c = await circle(circleId);
+    final h = _handovers.firstWhere((h) => h.id == handoverId, orElse: () => throw const SovaException('Handover not found.'));
+    if (c.adminId != me) throw const SovaException('Only the admin can approve a handover.', code: 'not_admin');
+    if (h.status != HandoverStatus.accepted) {
+      throw const SovaException('The replacement has to accept before you can decide.', code: 'not_ready');
+    }
+    if (!approve) {
+      h.status = HandoverStatus.rejected;
+      return _turnChangesOf(circleId);
+    }
+    _checkPin(pin ?? '');
+    h.status = HandoverStatus.approved;
+    if (c.forming) _completeHandover(h);
+    return _turnChangesOf(circleId);
+  }
+
+  @override
+  Future<TurnChanges> cancelHandover({required String circleId, required String handoverId}) async {
+    await circle(circleId);
+    final h = _handovers.firstWhere((h) => h.id == handoverId && h.leaving.userId == me,
+        orElse: () => throw const SovaException('Handover not found.'));
+    if (!h.status.open) throw const SovaException('This handover can no longer be cancelled.');
+    h.status = HandoverStatus.cancelled;
+    return _turnChangesOf(circleId);
+  }
+
+  @override
+  Future<List<HandoverOffer>> handoverOffers() async {
+    return [
+      for (final h in _handovers.where((h) => h.replacement.userId == me && h.status == HandoverStatus.pending))
+        HandoverOffer(
+          id: h.id,
+          createdAt: h.createdAt,
+          leavingName: h.leaving.name,
+          paidIn: _circles[h.circleId]!
+              .contributions
+              .where((x) => x.userId == h.leaving.userId && x.status == ContributionStatus.fullyConfirmed)
+              .fold(0, (t, x) => t + x.amount),
+          circleId: h.circleId,
+          circleName: _circles[h.circleId]!.name,
+          contributionAmount: _circles[h.circleId]!.contributionAmount,
+          payoutAmount: _circles[h.circleId]!.payout,
+          memberCount: _circles[h.circleId]!.memberCount,
+          cycle: _circles[h.circleId]!.cycle,
+          rules: _circles[h.circleId]!.rules!,
+          turn: _circles[h.circleId]!.memberById(h.leaving.userId)?.position,
+          reason: h.reason,
+        ),
+    ];
+  }
+
+  @override
+  Future<List<HandoverOffer>> answerHandover({required String handoverId, required bool accept, int? rulesVersion, String? pin}) async {
+    final h = _handovers.firstWhere((h) => h.id == handoverId && h.replacement.userId == me,
+        orElse: () => throw const SovaException('Handover not found.'));
+    if (h.status != HandoverStatus.pending) throw const SovaException('This handover has already been answered.');
+    if (!accept) {
+      h.status = HandoverStatus.declined;
+      return handoverOffers();
+    }
+    _checkPin(pin ?? '');
+    if (_circles[h.circleId]!.rules?.version != rulesVersion) {
+      throw const SovaException('The rules changed while you were reading. Please read them again.');
+    }
+    h.status = HandoverStatus.accepted;
+    return handoverOffers();
+  }
+
+  /// The replacement takes the leaving member's place and turn.
+  void _completeHandover(_DemoHandover h) {
+    final c = _circles[h.circleId]!;
+    final leaving = c.memberById(h.leaving.userId)!;
+    h
+      ..position = leaving.position
+      ..status = HandoverStatus.completed;
+    final r = h.replacement;
+    _circles[h.circleId] = _copyCircle(
+      c,
+      members: [
+        for (final m in c.members)
+          m.userId == leaving.userId
+              ? Member(userId: r.userId, name: r.name, phone: r.phone, position: leaving.position, bank: r.bank, vouchedBy: leaving.userId)
+              : m,
+      ],
+      rules: c.rules == null ? null : _withAcceptance(c.rules!, r.userId),
+    );
+    for (final s in _swaps) {
+      if (s.circleId == h.circleId && s.status == SwapStatus.pending && (s.requester == leaving.userId || s.target == leaving.userId)) {
+        s.status = SwapStatus.cancelled;
+      }
+    }
+  }
+
+  /// When a turn ends: approved handovers take effect. When the next starts:
+  /// pending requests involving its collector are cancelled.
+  void _onTurnEnded(String circleId) {
+    for (final h in _handovers.where((h) => h.circleId == circleId && h.status == HandoverStatus.approved).toList()) {
+      _completeHandover(h);
+    }
+  }
+
+  void _onTurnStarted(String circleId, String collectorId) {
+    for (final s in _swaps.where((s) => s.circleId == circleId && s.status == SwapStatus.pending)) {
+      if (s.requester == collectorId || s.target == collectorId) s.status = SwapStatus.cancelled;
+    }
+    for (final h in _handovers.where((h) => h.circleId == circleId && h.status.open)) {
+      if (h.leaving.userId == collectorId) h.status = HandoverStatus.cancelled;
+    }
+  }
+
   /// Plain-words label for a score, as the API gives it.
   static String scoreBand(int score) =>
       score >= 90 ? 'Excellent' : score >= 75 ? 'Strong' : score >= 50 ? 'Fair' : 'Building';
@@ -669,7 +955,12 @@ class DemoRepository implements SovaRepository {
     return _copyCircle(
       c,
       status: CircleStatus.active,
-      draw: DrawInfo(commitment: c.draw!.commitment, seed: seed, revealedAt: DateTime.now()),
+      draw: DrawInfo(
+        commitment: c.draw!.commitment,
+        seed: seed,
+        revealedAt: DateTime.now(),
+        order: [for (final m in order) Person(id: m.userId, name: m.name)],
+      ),
       members: [
         for (final (i, m) in order.indexed)
           Member(
@@ -920,6 +1211,33 @@ class DemoRepository implements SovaRepository {
       ..votes['ifeoma'] = (DisputeSide.payer, raisedAt.add(const Duration(hours: 4)))
       ..votes['bayo'] = (DisputeSide.payer, raisedAt.add(const Duration(hours: 6)));
     _syncOpenDisputes(office);
+
+    // The order as drawn, as the server reads it from the record.
+    for (final id in [office, classAjo]) {
+      final c = _circles[id]!;
+      final d = c.draw!;
+      _circles[id] = _copyCircle(
+        c,
+        draw: DrawInfo(
+          commitment: d.commitment,
+          seed: d.seed,
+          revealedAt: d.revealedAt,
+          order: [for (final m in c.membersByPosition) Person(id: m.userId, name: m.name)],
+        ),
+      );
+    }
+
+    // Zainab (turn 6) asks to swap with your turn 4 in the office esusu.
+    _swaps.add(_DemoSwap(
+      id: 's-office-zainab',
+      circleId: office,
+      requester: 'zainab',
+      requesterName: 'Zainab Bello',
+      target: me,
+      targetName: 'You',
+      reason: 'My shop rent is due before my turn. Could we swap?',
+      createdAt: day(-1).add(const Duration(hours: 15)),
+    ));
   }
 }
 
@@ -953,4 +1271,49 @@ class _DemoDispute {
 
   /// (actor id, kind, message, at)
   final events = <(String, String, String?, DateTime)>[];
+}
+
+class _DemoSwap {
+  _DemoSwap({
+    required this.id,
+    required this.circleId,
+    required this.requester,
+    required this.requesterName,
+    required this.target,
+    required this.targetName,
+    required this.createdAt,
+    this.reason,
+  });
+
+  final String id;
+  final String circleId;
+  final String requester;
+  final String requesterName;
+  final String target;
+  final String targetName;
+  final String? reason;
+  final DateTime createdAt;
+  SwapStatus status = SwapStatus.pending;
+}
+
+class _DemoHandover {
+  _DemoHandover({
+    required this.id,
+    required this.circleId,
+    required this.leaving,
+    required this.replacement,
+    required this.createdAt,
+    this.reason,
+  });
+
+  final String id;
+  final String circleId;
+  final Member leaving;
+  final Member replacement;
+  final String? reason;
+  final DateTime createdAt;
+  HandoverStatus status = HandoverStatus.pending;
+
+  /// The turn handed over, once done.
+  int? position;
 }
