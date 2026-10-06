@@ -78,9 +78,22 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
                   ),
                   const SizedBox(height: SovaSpacing.lg),
                   if (shown.isEmpty)
-                    NoticeBox(
-                      _completed ? 'Circles you finish will appear here.' : 'You are not in any active circle yet.',
-                    ),
+                    _completed
+                        ? const EmptyState(
+                            icon: Icons.emoji_events_outlined,
+                            title: 'No finished circles yet',
+                            message: 'Circles you complete appear here, and every one adds to your record.',
+                          )
+                        : EmptyState(
+                            icon: Icons.groups_2_outlined,
+                            title: 'No circles yet',
+                            message: 'Start one with the people you already save with, or join with an invite code.',
+                            action: FilledButton(onPressed: () => context.push('/create'), child: const Text('Start a circle')),
+                            secondaryAction: OutlinedButton(
+                              onPressed: () => context.push('/join'),
+                              child: const Text('Join with a code'),
+                            ),
+                          ),
                   for (final (i, c) in shown.indexed)
                     StaggeredIn(
                       index: i,

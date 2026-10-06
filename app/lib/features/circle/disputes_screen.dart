@@ -49,7 +49,13 @@ class DisputesScreen extends ConsumerWidget {
                 style: SovaText.bodySmall,
               ),
               const SizedBox(height: SovaSpacing.xl),
-              if (list.isEmpty) const NoticeBox('No disputes in this circle.', icon: Icons.verified_outlined),
+              if (list.isEmpty)
+                const EmptyState(
+                  icon: Icons.verified_outlined,
+                  title: 'No disputes',
+                  message: 'Nothing is disputed in this circle. If a payment goes missing, the payer or the collector '
+                      'can raise a dispute from the payment.',
+                ),
               for (final d in list) ...[
                 _DisputeCard(dispute: d, me: me),
                 const SizedBox(height: SovaSpacing.md),
