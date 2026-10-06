@@ -99,7 +99,7 @@ export function RecordFlow() {
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
         <Reveal>
           <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric"><span className="size-1.5 bg-electric" /> No wallet, no middleman</p>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-balance text-navy-900 sm:text-5xl">
+          <h2 className="mt-4 font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance text-navy-900 sm:text-5xl">
             Money moves between members. Sova keeps the record.
           </h2>
           <p className="mt-4 max-w-lg text-lg text-slate-600">

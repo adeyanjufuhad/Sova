@@ -77,7 +77,7 @@ export function Faq() {
 
   return (
     <section id="faq" className="relative mx-auto max-w-3xl scroll-mt-24 px-4 py-24 sm:py-32">
-      <SectionHeading eyebrow="FAQ" title="Questions people ask us" />
+      <SectionHeading align="center" eyebrow="FAQ" title="Questions people ask us" />
 
       <div className="mt-10 flex justify-center">
         <div role="group" aria-label="Language" className="inline-flex rounded-full border border-navy-900/10 bg-mist p-1">
