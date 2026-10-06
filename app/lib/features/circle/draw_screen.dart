@@ -83,6 +83,14 @@ class _DrawBody extends StatelessWidget {
           const Eyebrow('Checked on this phone'),
           const SizedBox(height: SovaSpacing.md),
           _ChecksCard(check: check, adminCollectsLast: c.adminCollectsLast),
+          if (turnsChangedSinceDraw(c)) ...[
+            const SizedBox(height: SovaSpacing.md),
+            const NoticeBox(
+              'Some turns changed hands after the draw, by agreed swaps or handovers. They are on the record; '
+              'the checks above are against the order as drawn.',
+              icon: Icons.swap_horiz_rounded,
+            ),
+          ],
         ],
         if (draw != null) ...[
           const SizedBox(height: SovaSpacing.xl3),
@@ -175,9 +183,17 @@ class _DrawAnimationState extends State<_DrawAnimation> with SingleTickerProvide
 
   void _prepare() {
     final c = widget.circle;
-    _startOrder = [...c.members]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    _keys = {for (final m in c.members) m.userId: drawKey(widget.seed, m.userId)};
-    _turnIndex = {for (final (i, m) in c.membersByPosition.indexed) m.userId: i};
+    // Replay the draw as it happened, even if turns changed hands since.
+    final order = c.draw?.order;
+    final drawn = order == null
+        ? c.membersByPosition
+        : [
+            for (final (i, p) in order.indexed)
+              Member(userId: p.id, name: c.memberById(p.id)?.name ?? p.name, phone: '', position: i + 1),
+          ];
+    _startOrder = [...drawn]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    _keys = {for (final m in drawn) m.userId: drawKey(widget.seed, m.userId)};
+    _turnIndex = {for (final (i, m) in drawn.indexed) m.userId: i};
   }
 
   @override
