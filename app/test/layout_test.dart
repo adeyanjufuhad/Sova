@@ -59,6 +59,8 @@ void main() {
         '/circle/class-ajo',
         '/circle/class-ajo/draw',
         '/circle/office-esusu/draw',
+        '/circle/office-esusu/disputes',
+        '/circle/office-esusu/disputes/d-office-chuka',
         '/create',
         '/join',
       ]) {

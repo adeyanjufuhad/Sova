@@ -9,6 +9,7 @@ import '../../features/auth/phone_screen.dart';
 import '../../features/auth/profile_screen.dart';
 import '../../features/auth/welcome_screen.dart';
 import '../../features/circle/circle_screen.dart';
+import '../../features/circle/disputes_screen.dart';
 import '../../features/circle/draw_screen.dart';
 import '../../features/circle/pay_screen.dart';
 import '../../features/circle/payout_screen.dart';
@@ -98,6 +99,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'rules', builder: (_, state) => RulesScreen(circleId: state.pathParameters['id']!)),
           GoRoute(path: 'payout', builder: (_, state) => PayoutScreen(circleId: state.pathParameters['id']!)),
           GoRoute(path: 'draw', builder: (_, state) => DrawScreen(circleId: state.pathParameters['id']!)),
+          GoRoute(
+            path: 'disputes',
+            builder: (_, state) => DisputesScreen(circleId: state.pathParameters['id']!),
+            routes: [
+              GoRoute(
+                path: ':disputeId',
+                builder: (_, state) => DisputeScreen(
+                  circleId: state.pathParameters['id']!,
+                  disputeId: state.pathParameters['disputeId']!,
+                ),
+              ),
+            ],
+          ),
           GoRoute(
             path: 'receipt/:roundId',
             builder: (_, state) => ReceiptScreen(

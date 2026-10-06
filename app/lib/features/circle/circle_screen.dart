@@ -11,6 +11,7 @@ import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/pin_pad.dart';
+import 'disputes_screen.dart';
 
 class CircleScreen extends ConsumerWidget {
   const CircleScreen({super.key, required this.circleId});
@@ -138,12 +139,7 @@ class _CircleBody extends ConsumerWidget {
           ),
         const SizedBox(height: SovaSpacing.lg),
         if (c.openDisputes > 0) ...[
-          NoticeBox(
-            c.openDisputes == 1
-                ? 'There is an open dispute in this circle.'
-                : 'There are ${c.openDisputes} open disputes in this circle.',
-            icon: Icons.gavel_rounded,
-          ),
+          _DisputesCard(circle: c),
           const SizedBox(height: SovaSpacing.lg),
         ],
         if (round != null) _MyAction(circle: c, round: round, me: me),
@@ -177,6 +173,10 @@ class _CircleBody extends ConsumerWidget {
         const Eyebrow('Group rules'),
         const SizedBox(height: SovaSpacing.md),
         _RulesCard(circle: c, me: me),
+        if (!c.forming && c.openDisputes == 0) ...[
+          const SizedBox(height: SovaSpacing.md),
+          _DisputesCard(circle: c),
+        ],
         // Only circles on the server have a public record to check.
         if (apiUrl.isNotEmpty) ...[
           const SizedBox(height: SovaSpacing.xl3),
@@ -250,14 +250,46 @@ class _MyAction extends ConsumerWidget {
           icon: const Icon(Icons.north_east_rounded),
           label: Text('Pay ${c.currentCollector?.firstName ?? 'collector'} ${naira(c.contributionAmount)}'),
         ),
-      ContributionStatus.payerConfirmed => NoticeBox(
-          'You recorded your payment. Waiting for ${c.currentCollector?.firstName ?? 'the collector'} to confirm it arrived.',
-          icon: Icons.schedule_rounded,
+      ContributionStatus.payerConfirmed => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            NoticeBox(
+              'You recorded your payment. Waiting for ${c.currentCollector?.firstName ?? 'the collector'} to confirm it arrived.',
+              icon: Icons.schedule_rounded,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => raiseDisputeFlow(
+                  context,
+                  ref,
+                  circleId: c.id,
+                  contributionId: c.contributionFor(round.id, me)!.id,
+                  asCollector: false,
+                ),
+                child: const Text('Not being confirmed? Raise a dispute'),
+              ),
+            ),
+          ],
         ),
       ContributionStatus.fullyConfirmed => const NoticeBox('Your payment for this turn is confirmed by both sides.',
           icon: Icons.done_all_rounded),
-      ContributionStatus.disputed => const NoticeBox('Your payment for this turn is in dispute. The admin will review it.',
-          icon: Icons.gavel_rounded),
+      ContributionStatus.disputed => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const NoticeBox(
+              'Your payment for this turn is in dispute. The other members are deciding whether it arrived.',
+              icon: Icons.gavel_rounded,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => context.push('/circle/${c.id}/disputes'),
+                child: const Text('See the dispute'),
+              ),
+            ),
+          ],
+        ),
     };
   }
 }
@@ -329,6 +361,18 @@ class _ConfirmRowState extends ConsumerState<_ConfirmRow> {
               onPressed: _viewProof,
             ),
           TextButton(onPressed: _confirm, child: const Text('Confirm')),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: const Icon(Icons.more_vert_rounded, color: SovaColors.textMuted),
+            onSelected: (_) => raiseDisputeFlow(
+              context,
+              ref,
+              circleId: widget.circle.id,
+              contributionId: x.id,
+              asCollector: true,
+            ),
+            itemBuilder: (_) => const [PopupMenuItem(value: 'dispute', child: Text("It hasn't arrived"))],
+          ),
         ],
       ),
     );
@@ -525,6 +569,55 @@ class _InviteCard extends StatelessWidget {
               icon: const Icon(Icons.copy_rounded),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Open disputes need attention; otherwise a quiet way into the history.
+class _DisputesCard extends StatelessWidget {
+  const _DisputesCard({required this.circle});
+
+  final Circle circle;
+
+  @override
+  Widget build(BuildContext context) {
+    final open = circle.openDisputes;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: open > 0
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(SovaRadius.lg),
+              side: const BorderSide(color: SovaColors.electric),
+            )
+          : null,
+      child: InkWell(
+        onTap: () => context.push('/circle/${circle.id}/disputes'),
+        child: Padding(
+          padding: const EdgeInsets.all(SovaSpacing.lg),
+          child: Row(
+            children: [
+              Icon(Icons.gavel_rounded, color: open > 0 ? SovaColors.electric : SovaColors.textMuted),
+              const SizedBox(width: SovaSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      open == 0 ? 'Disputes' : open == 1 ? '1 open dispute' : '$open open disputes',
+                      style: SovaText.label,
+                    ),
+                    Text(
+                      open == 0 ? 'None open. See past disputes and how they ended.' : 'See the evidence, vote or settle it.',
+                      style: SovaText.caption,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: SovaColors.textMuted),
+            ],
+          ),
         ),
       ),
     );
