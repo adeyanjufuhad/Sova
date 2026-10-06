@@ -28,6 +28,12 @@ describe("demo seed", () => {
     expect(byName["Office Esusu"]).toMatchObject({ members: 6, active: 1 });
     expect(byName["Ikeja Tech Hub Esusu"]).toMatchObject({ status: "forming", members: 4, active: 0 });
 
+    // Seeding writes a short history for the demo member only, not a flood from the triggers.
+    const notes = await db.pool.query<{ phone: string; n: number }>(
+      "select u.phone, count(*)::int as n from notifications x join users u on u.id = x.user_id group by u.phone",
+    );
+    expect(notes.rows).toEqual([{ phone: DEMO_PHONE, n: 5 }]);
+
     const swaps = await db.pool.query("select status from swap_requests");
     expect(swaps.rows).toEqual([{ status: "pending" }]);
 
