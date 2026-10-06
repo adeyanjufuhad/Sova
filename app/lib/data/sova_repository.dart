@@ -86,6 +86,25 @@ abstract interface class SovaRepository {
     required int amount,
     required String pin,
   });
+
+  /// The circle's disputes, open ones first. Timelines are left out.
+  Future<List<Dispute>> disputes(String circleId);
+
+  /// One dispute with its votes and timeline.
+  Future<Dispute> dispute(String id);
+
+  /// The collector says a payment marked as sent hasn't arrived, or the payer
+  /// says it isn't being confirmed. The payment is frozen while the circle decides.
+  Future<Dispute> raiseDispute({required String contributionId, required String reason, required String pin});
+
+  /// Members other than the payer and collector vote on whether the money
+  /// arrived; more than half of them decides. A vote can change while open.
+  Future<Dispute> voteDispute({required String disputeId, required DisputeSide side, required String pin});
+
+  /// A party closes the dispute by agreeing with the other side.
+  Future<Dispute> settleDispute({required String disputeId, required String pin});
+
+  Future<Dispute> commentOnDispute({required String disputeId, required String message});
 }
 
 class SovaException implements Exception {

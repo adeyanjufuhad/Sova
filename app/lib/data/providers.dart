@@ -115,8 +115,17 @@ final circleProvider = FutureProvider.family<Circle, String>((ref, id) {
   return ref.watch(repositoryProvider).circle(id);
 });
 
+final disputesProvider = FutureProvider.family<List<Dispute>, String>((ref, circleId) {
+  return ref.watch(repositoryProvider).disputes(circleId);
+});
+
+final disputeProvider = FutureProvider.family<Dispute, String>((ref, id) {
+  return ref.watch(repositoryProvider).dispute(id);
+});
+
 /// Refresh every view of a circle after something changes.
 void refreshCircle(WidgetRef ref, String id) {
   ref.invalidate(circleProvider(id));
   ref.invalidate(circlesProvider);
+  ref.invalidate(disputesProvider(id));
 }

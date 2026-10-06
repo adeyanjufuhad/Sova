@@ -264,6 +264,95 @@ class ApiRepository implements SovaRepository {
     );
   }
 
+  @override
+  Future<List<Dispute>> disputes(String circleId) async {
+    final res = await _api.get('/circles/$circleId/disputes') as Map<String, dynamic>;
+    return [for (final d in (res['disputes'] as List).cast<Map<String, dynamic>>()) _dispute(d)];
+  }
+
+  @override
+  Future<Dispute> dispute(String id) async => _dispute(await _api.get('/disputes/$id') as Map<String, dynamic>);
+
+  @override
+  Future<Dispute> raiseDispute({required String contributionId, required String reason, required String pin}) async =>
+      _dispute(await _api.post('/contributions/$contributionId/dispute', {'reason': reason, 'pin': pin})
+          as Map<String, dynamic>);
+
+  @override
+  Future<Dispute> voteDispute({required String disputeId, required DisputeSide side, required String pin}) async =>
+      _dispute(await _api.post('/disputes/$disputeId/vote', {'side': side.name, 'pin': pin}) as Map<String, dynamic>);
+
+  @override
+  Future<Dispute> settleDispute({required String disputeId, required String pin}) async =>
+      _dispute(await _api.post('/disputes/$disputeId/settle', {'pin': pin}) as Map<String, dynamic>);
+
+  @override
+  Future<Dispute> commentOnDispute({required String disputeId, required String message}) async =>
+      _dispute(await _api.post('/disputes/$disputeId/comments', {'message': message}) as Map<String, dynamic>);
+
+  static Person _person(Map<String, dynamic> p) => Person(id: p['id'] as String, name: p['name'] as String);
+
+  static DateTime _time(Object? v) => DateTime.parse(v as String).toLocal();
+
+  static Dispute _dispute(Map<String, dynamic> j) {
+    final votes = j['votes'] as Map<String, dynamic>;
+    final payment = j['payment'] as Map<String, dynamic>?;
+    return Dispute(
+      id: j['id'] as String,
+      circleId: j['circleId'] as String,
+      kind: DisputeKind.values.byName(j['kind'] as String),
+      status: _disputeStatus[j['status']] ?? DisputeStatus.open,
+      turn: j['turn'] as int,
+      reason: j['reason'] as String,
+      createdAt: _time(j['createdAt']),
+      resolvedAt: j['resolvedAt'] == null ? null : _time(j['resolvedAt']),
+      resolutionNote: j['resolutionNote'] as String?,
+      raisedBy: _person(j['raisedBy'] as Map<String, dynamic>),
+      collector: _person(j['collector'] as Map<String, dynamic>),
+      payers: [for (final p in (j['payers'] as List).cast<Map<String, dynamic>>()) _person(p)],
+      payment: payment == null
+          ? null
+          : DisputePayment(
+              contributionId: payment['id'] as String,
+              amount: payment['amount'] as int,
+              bankReference: payment['bankReference'] as String?,
+              hasProof: (payment['hasProof'] as bool?) ?? false,
+              paidAt: payment['paidAt'] == null ? null : _time(payment['paidAt']),
+            ),
+      myRole: DisputeRole.values.byName(j['myRole'] as String),
+      payerVotes: votes['payer'] as int,
+      collectorVotes: votes['collector'] as int,
+      eligibleVoters: votes['eligible'] as int,
+      myVote: votes['mine'] == null ? null : DisputeSide.values.byName(votes['mine'] as String),
+      votes: [
+        for (final v in (votes['cast'] as List).cast<Map<String, dynamic>>())
+          DisputeVote(
+            voter: _person(v['voter'] as Map<String, dynamic>),
+            side: DisputeSide.values.byName(v['side'] as String),
+            at: _time(v['at']),
+          ),
+      ],
+      timeline: [
+        for (final e in ((j['timeline'] as List?) ?? const []).cast<Map<String, dynamic>>())
+          DisputeEvent(
+            actor: _person(e['actor'] as Map<String, dynamic>),
+            kind: e['kind'] as String,
+            message: e['message'] as String?,
+            at: _time(e['at']),
+          ),
+      ],
+      canVote: j['canVote'] as bool,
+      canSettle: j['canSettle'] as bool,
+    );
+  }
+
+  static const _disputeStatus = {
+    'open': DisputeStatus.open,
+    'resolved_for_payer': DisputeStatus.resolvedForPayer,
+    'resolved_for_collector': DisputeStatus.resolvedForCollector,
+    'withdrawn': DisputeStatus.withdrawn,
+  };
+
   static GroupRules _rules(Map<String, dynamic> r, Set<String> acceptedBy) => GroupRules(
         version: r['version'] as int,
         lateFee: r['lateFee'] as int,
