@@ -21,7 +21,7 @@ class CircleScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(circleProvider(circleId));
     return Scaffold(
-      appBar: AppBar(title: Text(async.value?.name ?? '')),
+      appBar: AppBar(leading: const SovaBackButton(), title: Text(async.value?.name ?? '')),
       body: async.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circleProvider(circleId))),
@@ -148,9 +148,12 @@ class _CircleBody extends ConsumerWidget {
         ],
         if (round != null) _MyAction(circle: c, round: round, me: me),
         const SizedBox(height: SovaSpacing.xl3),
-        Row(
+        // Wraps the link under the heading on narrow screens with large text.
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Expanded(child: Eyebrow(c.forming ? 'Members' : 'Payout order')),
+            Eyebrow(c.forming ? 'Members' : 'Payout order'),
             if (c.draw != null)
               TextButton.icon(
                 onPressed: () => context.push('/circle/${c.id}/draw'),

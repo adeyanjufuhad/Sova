@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models.dart';
@@ -205,4 +206,19 @@ class NoticeBox extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Goes back if there is a screen underneath; otherwise (opened from a link,
+/// a reload, or after `context.go`) goes to [fallback].
+void leaveScreen(BuildContext context, {String fallback = '/circles'}) =>
+    context.canPop() ? context.pop() : context.go(fallback);
+
+/// App bar back button that always shows, even when nothing is underneath.
+class SovaBackButton extends StatelessWidget {
+  const SovaBackButton({super.key, this.fallback = '/circles'});
+
+  final String fallback;
+
+  @override
+  Widget build(BuildContext context) => BackButton(onPressed: () => leaveScreen(context, fallback: fallback));
 }

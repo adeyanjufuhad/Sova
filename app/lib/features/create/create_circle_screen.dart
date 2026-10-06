@@ -109,7 +109,7 @@ class _CreateCircleScreenState extends ConsumerState<CreateCircleScreen> {
 
   void _back() {
     if (_step == 0) {
-      context.pop();
+      leaveScreen(context, fallback: '/home');
     } else {
       setState(() {
         _error = null;
