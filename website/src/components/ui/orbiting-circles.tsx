@@ -36,7 +36,7 @@ export function OrbitingCircles({ orbits }: { orbits: Orbit[] }) {
         return (
           <div
             key={index}
-            className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rounded-full border border-navy-900/10 ${orbit.size}`}
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rounded-full border border-sky/60 ${orbit.size}`}
           >
             {orbit.items.map(({ id, content, angle }) => (
               // Zero-width arm from the ring's centre to its top edge; the item

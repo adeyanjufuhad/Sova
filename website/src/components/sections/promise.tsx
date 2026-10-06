@@ -30,7 +30,7 @@ export function SovaPromise() {
           <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric">
             <span className="size-1.5 bg-electric" /> Our promise
           </p>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-balance text-navy-900 sm:text-5xl">
+          <h2 className="mt-4 font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance text-navy-900 sm:text-5xl">
             Trust is the whole product.
           </h2>
           <p className="mt-4 max-w-md text-lg text-slate-600">
