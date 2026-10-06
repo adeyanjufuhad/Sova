@@ -255,6 +255,8 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
     // Demo ledgers can only be purged with this flag, and only for circles run by
     // the reserved demo numbers (see ledger_guard). Real circles' ledgers stay.
     await client.query("set local sova.purge_demo = 'on'");
+    // Notification triggers stay quiet while seeding; the demo's history is written below instead.
+    await client.query("set local sova.seeding = 'on'");
     await client.query(
       `delete from ledger_entries where group_id in
          (select g.id from groups g join users u on u.id = g.admin_id where u.phone like $1)`,
@@ -451,6 +453,11 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
       await client.query("update contributions set status = 'disputed' where id = $1", [late.rows[0]!.id]);
       const disputeId = dispute.rows[0]!.id;
       await client.query(
+        `insert into notifications (user_id, group_id, type, title, message, link, created_at)
+         values ($1, $2, 'dispute_vote', 'Your vote is needed', $3, $4, $5)`,
+        [id(ctx, "ada"), yabaId, "Yaba Traders Circle: did Musa's payment reach Peter?", `/circle/${yabaId}/disputes/${disputeId}`, at(markedAt, 4)],
+      );
+      await client.query(
         "insert into dispute_votes (dispute_id, voter_id, side, created_at, updated_at) values ($1, $2, 'collector', $3, $3)",
         [disputeId, id(ctx, "sani"), at(markedAt, 21)],
       );
@@ -464,6 +471,21 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
           [disputeId, id(ctx, actor), kind, message, at(markedAt, hours)],
         );
       }
+    }
+
+    // The demo member's recent notifications (the triggers write these for real circles).
+    const classId = (await client.query<{ id: string }>("select id from groups where invite_code = 'P4DN8R'")).rows[0]!.id;
+    for (const [group, type, title, message, link, when, read] of [
+      [officeId, "turn_opened", "Turn 3: pay Halima ₦20,000", "Office Esusu. Due in a week.", `/circle/${officeId}`, at(day(-5), 18), true],
+      [classId, "turn_opened", "It's your turn to collect ₦40,000", "Unilag Class of '24 Ajo, turn 2.", `/circle/${classId}`, at(day(-20), 9), true],
+      [classId, "payment_marked", "Emeka marked ₦10,000 as sent", "Unilag Class of '24 Ajo, turn 2. Check your bank, then confirm it arrived.", `/circle/${classId}`, at(day(-1), 11), false],
+      [officeId, "swap_request", "Zainab asks to swap turns with you", "Office Esusu", `/circle/${officeId}/turns`, at(day(-1), 15), false],
+    ] as const) {
+      await client.query(
+        `insert into notifications (user_id, group_id, type, title, message, link, created_at, read)
+         values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [id(ctx, "ada"), group, type, title, message, link, when, read],
+      );
     }
 
     // Sova Scores from the database function, for everyone seeded.
