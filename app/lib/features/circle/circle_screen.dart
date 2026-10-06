@@ -148,8 +148,18 @@ class _CircleBody extends ConsumerWidget {
         ],
         if (round != null) _MyAction(circle: c, round: round, me: me),
         const SizedBox(height: SovaSpacing.xl3),
-        Eyebrow(c.forming ? 'Members' : 'Payout order'),
-        const SizedBox(height: SovaSpacing.md),
+        Row(
+          children: [
+            Expanded(child: Eyebrow(c.forming ? 'Members' : 'Payout order')),
+            if (c.draw != null)
+              TextButton.icon(
+                onPressed: () => context.push('/circle/${c.id}/draw'),
+                icon: const Icon(Icons.casino_outlined, size: 18),
+                label: Text(c.draw!.revealed ? 'How it was drawn' : 'Fair draw'),
+              ),
+          ],
+        ),
+        const SizedBox(height: SovaSpacing.xs),
         Card(
           child: Column(
             children: [
