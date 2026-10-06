@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function VerifyPage() {
   return (
-    <div className="min-h-screen bg-mist">
+    <div className="min-h-dvh bg-mist">
       <header className="border-b border-navy-900/10 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <Link href="/" aria-label="Sova home">
@@ -25,7 +25,7 @@ export default function VerifyPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
+      <main id="main" className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
         <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-electric">
           <span className="size-1.5 bg-electric" /> Verify a circle
         </p>

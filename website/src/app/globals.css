@@ -39,6 +39,22 @@
 html {
   scroll-behavior: smooth;
   background: #ffffff;
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* No double-tap zoom delay on taps. */
+a, button, input, select, textarea, label {
+  touch-action: manipulation;
+}
+
+/* One visible focus ring for keyboard users, on every control. In the base
+   layer so a component's own focus style (e.g. the form inputs' ring) wins. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-electric);
+    outline-offset: 2px;
+  }
 }
 
 body {
