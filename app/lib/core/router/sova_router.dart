@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
+import '../theme/theme.dart';
 import '../../features/activity/activity_screen.dart';
 import '../../features/auth/otp_screen.dart';
 import '../../features/auth/phone_screen.dart';
@@ -46,6 +47,21 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
     initialLocation: SovaRoutes.start,
+    // A friendly page for links that point nowhere (old, mistyped or shortened).
+    errorBuilder: (context, _) => Scaffold(
+      appBar: AppBar(leading: const SovaBackButton(fallback: SovaRoutes.home), title: const Text('Page not found')),
+      body: Padding(
+        padding: const EdgeInsets.all(SovaSpacing.screenH),
+        child: Center(
+          child: EmptyState(
+            icon: Icons.link_off_rounded,
+            title: 'This page doesn\'t exist',
+            message: 'The link may be old or mistyped. Your circles and payments are safe.',
+            action: FilledButton(onPressed: () => context.go(SovaRoutes.home), child: const Text('Go to home')),
+          ),
+        ),
+      ),
+    ),
     refreshListenable: refresh,
     redirect: (context, state) {
       final auth = ref.read(authProvider);

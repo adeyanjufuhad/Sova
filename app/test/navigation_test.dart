@@ -39,4 +39,21 @@ void main() {
     await settle(tester);
     expect(router.state.matchedLocation, SovaRoutes.circles);
   });
+
+  testWidgets('a link to nowhere shows a friendly page with a way home', (tester) async {
+    final container = ProviderContainer(overrides: [authProvider.overrideWith(_SignedIn.new)]);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const SovaApp()));
+    await settle(tester);
+
+    final router = container.read(routerProvider);
+    router.go('/no-such-page');
+    await settle(tester);
+    expect(find.text("This page doesn't exist"), findsOneWidget);
+    expect(find.textContaining('GoException'), findsNothing);
+
+    await tester.tap(find.text('Go to home'));
+    await settle(tester);
+    expect(router.state.matchedLocation, SovaRoutes.home);
+  });
 }
