@@ -56,6 +56,8 @@ void main() {
         '/circle/office-esusu/pay',
         '/circle/office-esusu/rules',
         '/circle/class-ajo',
+        '/circle/class-ajo/draw',
+        '/circle/office-esusu/draw',
         '/create',
         '/join',
       ]) {
