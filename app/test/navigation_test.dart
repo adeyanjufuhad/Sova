@@ -5,6 +5,7 @@ import 'package:sova/app.dart';
 import 'package:sova/core/router/sova_router.dart';
 import 'package:sova/data/models.dart';
 import 'package:sova/data/providers.dart';
+import 'package:sova/shared/widgets/glass_tab_bar.dart';
 
 class _SignedIn extends AuthNotifier {
   @override
@@ -38,6 +39,35 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await settle(tester);
     expect(router.state.matchedLocation, SovaRoutes.circles);
+  });
+
+  testWidgets('the glass tab bar switches pages by tap and by dragging the lens', (tester) async {
+    final container = ProviderContainer(overrides: [authProvider.overrideWith(_SignedIn.new)]);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const SovaApp()));
+    await settle(tester);
+    final router = container.read(routerProvider);
+    router.go(SovaRoutes.home);
+    await settle(tester);
+
+    Finder tab(String label) => find.descendant(of: find.byType(GlassTabBar), matching: find.bySemanticsLabel(label));
+
+    // Tap.
+    await tester.tap(tab('Circles'));
+    await settle(tester);
+    expect(router.state.matchedLocation, SovaRoutes.circles);
+
+    // Drag the lens from Circles across to Record and let go.
+    final circles = tester.getCenter(tab('Circles'));
+    final record = tester.getCenter(tab('Record'));
+    await tester.dragFrom(circles, record - circles);
+    await settle(tester);
+    expect(router.state.matchedLocation, SovaRoutes.record);
+
+    // A short drag that ends nearer where it started stays put.
+    await tester.dragFrom(record, const Offset(-20, 0));
+    await settle(tester);
+    expect(router.state.matchedLocation, SovaRoutes.record);
   });
 
   testWidgets('a link to nowhere shows a friendly page with a way home', (tester) async {

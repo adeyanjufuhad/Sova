@@ -7,6 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../data/insights.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../shared/widgets/app_shell.dart' show tabBarInset;
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 
@@ -25,6 +26,7 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
     final circles = ref.watch(circlesProvider);
     return Scaffold(
       body: SafeArea(
+        bottom: false, // lists run behind the glass tab bar
         child: circles.when(
           loading: () => const SkeletonList(),
           error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circlesProvider)),
@@ -34,11 +36,11 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
               color: SovaColors.electric,
               onRefresh: () => ref.refresh(circlesProvider.future),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   SovaSpacing.screenH,
                   SovaSpacing.lg,
                   SovaSpacing.screenH,
-                  SovaSpacing.xl3,
+                  SovaSpacing.xl3 + tabBarInset(context),
                 ),
                 children: [
                   const Text('Circles', style: SovaText.h1),
