@@ -12,6 +12,7 @@ import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/polish.dart';
 
 /// The commit-reveal draw for one circle: replays how the turns fell out of the
 /// revealed seed, then rechecks the seed and the order on this phone.
@@ -26,7 +27,7 @@ class DrawScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Fair draw')),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circleProvider(circleId))),
         data: (c) => _DrawBody(circle: c),
       ),

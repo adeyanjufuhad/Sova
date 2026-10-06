@@ -7,6 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/polish.dart';
 
 /// Bank-statement style receipt for the signed-in member's payment in a round.
 class ReceiptScreen extends ConsumerWidget {
@@ -24,7 +25,7 @@ class ReceiptScreen extends ConsumerWidget {
         leading: CloseButton(onPressed: () => context.go('/circle/$circleId')),
       ),
       body: async.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString()),
         data: (c) {
           final me = ref.watch(meProvider);
