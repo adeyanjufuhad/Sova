@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../models.dart';
 import '../sova_repository.dart';
 import 'api_client.dart';
@@ -129,15 +131,35 @@ class ApiRepository implements SovaRepository {
       _circle(await _api.post('/circles/$circleId/rules/accept', {'version': version}) as Map<String, dynamic>);
 
   @override
+  Future<String> uploadProof({
+    required String circleId,
+    required int roundNumber,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    final link = await _api.post('/circles/$circleId/rounds/$roundNumber/proof', {
+      'contentType': contentType,
+      'size': bytes.length,
+    }) as Map<String, dynamic>;
+    await _api.upload(link['uploadUrl'] as String, bytes, (link['headers'] as Map).cast<String, String>());
+    return link['key'] as String;
+  }
+
+  @override
+  Future<String> proofUrl(String contributionId) async =>
+      ((await _api.get('/contributions/$contributionId/proof')) as Map<String, dynamic>)['url'] as String;
+
+  @override
   Future<Circle> confirmMyPayment({
     required String circleId,
     required int roundNumber,
     String? bankReference,
-    bool hasProof = false,
+    String? proofKey,
     required String pin,
   }) async {
     final res = await _api.post('/circles/$circleId/rounds/$roundNumber/pay', {
       'bankReference': bankReference,
+      'proofKey': proofKey,
       'pin': pin,
     });
     return _circle(res as Map<String, dynamic>);

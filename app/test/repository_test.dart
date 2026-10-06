@@ -58,7 +58,7 @@ void main() {
       throwsA(isA<SovaException>().having((e) => e.code, 'code', 'wrong_pin')),
     );
     final after = await repo.confirmMyPayment(
-        circleId: c.id, roundNumber: round.number, bankReference: 'FT123', hasProof: true, pin: pin);
+        circleId: c.id, roundNumber: round.number, bankReference: 'FT123', proofKey: 'demo-photo', pin: pin);
     final mine = after.contributionFor(round.id, me)!;
     expect(mine.status, ContributionStatus.payerConfirmed);
     expect(mine.reference, startsWith('SV-'));
