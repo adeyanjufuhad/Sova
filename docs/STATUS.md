@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 7 October 2026 (Devcenter Hacktober build phase, day 7). Phases 4 and 5 done early.
+Last updated: 7 October 2026 (Devcenter Hacktober build phase, day 7). Phases 4, 5 and 6 done early.
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -21,6 +21,7 @@ Update it at the end of every phase.
 - Judged on: live and fully functional on **RumptyCloud**; clean code and docs (setup from README); innovation and practical utility.
 - Milestones: core loop live by **12 Oct**, trust features by **22 Oct**, polish and docs by **28 Oct**, buffer 29–31 Oct.
 - Before 1 November: turn off scale-to-zero on every RumptyCloud deployment.
+- On each judging and demo day: reseed the demo data (`npm run seed` in `api/`, admin URL), because every visitor shares the demo account. See `docs/demo-script.md`.
 
 ## Architecture (target)
 
@@ -59,9 +60,10 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 6 Oct | **Disputes (owner may change):** a payment marked as sent can be disputed by its payer or the turn's collector; it is frozen until decided. Every member except the payer and collector may vote "it arrived" / "it didn't arrive"; votes are open (in the ledger) and can change while open; more than half of the eligible voters decides. Either party can settle by agreeing with the other side. Outcome: arrived = payment confirmed; not arrived = back to unpaid. Shortfall disputes have no vote: they close when every missing payment for that turn is confirmed, or the collector marks them settled. Raising, voting and settling need the PIN. |
 | 6 Oct | **Design direction (owner):** visible redesign within Sova's look, borrowing patterns from Wise, Revolut, Stripe and Mastercard (no logos, colours or names). Section labels in sentence case with no square markers; Plus Jakarta Sans everywhere except hashes and references; the app's bottom navigation is a floating pill. Design skills installed (see CLAUDE.md); Sova's rules win where they clash. |
 | 7 Oct | **Notifications and settings (owner may change):** in-app only (no SMS, no email, no push yet). Event notifications are written by database triggers; reminders (due within 2 days, overdue, payments to confirm) are worked out on every read, so no scheduler is needed. Opening the list marks everything read. Changing bank details needs the PIN (it decides where payouts go); changing the PIN needs the current one; the phone number can't be changed in the app. |
-| 8 Oct | **Swaps and handovers (owner may change):** a member asks another to trade turns; both turns must not have started; the other accepts (PIN) or declines; one pending request per member; an admin who pledged last can't swap. A member who hasn't collected (not the admin) can hand their place to someone with a Sova account: the replacement accepts the rules (PIN), then the admin approves (PIN); it takes effect when the current turn ends (straight away while forming). Pending requests are cancelled when a turn involved starts, or the member leaves. The leaving member's past payments are shown so the two can settle privately; Sova moves no money. Draw checks use the order as drawn (from the ledger). |
+| 6 Oct | **Swaps and handovers (owner may change):** a member asks another to trade turns; both turns must not have started; the other accepts (PIN) or declines; one pending request per member; an admin who pledged last can't swap. A member who hasn't collected (not the admin) can hand their place to someone with a Sova account: the replacement accepts the rules (PIN), then the admin approves (PIN); it takes effect when the current turn ends (straight away while forming). Pending requests are cancelled when a turn involved starts, or the member leaves. The leaving member's past payments are shown so the two can settle privately; Sova moves no money. Draw checks use the order as drawn (from the ledger). |
 | 7 Oct | **Liquid glass tab bar (owner):** the app's bottom navigation becomes iOS-style liquid glass with a draggable lens; the only glass, gradient and shadow allowed. Everything else stays flat. |
 | 7 Oct | **Sova Score (owner may change):** v1 formula kept (60% on time, 25% every turn paid, 15% circles finished). Shown only after 3 confirmed payments. Turns not yet due and payments sent back to unpaid don't count. Bands: Excellent 90+, Strong 75–89, Fair 50–74, Building under 50. Sharing publishes a snapshot behind a random link (PIN needed): first name + initial, score, rates and counts only; one live link at a time; stop sharing any time. Described as "your record, not a credit rating". |
+| 7 Oct | **Shared demo account (owner may change):** everyone who taps "Try the demo" signs in as Ada Obi, so the API refuses changes to that account's name, bank details and PIN (403), and the app shows the demo PIN (`2580`) on every PIN sheet. Five wrong PINs still lock it for 15 minutes like any account; reseeding resets it. |
 | 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
 
 ## Built and working
@@ -124,7 +126,13 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Endpoints: `GET /me/notifications` (live reminders + recent notifications + badge), `POST /me/notifications/read`, `POST /me/pin/change`; `PUT /me/bank` now needs the PIN. 5 new API tests (88 total).
 - App: notifications screen ("Needs you now" reminders, then recent, unread dots), badge on the Home bell; edit profile, bank details (searchable bank list, 10-digit account number, PIN) and change PIN (current, new, confirm; easy PINs refused) from the Record tab. Flutter tests: 57.
 
-### Swaps and handovers (Phase 4, 8 Oct)
+### Docs and polish (Phase 6, done 7 Oct)
+- Root `README.md` rewritten: what Sova does, live addresses, Mermaid architecture diagram, local setup for all three parts, RumptyCloud deployment (database, bucket, API, static sites via GitHub Actions), security notes.
+- New `app/README.md` and `website/README.md`; `api/README.md` lists every endpoint; `db/README.md` lists every migration.
+- `docs/demo-script.md`: a 7-minute walkthrough of the five demo circles, with preparation (reseed, wake the services) and what to do if something goes wrong.
+- Demo safety: the shared demo account's name, bank details and PIN can't be changed (API 403 and app notices); the PIN sheet shows the demo PIN. API 0.9.1. API tests: 89; Flutter tests: 58.
+
+### Swaps and handovers (Phase 4, 6 Oct)
 - Migration `20261008000000_swaps_handovers.sql` (applied to RumptyCloud; demo reseeded): `request_swap`, `respond_swap`, `cancel_swap`, `request_handover`, `respond_handover`, `decide_handover`, `complete_handover`, `cancel_handover`; a trigger on turns applies approved handovers as a turn ends and cancels requests when a turn starts. Ledger entries `turns_swapped`, `slot_handed_over` (plus `member_joined` for the replacement).
 - Endpoints: `GET /circles/:id/turn-changes`, `POST /circles/:id/swaps`, `POST /swaps/:id/accept|decline|cancel`, `POST /circles/:id/handovers`, `GET /me/handover-offers`, `POST /handovers/:id/accept|decline|approve|reject|cancel`. Circle detail now includes the drawn order. 6 new API tests (83 total).
 - App: "Swaps and handovers" screen (answer requests, ask to swap, hand over, history), a card on the circle screen that lights up when something waits on you, offers on Home with an accept screen; draw replay and checks use the drawn order and note later agreed changes. Flutter tests: 52.
@@ -162,7 +170,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Constraints: one membership per group, unique payout positions (deferrable), one contribution per member per round, checked statuses, Nigerian phone format.
 - All functions were smoke-tested inside rolled-back transactions.
 
-### App (`app/`), running on an in-memory demo backend
+### App foundations (`app/`, first built on the in-memory demo backend)
 - Design system (`core/theme`), bundled subset Plus Jakarta Sans (₦ and tabular figures), adire painter, Sova launcher icon.
 - Sign-up: welcome slides (circle card art), Nigerian phone, OTP (demo code `123456`), name, 4-digit PIN twice (easy PINs refused).
 - Tabs: Home (blue adire header, next payout count-up, hide-amounts eye, Pay/Start/scan, nudge card, payments with filters), Circles, Activity, Record (on-time rate, monthly chart, per-circle share, settings stub).
@@ -187,7 +195,6 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 
 - Push notifications, SMS and WhatsApp reminders (roadmap; in-app reminders are built).
 - Voice prompts, local languages, offline use, SMS, USSD, collector mode (roadmap; labelled as such on the website).
-- Root README with architecture and deployment guide; per-folder READMEs for `app/` and `website/`.
 
 ## Phase plan
 
@@ -197,9 +204,9 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 1. Database + API foundation ✅ | 3 Oct | Migration runner; schema fixes (payout amount, undrawn turns, invite codes); auth (OTP provider interface, test numbers, paid-SMS stub, demo login, JWT with refresh rotation, argon2id PINs, lockout, rate limits); seed script |
 | 2. Core loop live | 7–12 Oct | Circle lifecycle endpoints; app on the API; session persistence (Android + web); proof photos via presigned uploads; payout shortfall; auto-advance; app web build, website static export, honesty fixes and waitlist via API, all deployed |
 | 3. Ledger ✅ (early, 4 Oct) | 12–17 Oct | Append-only hash-chained ledger written by triggers; UPDATE/DELETE/TRUNCATE blocked; public chain endpoint; website "Verify this circle" recomputing in the browser; docs/ledger.md |
-| 4. Fair draw + trust screens | 17–22 Oct | Commit-reveal draw with animation and verification; Sova Score card from the database; swaps, handovers, disputes with votes; collected-then-stopped flag |
+| 4. Fair draw + trust screens ✅ (early, 7 Oct) | 17–22 Oct | Commit-reveal draw with animation and verification; Sova Score card from the database; swaps, handovers, disputes with votes; collected-then-stopped flag |
 | 5. Settings + reminders ✅ (early, 7 Oct) | 22–25 Oct | Edit profile, bank details, change PIN; in-app notifications |
-| 6. Docs + polish | 25–28 Oct | Root README with Mermaid diagram and RumptyCloud deployment; folder READMEs; demo script |
+| 6. Docs + polish ✅ (early, 7 Oct) | 25–28 Oct | Root README with Mermaid diagram and RumptyCloud deployment; folder READMEs; demo script |
 
 ## RumptyCloud facts (observed 3 Oct)
 
