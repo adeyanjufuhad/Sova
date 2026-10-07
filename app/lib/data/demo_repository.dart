@@ -79,6 +79,137 @@ class DemoRepository implements SovaRepository {
     _checkPin(pin);
   }
 
+  @override
+  Future<Session> updateName(String fullName) async {
+    await _latency();
+    final name = fullName.trim();
+    if (name.length < 2) throw const SovaException('Enter your full name.');
+    _session = _session!.copyWith(fullName: name);
+    _renameMe(name, _session!.phone);
+    return _session!;
+  }
+
+  @override
+  Future<List<String>> banks() async => const [
+        'Access Bank', 'Ecobank', 'Fidelity Bank', 'First Bank', 'FCMB', 'GTBank', 'Kuda', 'Moniepoint MFB', 'OPay',
+        'PalmPay', 'Polaris Bank', 'Stanbic IBTC', 'Sterling Bank', 'UBA', 'Union Bank', 'Wema Bank', 'Zenith Bank',
+      ];
+
+  @override
+  Future<Session> saveBank({required BankDetails bank, required String pin}) async {
+    await _latency();
+    _checkPin(pin);
+    if (!RegExp(r'^\d{10}$').hasMatch(bank.accountNumber)) throw const SovaException('Account numbers are 10 digits.');
+    if (bank.accountName.trim().length < 2) throw const SovaException('Enter the name on the account.');
+    _session = _session!.copyWith(bank: bank);
+    for (final c in _circles.values.toList()) {
+      _circles[c.id] = _copyCircle(c, members: [
+        for (final m in c.members)
+          m.userId == me
+              ? Member(userId: me, name: m.name, phone: m.phone, position: m.position, bank: bank, vouchedBy: m.vouchedBy)
+              : m,
+      ]);
+    }
+    return _session!;
+  }
+
+  @override
+  Future<void> changePin({required String currentPin, required String newPin}) async {
+    await _latency();
+    _checkPin(currentPin);
+    if (isEasyPin(newPin)) throw const SovaException('That PIN is too easy to guess. Choose another.', code: 'weak_pin');
+    if (newPin == currentPin) {
+      throw const SovaException("Choose a PIN that's different from your current one.", code: 'same_pin');
+    }
+    _pin = newPin;
+  }
+
+  /// Seeded notifications; the server writes these from real events.
+  late final _inbox = <AppNotification>[
+    AppNotification(
+      id: 'n-swap',
+      type: 'swap_request',
+      title: 'Zainab asks to swap turns with you',
+      message: 'Office Esusu',
+      read: false,
+      createdAt: DateTime.now().subtract(const Duration(hours: 20)),
+      link: '/circle/office-esusu/turns',
+    ),
+    AppNotification(
+      id: 'n-emeka',
+      type: 'payment_marked',
+      title: 'Emeka marked ₦10,000 as sent',
+      message: "Unilag Class of '24 Ajo, turn 2. Check your bank, then confirm it arrived.",
+      read: false,
+      createdAt: DateTime.now().subtract(const Duration(hours: 26)),
+      link: '/circle/class-ajo',
+    ),
+    AppNotification(
+      id: 'n-turn',
+      type: 'turn_opened',
+      title: 'Turn 3: pay Halima ₦20,000',
+      message: 'Office Esusu. Due in a week.',
+      read: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+      link: '/circle/office-esusu',
+    ),
+  ];
+
+  @override
+  Future<Inbox> notifications() async {
+    final today = DateTime.now();
+    final day = DateTime(today.year, today.month, today.day);
+    final reminders = <Reminder>[];
+    for (final c in _circles.values.where((c) => c.memberById(me) != null)) {
+      final r = c.activeRound;
+      if (r == null) continue;
+      if (r.collectorId == me) {
+        final n = c.contributions.where((x) => x.roundId == r.id && x.status == ContributionStatus.payerConfirmed).length;
+        if (n > 0) {
+          reminders.add(Reminder(
+            kind: 'confirm',
+            title: '$n payment${n == 1 ? '' : 's'} to confirm',
+            message: '${c.name}. Check your bank, then confirm what arrived.',
+            link: '/circle/${c.id}',
+          ));
+        }
+        continue;
+      }
+      final days = r.dueDate.difference(day).inDays;
+      if (c.statusFor(r.id, me) == ContributionStatus.pending && days <= 2) {
+        final who = c.currentCollector?.firstName ?? 'the collector';
+        reminders.add(Reminder(
+          kind: days < 0 ? 'overdue' : 'due',
+          title: 'Pay $who ${naira(c.contributionAmount)}',
+          message: days < 0
+              ? '${c.name}, turn ${r.number}. ${-days} day${days == -1 ? '' : 's'} late.'
+              : '${c.name}, turn ${r.number}. Due ${days == 0 ? 'today' : days == 1 ? 'tomorrow' : shortDate(r.dueDate)}.',
+          link: '/circle/${c.id}/pay',
+        ));
+      }
+    }
+    return Inbox(
+      reminders: reminders,
+      items: List.of(_inbox),
+      badge: _inbox.where((n) => !n.read).length + reminders.length,
+    );
+  }
+
+  @override
+  Future<void> markNotificationsRead() async {
+    for (final (i, n) in _inbox.indexed) {
+      _inbox[i] = AppNotification(
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        read: true,
+        createdAt: n.createdAt,
+        link: n.link,
+      );
+    }
+  }
+
   void _checkPin(String pin) {
     final now = DateTime.now();
     if (_pinLockedUntil != null && _pinLockedUntil!.isAfter(now)) {

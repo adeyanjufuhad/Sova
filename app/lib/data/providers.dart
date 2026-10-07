@@ -95,6 +95,16 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(session: session);
   }
 
+  Future<void> updateName(String fullName) async {
+    final session = await _repo.updateName(fullName);
+    state = state.copyWith(session: session);
+  }
+
+  Future<void> saveBank(BankDetails bank, {required String pin}) async {
+    final session = await _repo.saveBank(bank: bank, pin: pin);
+    state = state.copyWith(session: session);
+  }
+
   Future<void> signOut() async {
     await _repo.signOut();
     state = AuthState(restoring: false, onboarded: state.onboarded);
@@ -118,6 +128,11 @@ final circleProvider = FutureProvider.family<Circle, String>((ref, id) {
 final scoreProvider = FutureProvider<SovaScore>((ref) {
   ref.watch(meProvider);
   return ref.watch(repositoryProvider).myScore();
+});
+
+final inboxProvider = FutureProvider<Inbox>((ref) {
+  ref.watch(meProvider);
+  return ref.watch(repositoryProvider).notifications();
 });
 
 final turnChangesProvider = FutureProvider.family<TurnChanges, String>((ref, circleId) {
@@ -144,4 +159,5 @@ void refreshCircle(WidgetRef ref, String id) {
   ref.invalidate(scoreProvider);
   ref.invalidate(disputesProvider(id));
   ref.invalidate(turnChangesProvider(id));
+  ref.invalidate(inboxProvider);
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/format.dart';
 import '../../core/theme/theme.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
@@ -45,7 +46,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _onPin(String pin) async {
     if (_step == _Step.pin) {
-      if (RegExp(r'^(\d)\1{3}$').hasMatch(pin) || pin == '1234' || pin == '0000') {
+      if (isEasyPin(pin)) {
         _padKey.currentState?.clear();
         setState(() => _error = 'That PIN is too easy to guess. Try another.');
         return;

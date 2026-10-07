@@ -135,6 +135,23 @@ abstract interface class SovaRepository {
 
   Future<TurnChanges> cancelHandover({required String circleId, required String handoverId});
 
+  /// Changes the member's name as others see it.
+  Future<Session> updateName(String fullName);
+
+  /// Banks members can receive payouts into.
+  Future<List<String>> banks();
+
+  /// Where members send this person's payout. Needs the PIN.
+  Future<Session> saveBank({required BankDetails bank, required String pin});
+
+  /// Changes the PIN; the current one must be right.
+  Future<void> changePin({required String currentPin, required String newPin});
+
+  /// Notifications and live reminders.
+  Future<Inbox> notifications();
+
+  Future<void> markNotificationsRead();
+
   /// Places offered to the signed-in person.
   Future<List<HandoverOffer>> handoverOffers();
 
