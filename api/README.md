@@ -4,7 +4,7 @@ The backend for the Sova app and website: phone sign-in, circles, payments, the 
 
 Rules that guard the records (constraints, PIN lockout, round advancing, swaps, handovers, payout checks) live in the database (`../db/migrations`). The API wraps those functions instead of duplicating them.
 
-> Status: Phase 2 in progress (auth and the circle lifecycle are done; photo uploads next). See `../docs/STATUS.md`.
+> Status: live at https://sova-api.rumptycloud.app (version on `/health`). What is built is tracked in `../docs/STATUS.md`.
 
 ## Run locally
 
@@ -72,9 +72,15 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/auth/logout` | none | `{ refreshToken }` → ends the session family |
 | GET | `/me` | bearer | Current user |
 | PATCH | `/me` | bearer | `{ fullName }` (first and last name) |
+| POST | `/me/pin/change` | bearer | `{ currentPin, newPin }`; a wrong current PIN counts towards the lockout |
 | POST | `/me/pin` | bearer | `{ pin }` sets the first PIN (4 digits, not trivial) |
 | POST | `/me/pin/verify` | bearer | `{ pin }` → `204`, `401` with attempts left, or `423` when locked |
-| PUT | `/me/bank` | bearer | `{ bankName, accountNumber, accountName }`: where this person receives payouts |
+| PUT | `/me/bank` | bearer | `{ bankName, accountNumber, accountName, pin }`: where this person receives payouts |
+| GET | `/me/notifications` | bearer | Live reminders (due within 2 days, overdue, to confirm), recent notifications, badge count |
+| POST | `/me/notifications/read` | bearer | Marks every notification read |
+| GET | `/me/score` | bearer | Sova Score with its parts (shown after 3 confirmed payments) |
+| POST | `/me/score/share` | bearer | `{ pin }` → a random link to a snapshot; replaces any earlier link |
+| POST | `/me/score/share/stop` | bearer | Ends sharing |
 | GET | `/banks` | none | Nigerian banks and fintechs to choose from |
 | POST | `/waitlist` | none | Website sign-up `{ name, phone, role, city?, groupSize? }`; 5/min per IP, honeypot field `website` |
 | GET | `/circles` | bearer | My circles, with the current turn and my payment status |
@@ -89,8 +95,27 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/contributions/:id/confirm` | collector | `{ pin }`: "the money arrived" |
 | GET | `/contributions/:id/proof` | member | `{ url }`: a 5-minute link to view the payment's receipt photo |
 | POST | `/circles/:id/rounds/:n/payout` | collector | `{ amount, pin }` → `{ shortfall, disputeId, nextRound }`; closes the turn |
+| GET | `/circles/:id/disputes` | member | Disputes in the circle |
+| GET | `/disputes/:id` | member | Question, people involved, evidence, votes, timeline |
+| POST | `/contributions/:id/dispute` | payer or collector | `{ reason, pin }`: freezes the payment until decided |
+| POST | `/disputes/:id/vote` | member | `{ side: "payer" or "collector", pin }`; open votes that can change while the dispute is open |
+| POST | `/disputes/:id/settle` | party | `{ pin }`: agree with the other side (or, for a shortfall, the collector marks it settled) |
+| POST | `/disputes/:id/comments` | member | `{ message }` |
+| GET | `/circles/:id/turn-changes` | member | Swap and handover requests and their history |
+| POST | `/circles/:id/swaps` | member | `{ targetId, reason?, pin }`: ask to trade turns |
+| POST | `/swaps/:id/accept`, `/decline`, `/cancel` | member | Answer (accept needs `{ pin }`) or withdraw a swap request |
+| POST | `/circles/:id/handovers` | member | `{ phone, reason?, pin }`: offer your place to someone with a Sova account |
+| GET | `/me/handover-offers` | bearer | Places offered to me |
+| POST | `/handovers/:id/accept`, `/decline` | replacement | Accept needs `{ rulesVersion, pin }` |
+| POST | `/handovers/:id/approve`, `/reject` | admin | Approve needs `{ pin }` |
+| POST | `/handovers/:id/cancel` | member | Withdraw the offer |
+| GET | `/public/demo-circles` | none | Demo circles for the website's verify page |
+| GET | `/public/circles/:id/ledger` | none | A circle's hash chain and draw; people appear as id + "Ada O." |
+| GET | `/public/scores/:token` | none | A shared score snapshot |
 
 Money actions need the PIN. Anyone outside a circle gets `404` for it, so ids reveal nothing.
+
+The shared demo account (`POST /auth/demo`) can't change its name, bank details or PIN (`403`), so one visitor can't lock out the next.
 
 ## How a circle runs
 
