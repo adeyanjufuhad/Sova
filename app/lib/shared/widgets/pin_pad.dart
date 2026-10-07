@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme.dart';
+import '../../data/models.dart';
+import '../../data/providers.dart';
 
 /// Four dots plus a large numeric keypad. Big keys suit low-literacy users
 /// and work without the system keyboard.
@@ -142,7 +145,7 @@ Future<bool> confirmWithPin(
   return result ?? false;
 }
 
-class _PinSheet extends StatefulWidget {
+class _PinSheet extends ConsumerStatefulWidget {
   const _PinSheet({required this.title, required this.subtitle, required this.onPin});
 
   final String title;
@@ -150,10 +153,10 @@ class _PinSheet extends StatefulWidget {
   final Future<void> Function(String pin) onPin;
 
   @override
-  State<_PinSheet> createState() => _PinSheetState();
+  ConsumerState<_PinSheet> createState() => _PinSheetState();
 }
 
-class _PinSheetState extends State<_PinSheet> {
+class _PinSheetState extends ConsumerState<_PinSheet> {
   final _padKey = GlobalKey<PinPadState>();
   bool _busy = false;
   String? _error;
@@ -196,6 +199,10 @@ class _PinSheetState extends State<_PinSheet> {
             Text(widget.title, style: SovaText.h2, textAlign: TextAlign.center),
             const SizedBox(height: SovaSpacing.xs),
             Text(widget.subtitle, style: SovaText.bodySmall, textAlign: TextAlign.center),
+            if (ref.watch(authProvider).session?.isDemo ?? false) ...[
+              const SizedBox(height: SovaSpacing.sm),
+              const Text('Demo account PIN: $demoAccountPin', style: SovaText.label, textAlign: TextAlign.center),
+            ],
             const SizedBox(height: SovaSpacing.xl2),
             PinPad(key: _padKey, busy: _busy, onCompleted: _submit),
             if (_error != null) ...[
