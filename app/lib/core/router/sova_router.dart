@@ -21,6 +21,8 @@ import '../../features/circle/rules_screen.dart';
 import '../../features/circles/circles_screen.dart';
 import '../../features/create/create_circle_screen.dart';
 import '../../features/join/join_circle_screen.dart';
+import '../../features/notifications/notifications_screen.dart';
+import '../../features/settings/settings_screens.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/record/record_screen.dart';
 import '../../shared/widgets/app_shell.dart';
@@ -108,6 +110,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Full-screen flows above the tab bar.
       GoRoute(path: '/create', parentNavigatorKey: _rootKey, builder: (_, _) => const CreateCircleScreen()),
       GoRoute(path: '/join', parentNavigatorKey: _rootKey, builder: (_, _) => const JoinCircleScreen()),
+      GoRoute(path: '/notifications', parentNavigatorKey: _rootKey, builder: (_, _) => const NotificationsScreen()),
+      GoRoute(path: '/settings/profile', parentNavigatorKey: _rootKey, builder: (_, _) => const EditProfileScreen()),
+      GoRoute(path: '/settings/bank', parentNavigatorKey: _rootKey, builder: (_, _) => const BankDetailsScreen()),
+      GoRoute(path: '/settings/pin', parentNavigatorKey: _rootKey, builder: (_, _) => const ChangePinScreen()),
       GoRoute(
         path: '/handover/:id',
         parentNavigatorKey: _rootKey,
