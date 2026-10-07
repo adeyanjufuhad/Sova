@@ -121,4 +121,23 @@ describe("settings", () => {
     const saved = await call("chuka", "PUT", "/me/bank", { ...bank, pin: PIN });
     expect(saved.body.bank).toEqual({ bankName: "OPay", accountNumber: "9061234567", accountName: "Chuka Eze" });
   });
+
+  it("keeps the shared demo account's name, bank details and PIN as seeded", async () => {
+    await db.pool.query("update users set is_demo = true where id = $1", [ids.chuka]);
+    try {
+      const bank = { bankName: "OPay", accountNumber: "9061234567", accountName: "Chuka Eze", pin: PIN };
+      for (const [method, url, body] of [
+        ["PATCH", "/me", { fullName: "Someone Else" }],
+        ["PUT", "/me/bank", bank],
+        ["POST", "/me/pin/change", { currentPin: PIN, newPin: "4826" }],
+      ] as const) {
+        const res = await call("chuka", method, url, body);
+        expect(res.status).toBe(403);
+        expect(res.body.error.message).toMatch(/shared demo account/);
+      }
+      expect((await call("chuka", "POST", "/me/pin/verify", { pin: PIN })).status).toBe(204);
+    } finally {
+      await db.pool.query("update users set is_demo = false where id = $1", [ids.chuka]);
+    }
+  });
 });
