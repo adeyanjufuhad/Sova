@@ -16,7 +16,7 @@ class DemoRepository implements SovaRepository {
   }
 
   static const demoOtp = '123456';
-  static const demoPin = '2580';
+  static const demoPin = demoAccountPin;
   static const me = 'me';
 
   final _random = Random();

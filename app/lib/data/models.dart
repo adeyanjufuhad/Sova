@@ -245,6 +245,15 @@ class Circle {
   bool isAdmin(String userId) => adminId == userId;
 }
 
+/// The shared demo account's PIN, seeded by the API (`DEMO_PIN` in
+/// api/src/seed/demo.ts). Shown on the PIN sheet so visitors can try money
+/// actions; the account's PIN, name and bank details can't be changed.
+const demoAccountPin = '2580';
+
+/// What the settings screens say on the shared demo account.
+const demoAccountNotice =
+    'This is the shared demo account, so its name, bank details and PIN stay as they are for the next visitor.';
+
 class Session {
   const Session({
     required this.phone,

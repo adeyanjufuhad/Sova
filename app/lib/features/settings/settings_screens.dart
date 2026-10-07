@@ -58,11 +58,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(authProvider).session;
+    final demo = session?.isDemo ?? false;
     return Scaffold(
       appBar: AppBar(leading: const SovaBackButton(fallback: '/record'), title: const Text('Edit profile')),
       body: ListView(
         padding: const EdgeInsets.all(SovaSpacing.screenH),
         children: [
+          if (demo) ...[
+            const NoticeBox(demoAccountNotice, icon: Icons.science_outlined),
+            const SizedBox(height: SovaSpacing.lg),
+          ],
           TextField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
@@ -77,7 +82,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             style: SovaText.caption,
           ),
           const SizedBox(height: SovaSpacing.xl2),
-          FilledButton(onPressed: _busy ? null : _save, child: Text(_busy ? 'Saving…' : 'Save')),
+          FilledButton(onPressed: _busy || demo ? null : _save, child: Text(_busy ? 'Saving…' : 'Save')),
         ],
       ),
     );
@@ -127,11 +132,16 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final banks = ref.watch(_banksProvider);
+    final demo = ref.watch(authProvider).session?.isDemo ?? false;
     return Scaffold(
       appBar: AppBar(leading: const SovaBackButton(fallback: '/record'), title: const Text('Bank details')),
       body: ListView(
         padding: const EdgeInsets.all(SovaSpacing.screenH),
         children: [
+          if (demo) ...[
+            const NoticeBox(demoAccountNotice, icon: Icons.science_outlined),
+            const SizedBox(height: SovaSpacing.lg),
+          ],
           const Text(
             'When it\'s your turn, members send your payout here. Sova never holds or moves money, so check '
             'every digit.',
@@ -176,7 +186,7 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
             NoticeBox(_error!),
           ],
           const SizedBox(height: SovaSpacing.xl2),
-          FilledButton(onPressed: _save, child: const Text('Save')),
+          FilledButton(onPressed: demo ? null : _save, child: const Text('Save')),
         ],
       ),
     );
@@ -257,6 +267,15 @@ class _ChangePinScreenState extends ConsumerState<ChangePinScreen> {
       _PinStep.fresh => ('Choose a new PIN', 'Avoid easy ones like 1234 or 1111.'),
       _PinStep.confirm => ('Enter the new PIN again', 'To make sure it\'s right.'),
     };
+    if (ref.watch(authProvider).session?.isDemo ?? false) {
+      return Scaffold(
+        appBar: AppBar(leading: const SovaBackButton(fallback: '/record'), title: const Text('Change PIN')),
+        body: ListView(
+          padding: const EdgeInsets.all(SovaSpacing.screenH),
+          children: const [NoticeBox(demoAccountNotice, icon: Icons.science_outlined)],
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(leading: const SovaBackButton(fallback: '/record'), title: const Text('Change PIN')),
       body: SafeArea(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sova/app.dart';
@@ -15,6 +16,15 @@ class _SignedIn extends AuthNotifier {
         restoring: false,
         onboarded: true,
         session: Session(phone: '+2348000000000', userId: 'me', fullName: 'Ada Obi', hasPin: true),
+      );
+}
+
+class _DemoSignedIn extends AuthNotifier {
+  @override
+  AuthState build() => const AuthState(
+        restoring: false,
+        onboarded: true,
+        session: Session(phone: '+2348000000000', userId: 'me', fullName: 'Ada Obi', hasPin: true, isDemo: true),
       );
 }
 
@@ -104,5 +114,28 @@ void main() {
 
     expect(find.textContaining('PIN changed'), findsOneWidget);
     await tester.runAsync(() => demo.verifyPin('4826'));
+  });
+
+  testWidgets('the shared demo account keeps its PIN and bank details', (tester) async {
+    final demo = DemoRepository();
+    await tester.runAsync(demo.startDemo);
+    final container = ProviderContainer(overrides: [
+      authProvider.overrideWith(_DemoSignedIn.new),
+      repositoryProvider.overrideWithValue(demo),
+    ]);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const SovaApp()));
+    await tester.pumpAndSettle();
+
+    container.read(routerProvider).go('/settings/pin');
+    await tester.pumpAndSettle();
+    expect(find.text(demoAccountNotice), findsOneWidget);
+    expect(find.text('Enter your current PIN'), findsNothing);
+
+    container.read(routerProvider).go('/settings/bank');
+    await tester.pumpAndSettle();
+    expect(find.text(demoAccountNotice), findsOneWidget);
+    final save = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
+    expect(save.onPressed, isNull);
   });
 }
