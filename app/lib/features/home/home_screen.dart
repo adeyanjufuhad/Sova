@@ -21,10 +21,6 @@ String _greeting() {
   return 'Good evening';
 }
 
-void comingNext(BuildContext context, String what) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$what is coming in the next build.')));
-}
-
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -157,12 +153,7 @@ class _Header extends ConsumerWidget {
                   ),
                   _RoundIcon(icon: Icons.search_rounded, label: 'Find a circle', onTap: () => context.go('/circles')),
                   const SizedBox(width: SovaSpacing.sm),
-                  _RoundIcon(
-                    icon: Icons.notifications_none_rounded,
-                    label: '$actionCount things need your attention',
-                    badge: actionCount > 0,
-                    onTap: () => context.go('/activity'),
-                  ),
+                  const _Bell(),
                 ],
               ),
               const SizedBox(height: SovaSpacing.xl3),
@@ -245,6 +236,22 @@ class _Header extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The bell: unread notifications plus live reminders.
+class _Bell extends ConsumerWidget {
+  const _Bell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final badge = ref.watch(inboxProvider).value?.badge ?? 0;
+    return _RoundIcon(
+      icon: badge > 0 ? Icons.notifications_active_outlined : Icons.notifications_none_rounded,
+      label: badge == 0 ? 'Notifications' : 'Notifications, $badge new',
+      badge: badge > 0,
+      onTap: () => context.push('/notifications'),
     );
   }
 }
