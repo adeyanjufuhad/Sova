@@ -6,7 +6,7 @@ import type { OtpService } from "../auth/otp.js";
 import { requireUser, userIdOf } from "../auth/plugin.js";
 import { assertStrongPin, hashPin, verifyPin } from "../auth/pin.js";
 import type { TokenService } from "../auth/tokens.js";
-import { AppError, conflict } from "../lib/errors.js";
+import { AppError, conflict, forbidden } from "../lib/errors.js";
 import { displayPhone, normalisePhone } from "../lib/phone.js";
 
 const phoneField = z
@@ -130,8 +130,20 @@ export async function authRoutes(
 
   app.get("/me", { preHandler: auth }, async (req) => toUser(await findUser(userIdOf(req))));
 
+  /**
+   * Everyone who taps "Try the demo" shares one account, so its name, bank
+   * details and PIN stay as seeded: one visitor can't lock out the next.
+   */
+  const assertNotDemo = async (userId: string) => {
+    const { rows } = await pool.query<{ is_demo: boolean }>("select is_demo from users where id = $1", [userId]);
+    if (rows[0]?.is_demo) {
+      throw forbidden("This is the shared demo account, so its name, bank details and PIN can't be changed.");
+    }
+  };
+
   app.patch("/me", { preHandler: auth }, async (req) => {
     const { fullName } = profileBody.parse(req.body);
+    await assertNotDemo(userIdOf(req));
     const { rows } = await pool.query<UserRow>(
       `update users set full_name = $2 where id = $1 returning ${USER_COLUMNS}`,
       [userIdOf(req), fullName],
@@ -142,6 +154,7 @@ export async function authRoutes(
   /** Where this person receives their payout. */
   app.put("/me/bank", { preHandler: auth, config: moderate }, async (req) => {
     const body = bankBody.parse(req.body);
+    await assertNotDemo(userIdOf(req));
     await verifyPin(pool, userIdOf(req), body.pin);
     const bank = await pool.query<{ name: string }>("select name from nigerian_banks where lower(name) = lower($1)", [body.bankName]);
     if (!bank.rows[0]) throw new AppError(400, "unknown_bank", "Choose a bank from the list.");
@@ -175,6 +188,7 @@ export async function authRoutes(
     const me = userIdOf(req);
     const { currentPin, newPin } = changePinBody.parse(req.body);
     assertStrongPin(newPin);
+    await assertNotDemo(me);
     await verifyPin(pool, me, currentPin);
     if (newPin === currentPin) throw new AppError(400, "same_pin", "Choose a PIN that's different from your current one.");
     await pool.query("select change_pin($1, $2)", [me, await hashPin(newPin)]);
