@@ -184,13 +184,72 @@ class ApiRepository implements SovaRepository {
 
   // --- JSON -> models ---------------------------------------------------------
 
-  static Session _session(Map<String, dynamic> u) => Session(
-        phone: u['phone'] as String,
-        userId: u['id'] as String,
-        fullName: u['fullName'] as String?,
-        hasPin: u['hasPin'] as bool,
-        isDemo: (u['isDemo'] as bool?) ?? false,
-      );
+  static Session _session(Map<String, dynamic> u) {
+    final bank = u['bank'] as Map<String, dynamic>?;
+    return Session(
+      phone: u['phone'] as String,
+      userId: u['id'] as String,
+      fullName: u['fullName'] as String?,
+      hasPin: u['hasPin'] as bool,
+      isDemo: (u['isDemo'] as bool?) ?? false,
+      bank: bank == null
+          ? null
+          : BankDetails(
+              bankName: bank['bankName'] as String,
+              accountNumber: bank['accountNumber'] as String,
+              accountName: bank['accountName'] as String,
+            ),
+    );
+  }
+
+  @override
+  Future<Session> updateName(String fullName) async =>
+      _session(await _api.patch('/me', {'fullName': fullName.trim()}) as Map<String, dynamic>);
+
+  @override
+  Future<List<String>> banks() async {
+    final res = await _api.get('/banks') as Map<String, dynamic>;
+    return [for (final b in (res['banks'] as List).cast<Map<String, dynamic>>()) b['name'] as String];
+  }
+
+  @override
+  Future<Session> saveBank({required BankDetails bank, required String pin}) async => _session(await _api.put('/me/bank', {
+        'bankName': bank.bankName,
+        'accountNumber': bank.accountNumber,
+        'accountName': bank.accountName,
+        'pin': pin,
+      }) as Map<String, dynamic>);
+
+  @override
+  Future<void> changePin({required String currentPin, required String newPin}) =>
+      _api.post('/me/pin/change', {'currentPin': currentPin, 'newPin': newPin});
+
+  @override
+  Future<Inbox> notifications() async {
+    final j = await _api.get('/me/notifications') as Map<String, dynamic>;
+    return Inbox(
+      reminders: [
+        for (final r in (j['reminders'] as List).cast<Map<String, dynamic>>())
+          Reminder(kind: r['kind'] as String, title: r['title'] as String, message: r['message'] as String, link: r['link'] as String),
+      ],
+      items: [
+        for (final n in (j['items'] as List).cast<Map<String, dynamic>>())
+          AppNotification(
+            id: n['id'] as String,
+            type: n['type'] as String,
+            title: n['title'] as String,
+            message: n['message'] as String,
+            read: n['read'] as bool,
+            createdAt: _time(n['createdAt']),
+            link: n['link'] as String?,
+          ),
+      ],
+      badge: j['badge'] as int,
+    );
+  }
+
+  @override
+  Future<void> markNotificationsRead() => _api.post('/me/notifications/read');
 
   static Circle _circle(Map<String, dynamic> j) {
     final current = j['currentRound'] as Map<String, dynamic>?;

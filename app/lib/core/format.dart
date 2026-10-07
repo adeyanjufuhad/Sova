@@ -51,3 +51,6 @@ String displayPhone(String e164) {
 }
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// PINs too easy to guess (the server refuses the same): 1111, 2222… and 1234.
+bool isEasyPin(String pin) => RegExp(r'^(\d)\1{3}$').hasMatch(pin) || pin == '1234';

@@ -252,6 +252,7 @@ class Session {
     this.fullName,
     this.hasPin = false,
     this.isDemo = false,
+    this.bank,
   });
 
   final String phone;
@@ -262,14 +263,18 @@ class Session {
   /// The shared demo account behind "Try the demo".
   final bool isDemo;
 
+  /// Where members send this person's payout.
+  final BankDetails? bank;
+
   bool get profileComplete => (fullName?.isNotEmpty ?? false) && hasPin;
 
-  Session copyWith({String? fullName, bool? hasPin}) => Session(
+  Session copyWith({String? fullName, bool? hasPin, BankDetails? bank}) => Session(
         phone: phone,
         userId: userId,
         fullName: fullName ?? this.fullName,
         hasPin: hasPin ?? this.hasPin,
         isDemo: isDemo,
+        bank: bank ?? this.bank,
       );
 }
 
@@ -611,4 +616,47 @@ class HandoverOffer {
   /// The turn that comes with the place; null before the circle's draw.
   final int? turn;
   final String? reason;
+}
+
+/// Something that happened in one of the member's circles.
+class AppNotification {
+  const AppNotification({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.message,
+    required this.read,
+    required this.createdAt,
+    this.link,
+  });
+
+  final String id;
+  final String type;
+  final String title;
+  final String message;
+  final bool read;
+  final DateTime createdAt;
+
+  /// The app screen to open, e.g. `/circle/<id>`.
+  final String? link;
+}
+
+/// Worked out fresh each time: a payment due soon or late, or payments to confirm.
+class Reminder {
+  const Reminder({required this.kind, required this.title, required this.message, required this.link});
+
+  /// 'due', 'overdue' or 'confirm'.
+  final String kind;
+  final String title;
+  final String message;
+  final String link;
+}
+
+class Inbox {
+  const Inbox({required this.reminders, required this.items, required this.badge});
+  final List<Reminder> reminders;
+  final List<AppNotification> items;
+
+  /// Unread notifications plus reminders: the number on the bell.
+  final int badge;
 }
