@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/format.dart';
@@ -9,7 +10,6 @@ import '../../data/providers.dart';
 import '../../shared/widgets/app_shell.dart' show tabBarInset;
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
-import '../home/home_screen.dart' show comingNext;
 import 'score_card.dart';
 
 /// The member's own savings record: the thing that earns trust (and, later,
@@ -30,7 +30,12 @@ class RecordScreen extends ConsumerWidget {
             final s = recordStats(list, ref.watch(meProvider));
             final pct = (s.onTimeRate * 100).round();
             return ListView(
-              padding: EdgeInsets.fromLTRB(SovaSpacing.screenH, SovaSpacing.lg, SovaSpacing.screenH, SovaSpacing.xl3 + tabBarInset(context)),
+              padding: EdgeInsets.fromLTRB(
+                SovaSpacing.screenH,
+                SovaSpacing.lg,
+                SovaSpacing.screenH,
+                SovaSpacing.xl3 + tabBarInset(context),
+              ),
               children: [
                 Row(
                   children: [
@@ -57,9 +62,18 @@ class RecordScreen extends ConsumerWidget {
                   child: ScoreCard(
                     footer: Row(
                       children: [
-                        _Stat(label: 'Contributed', child: Money(s.totalContributed, style: _statStyle)),
-                        _Stat(label: 'Active circles', child: Text('${s.circlesActive}', style: _statStyle)),
-                        _Stat(label: 'Turns collected', child: Text('${s.turnsCollected}', style: _statStyle)),
+                        _Stat(
+                          label: 'Contributed',
+                          child: Money(s.totalContributed, style: _statStyle),
+                        ),
+                        _Stat(
+                          label: 'Active circles',
+                          child: Text('${s.circlesActive}', style: _statStyle),
+                        ),
+                        _Stat(
+                          label: 'Turns collected',
+                          child: Text('${s.turnsCollected}', style: _statStyle),
+                        ),
                       ],
                     ),
                   ),
@@ -78,10 +92,16 @@ class RecordScreen extends ConsumerWidget {
                         children: [
                           const IconTile(Icons.groups_rounded),
                           const SizedBox(width: SovaSpacing.md),
-                          Expanded(child: Text(share.circle.name, style: SovaText.label, overflow: TextOverflow.ellipsis)),
+                          Expanded(
+                            child: Text(share.circle.name, style: SovaText.label, overflow: TextOverflow.ellipsis),
+                          ),
                           SizedBox(
                             width: 48,
-                            child: Text('${(share.share * 100).round()}%', style: SovaText.caption, textAlign: TextAlign.right),
+                            child: Text(
+                              '${(share.share * 100).round()}%',
+                              style: SovaText.caption,
+                              textAlign: TextAlign.right,
+                            ),
                           ),
                           const SizedBox(width: SovaSpacing.lg),
                           Money(share.amount, style: SovaText.moneySmall),
@@ -228,13 +248,13 @@ class _Settings extends ConsumerWidget {
     final session = ref.watch(authProvider).session;
 
     Widget row(IconData icon, String title, {String? subtitle, Widget? trailing, VoidCallback? onTap}) => ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: SovaSpacing.lg),
-          leading: Icon(icon, color: SovaColors.navy900),
-          title: Text(title, style: SovaText.label),
-          subtitle: subtitle == null ? null : Text(subtitle, style: SovaText.caption),
-          trailing: trailing ?? const Icon(Icons.chevron_right_rounded, color: SovaColors.textMuted),
-          onTap: onTap,
-        );
+      contentPadding: const EdgeInsets.symmetric(horizontal: SovaSpacing.lg),
+      leading: Icon(icon, color: SovaColors.navy900),
+      title: Text(title, style: SovaText.label),
+      subtitle: subtitle == null ? null : Text(subtitle, style: SovaText.caption),
+      trailing: trailing ?? const Icon(Icons.chevron_right_rounded, color: SovaColors.textMuted),
+      onTap: onTap,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -247,7 +267,7 @@ class _Settings extends ConsumerWidget {
             Icons.person_outline_rounded,
             session?.fullName ?? 'Profile',
             subtitle: session == null ? null : displayPhone(session.phone),
-            onTap: () => comingNext(context, 'Editing your profile'),
+            onTap: () => context.push('/settings/profile'),
           ),
           const Divider(),
           row(
@@ -262,13 +282,23 @@ class _Settings extends ConsumerWidget {
             onTap: () => ref.read(hideAmountsProvider.notifier).toggle(),
           ),
           const Divider(),
-          row(Icons.account_balance_outlined, 'Bank details', subtitle: 'Where members send your payout',
-              onTap: () => comingNext(context, 'Editing bank details')),
+          row(
+            Icons.account_balance_outlined,
+            'Bank details',
+            subtitle: session?.bank == null
+                ? 'Add where members send your payout'
+                : '${session!.bank!.bankName} ${session.bank!.accountNumber}',
+            onTap: () => context.push('/settings/bank'),
+          ),
           const Divider(),
-          row(Icons.lock_outline_rounded, 'Change PIN', onTap: () => comingNext(context, 'Changing your PIN')),
+          row(Icons.lock_outline_rounded, 'Change PIN', onTap: () => context.push('/settings/pin')),
           const Divider(),
-          row(Icons.logout_rounded, 'Sign out', trailing: const SizedBox.shrink(),
-              onTap: () => ref.read(authProvider.notifier).signOut()),
+          row(
+            Icons.logout_rounded,
+            'Sign out',
+            trailing: const SizedBox.shrink(),
+            onTap: () => ref.read(authProvider.notifier).signOut(),
+          ),
         ],
       ),
     );
