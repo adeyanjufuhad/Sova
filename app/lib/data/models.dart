@@ -314,6 +314,10 @@ enum AssistantLanguage {
   const AssistantLanguage(this.code, this.label);
   final String code;
   final String label;
+
+  /// Languages the app offers. Pidgin is hidden (owner, 16 Oct) until a model
+  /// writes it well; the API and the offline demo still support it.
+  static const offered = [english];
 }
 
 /// An answer from "Ask Sova": a model's explanation, never the record itself.

@@ -8,7 +8,7 @@ import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 
 /// Opens "Ask Sova": a short explanation of a circle or a dispute, or an
-/// answer to a question about how Sova works, in English or Pidgin.
+/// answer to a question about how Sova works. Languages: [AssistantLanguage.offered].
 Future<void> showAskSova(BuildContext context, {required AssistantTopic topic, String? circleId, String? disputeId}) =>
     showModalBottomSheet<void>(
       context: context,
@@ -129,11 +129,12 @@ class _AskSovaSheetState extends ConsumerState<AskSovaSheet> {
                   const Icon(Icons.chat_bubble_outline_rounded, color: SovaColors.electric, size: 24),
                   const SizedBox(width: SovaSpacing.sm),
                   const Expanded(child: Text('Ask Sova', style: SovaText.h2)),
-                  SegmentedChips<AssistantLanguage>(
-                    options: {for (final l in AssistantLanguage.values) l: l.label},
-                    selected: _language,
-                    onChanged: _busy ? (_) {} : _setLanguage,
-                  ),
+                  if (AssistantLanguage.offered.length > 1)
+                    SegmentedChips<AssistantLanguage>(
+                      options: {for (final l in AssistantLanguage.offered) l: l.label},
+                      selected: _language,
+                      onChanged: _busy ? (_) {} : _setLanguage,
+                    ),
                 ],
               ),
               const SizedBox(height: SovaSpacing.xs),

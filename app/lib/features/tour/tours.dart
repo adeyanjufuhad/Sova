@@ -47,7 +47,7 @@ void startHomeTour(BuildContext context, WidgetRef ref) {
         target: 'home.ask',
         title: 'Ask Sova',
         body:
-            'Stuck? Ask Sova answers questions about how Sova works, in plain English or Pidgin, and explains '
+            'Stuck? Ask Sova answers questions about how Sova works, in plain words, and explains '
             'a circle or a dispute from inside it. It\'s written by AI, so the circle screen stays the record.',
       ),
     TourStep(
@@ -112,7 +112,7 @@ void startCircleTour(BuildContext context, WidgetRef ref) {
       const TourStep(
         target: 'circle.ask',
         title: 'Ask Sova',
-        body: 'A plain-words summary of where this circle stands, in English or Pidgin.',
+        body: 'A plain-words summary of where this circle stands and what you should do next.',
       ),
     const TourStep(
       target: 'circle.verify',

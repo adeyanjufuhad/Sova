@@ -345,7 +345,7 @@ class _Help extends ConsumerWidget {
               child: row(
                 Icons.chat_bubble_outline_rounded,
                 'Ask Sova',
-                'Questions about how Sova works, in English or Pidgin',
+                'Questions about how Sova works, answered in plain words',
                 () => showAskSova(context, topic: AssistantTopic.question),
               ),
             ),

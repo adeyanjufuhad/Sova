@@ -75,9 +75,8 @@ void main() {
     expect(find.textContaining('Office Esusu is a'), findsOneWidget);
     expect(find.textContaining('Offline demo: a fixed answer'), findsOneWidget);
 
-    await tester.tap(find.text('Pidgin'));
-    await settle(tester, 25);
-    expect(find.textContaining('Office Esusu na'), findsOneWidget);
+    // Pidgin is hidden until a model writes it well.
+    expect(find.text('Pidgin'), findsNothing);
   });
 
   testWidgets('Ask Sova answers a question about how Sova works', (tester) async {
