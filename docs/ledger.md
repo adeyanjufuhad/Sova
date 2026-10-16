@@ -2,7 +2,7 @@
 
 Every circle in Sova has its own append-only ledger: a hash chain of everything that matters to its money. Anyone with a circle's link can download the chain and check it, without signing in and without trusting Sova's servers to do the checking.
 
-The ledger is **tamper-evident, not tamper-proof**. It can't stop someone with full control of the database from rewriting a whole chain, but any change to a recorded entry breaks every hash after it, so edits are visible to anyone who saved an earlier chain head. Publishing chain heads somewhere Sova doesn't control is on the roadmap.
+The ledger is **tamper-evident, not tamper-proof**. It can't stop someone with full control of the database from rewriting a whole chain, but any change to a recorded entry breaks every hash after it, so edits are visible to anyone who saved an earlier chain head. Sova publishes every circle's chain head to a public git branch every 6 hours (see [Public anchors](#public-anchors)), so earlier heads are saved outside its database for everyone.
 
 ## What is recorded
 
@@ -65,4 +65,15 @@ for (const e of entries) {
 }
 ```
 
-Tests: `api/test/ledger.test.ts` (chains verify, the draw re-checks from the chain, no phone numbers, changes refused even for the owner, a single altered entry is detected).
+## Public anchors
+
+A chain checks out on its own even if someone with full database access rewrote it from the start. Anchors close that gap: they save chain heads outside Sova's database, with a timestamp, so a rewrite no longer matches what was published before it.
+
+- `GET /public/chain-heads` lists every circle's latest `seq` and `hash` under a key, never the circle id:
+  `key = SHA-256("sova-anchor|" + circle id)` (hex). Circle ids work as private links, so the anchors can't be used to find circles; only someone with a circle's link can look its anchors up.
+- `.github/workflows/ledger-anchors.yml` runs every 6 hours (and by hand). It reads that endpoint and, for every circle whose head moved, appends a checkpoint `{ seq, hash, at }` to `anchors.json` on the public `ledger-anchors` branch of the GitHub repository. Checkpoints are only appended, each run is a new commit and the branch is never force-pushed, so git history shows when each checkpoint was published. Script: `.github/scripts/anchor-ledgers.mjs` (tests beside it).
+- The verify page downloads `anchors.json` from `raw.githubusercontent.com` and checks that, for every checkpoint, entry `seq` still has hash `hash`. A chain only grows, so any mismatch means the record changed after that checkpoint was published; the page then says "Changed after it was published" even if the hashes link up. If the anchor file can't be loaded, the other checks still run.
+
+Limits, stated plainly: the repository belongs to Sova's owner, who could in principle force-push the branch. Doing so is visible to anyone who cloned or watched it, and GitHub branch protection can forbid it. Changes made between two runs aren't covered until the next checkpoint. Reseeding the demo creates new demo circles (new ids, so new keys); run the workflow by hand afterwards so they get anchored.
+
+Tests: `api/test/ledger.test.ts` (chains verify, the draw re-checks from the chain, no phone numbers, changes refused even for the owner, a single altered entry is detected, chain heads are published under hashed keys only).

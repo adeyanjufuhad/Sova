@@ -13,6 +13,8 @@ A walk through Sova on the live services, for judging day and anyone trying it f
 
    It recreates only the reserved demo people (`+2348000000xxx`) and their circles; real accounts are untouched. Dates are relative to today, so seed on the day.
 
+   Then run the **Ledger anchors** workflow by hand (GitHub → Actions → Ledger anchors → Run workflow) so the new demo circles get a public anchor before anyone opens the verify page.
+
 2. **Wake the services.** Free RumptyCloud deployments sleep when idle and take about 8 seconds to wake. A minute before, open:
    - https://sova-api.rumptycloud.app/health (should say `"database":"ok"`)
    - https://sova.rumptycloud.app
