@@ -6,6 +6,7 @@ import { requireUser, userIdOf } from "../auth/plugin.js";
 import type { TokenService } from "../auth/tokens.js";
 import {
   AssistantUnavailable,
+  SOVA_FACTS,
   dateInLagos,
   naira,
   shortName,
@@ -36,27 +37,16 @@ const EXIT_POLICIES: Record<string, string> = {
 };
 
 const CONTRIBUTION_STATES: Record<string, string> = {
-  payer_confirmed: "marked as sent, waiting for the collector to confirm",
-  fully_confirmed: "confirmed by the collector",
-  disputed: "under dispute",
+  payer_confirmed: "has marked it as sent; the collector hasn't confirmed it yet",
+  fully_confirmed: "has paid (confirmed by the collector)",
+  disputed: "has a payment under dispute",
 };
 
-/** Per-user answers a day, on top of the per-IP limit; counted in memory (resets on restart). */
-class DailyCounter {
-  private day = "";
-  private counts = new Map<string, number>();
-  constructor(private readonly limit: number) {}
-  take(userId: string): boolean {
-    const today = new Date().toISOString().slice(0, 10);
-    if (today !== this.day) {
-      this.day = today;
-      this.counts.clear();
-    }
-    const used = this.counts.get(userId) ?? 0;
-    if (used >= this.limit) return false;
-    this.counts.set(userId, used + 1);
-    return true;
-  }
+export interface AssistantLimits {
+  /** Answers each member can have per day. */
+  perMember: number;
+  /** Answers the whole service gives per day, across everyone. */
+  total: number;
 }
 
 /**
@@ -64,13 +54,16 @@ class DailyCounter {
  * question about how Sova works. Members only (404 otherwise, like every
  * circle route). The answer is a suggestion written by a model; the app labels
  * it as such and the circle screen stays the record.
+ *
+ * The API works out everything a small model tends to get wrong (who collects,
+ * what you owe, what to do next, which disputes are open) and hands it over as
+ * plain sentences, so the model only has to say it simply.
  */
 export async function assistantRoutes(
   app: FastifyInstance,
-  opts: { pool: pg.Pool; tokens: TokenService; assistant: Assistant | null; dailyLimit: number },
+  opts: { pool: pg.Pool; tokens: TokenService; assistant: Assistant | null; limits: AssistantLimits },
 ) {
-  const { pool, assistant } = opts;
-  const daily = new DailyCounter(opts.dailyLimit);
+  const { pool, assistant, limits } = opts;
   app.addHook("preHandler", requireUser(opts.tokens));
 
   async function circleData(circleId: string, me: string): Promise<string> {
@@ -116,23 +109,28 @@ export async function assistantRoutes(
            from rounds where group_id = $1 order by round_number`,
         [circleId],
       ),
-      pool.query<{ n: number }>("select count(*)::int as n from disputes where group_id = $1 and status = 'open'", [circleId]),
+      pool.query<{ id: string; kind: string; turn: number; payers: string[] }>(
+        `select d.id, d.kind, r.round_number as turn,
+                array(select u.full_name from dispute_payers(d.id) p(id) join users u on u.id = p.id) as payers
+           from disputes d join rounds r on r.id = d.round_id
+          where d.group_id = $1 and d.status = 'open' order by d.created_at`,
+        [circleId],
+      ),
     ]);
 
     const nameOf = new Map(members.rows.map((m) => [m.id, shortName(m.name)]));
+    const payout = g.contribution_amount * (g.member_count - 1);
     const lines = [
-      `Circle: ${g.name} (status: ${g.status})`,
-      `Contribution: ${naira(g.contribution_amount)} per member, ${g.cycle_type}`,
-      `Members: ${members.rows.length} of ${g.member_count} joined`,
-      `Payout each turn: ${naira(g.contribution_amount * (g.member_count - 1))} (one contribution from each of the other ${g.member_count - 1} members)`,
-      `Planned start: ${dateInLagos(g.start_date)}`,
-      `Admin: ${nameOf.get(g.admin_id) ?? "A member"}${g.admin_collects_last ? " (promised to collect last)" : ""}`,
+      `Circle: ${g.name}. Status: ${g.status}.`,
+      `Each member pays ${naira(g.contribution_amount)} each turn (${g.cycle_type}). ${members.rows.length} of ${g.member_count} members have joined.`,
+      `Each turn one member collects ${naira(payout)}: one payment from each of the other ${g.member_count - 1} members. The collector keeps all of it; nothing is shared out or paid back.`,
+      `Admin: ${nameOf.get(g.admin_id) ?? "a member"}${g.admin_collects_last ? " (promised to collect last)" : ""}.`,
     ];
 
     const r = rules.rows[0];
     if (r) {
       lines.push(
-        `Rules: late fee ${naira(r.late_fee)}, ${r.grace_days} grace day(s); ${EXIT_POLICIES[r.early_exit_policy] ?? r.early_exit_policy}.` +
+        `Rules: late fee ${naira(r.late_fee)} after ${r.grace_days} grace day(s); ${EXIT_POLICIES[r.early_exit_policy] ?? r.early_exit_policy}.` +
           (r.emergency_policy ? ` Emergencies: ${r.emergency_policy.slice(0, 300)}.` : "") +
           (r.other_rules ? ` Other rules: ${r.other_rules.slice(0, 500)}` : ""),
       );
@@ -144,45 +142,86 @@ export async function assistantRoutes(
         .filter((m) => m.position !== null)
         .map((m) => {
           const t = byCollector.get(m.id);
-          const state = t?.status === "completed" ? "collected" : t?.status === "active" ? "collecting now" : "waiting";
-          return `${m.position}. ${nameOf.get(m.id)} (${state})`;
+          const state = t?.status === "completed" ? "has collected" : t?.status === "active" ? "is collecting now" : "is waiting";
+          return `${m.position}. ${nameOf.get(m.id)} ${state}`;
         });
-      lines.push(`Payout order: ${order.join("; ")}`);
+      lines.push(`Payout order (drawn fairly): ${order.join("; ")}.`);
     } else {
-      lines.push("Payout order: not drawn yet (it is drawn when the circle is full)");
+      lines.push(`Payout order: not drawn yet. It is drawn when all ${g.member_count} members have joined.`);
     }
 
     const current = rounds.rows.find((t) => t.status === "active");
+    let statusOfMine: string | undefined;
     if (current) {
       const { rows: paid } = await pool.query<{ user_id: string; status: string }>(
         "select user_id, status from contributions where round_id = $1",
         [current.id],
       );
       const statusOf = new Map(paid.map((c) => [c.user_id, c.status]));
+      statusOfMine = statusOf.get(me);
       const payments = members.rows
         .filter((m) => m.id !== current.collector_id)
-        .map((m) => `${nameOf.get(m.id)}: ${CONTRIBUTION_STATES[statusOf.get(m.id) ?? ""] ?? "not paid yet"}`);
+        .map((m) => `${nameOf.get(m.id)} ${CONTRIBUTION_STATES[statusOf.get(m.id) ?? ""] ?? "has not paid yet"}`);
       lines.push(
-        `Current turn: ${current.number} of ${g.member_count}, due ${dateInLagos(current.due_date)}, collector ${nameOf.get(current.collector_id)}`,
-        `Payments this turn: ${payments.join("; ")}`,
+        `This turn: turn ${current.number} of ${g.member_count}. ${nameOf.get(current.collector_id)} is collecting ${naira(payout)}, due ${dateInLagos(current.due_date)}.`,
+        `Payments this turn: ${payments.join("; ")}.`,
       );
     }
-    lines.push(`Open disputes: ${disputes.rows[0]!.n}`);
 
-    const mine = members.rows.find((m) => m.id === me);
-    const myTurn = mine ? byCollector.get(me) : undefined;
     lines.push(
-      `The member asking: ${nameOf.get(me)}` +
-        (mine?.position ? `, turn ${mine.position} in the order` : "") +
-        (myTurn?.status === "completed" ? " (already collected)" : "") +
-        (current?.collector_id === me ? " (collecting this turn)" : ""),
+      disputes.rows.length
+        ? `Open disputes: ${disputes.rows
+            .map((d) =>
+              d.kind === "shortfall"
+                ? `the turn ${d.turn} payout was short`
+                : `about ${d.payers.map(shortName).join(", ")}'s payment for turn ${d.turn}`,
+            )
+            .join("; ")}.`
+        : "Open disputes: none.",
+    );
+
+    // The member's own position and next step, worked out here rather than by the model.
+    const mine = members.rows.find((m) => m.id === me);
+    const myTurn = byCollector.get(me);
+    lines.push(
+      `The member asking is ${nameOf.get(me)}` +
+        (mine?.position ? `, number ${mine.position} in the payout order` : "") +
+        (myTurn?.status === "completed" ? ", and has already collected" : "") +
+        ".",
+      `What they should do now: ${nextStep(g, current, statusOfMine, me, nameOf)}`,
     );
     return lines.join("\n");
   }
 
-  async function disputeData(disputeId: string, me: string): Promise<{ circleId: string; text: string }> {
+  function nextStep(
+    g: { status: string; contribution_amount: number; member_count: number },
+    current: { collector_id: string } | undefined,
+    mine: string | undefined,
+    me: string,
+    nameOf: Map<string, string>,
+  ): string {
+    if (g.status === "forming") return "wait for the circle to fill up; share the invite code with people they trust.";
+    if (g.status === "completed") return "nothing: every turn has been paid out.";
+    if (g.status === "cancelled") return "nothing: the circle was cancelled before it started.";
+    if (!current) return "nothing right now.";
+    if (current.collector_id === me) {
+      return "they are collecting this turn: check their bank for each payment and confirm it in the app with their PIN, then confirm the payout.";
+    }
+    const collector = nameOf.get(current.collector_id);
+    switch (mine) {
+      case "payer_confirmed":
+        return `wait for ${collector} to confirm their payment.`;
+      case "fully_confirmed":
+        return "nothing: their payment this turn is confirmed.";
+      case "disputed":
+        return "their payment is under dispute; open the dispute to see the vote.";
+      default:
+        return `send ${naira(g.contribution_amount)} to ${collector} by bank transfer or cash, then tap Pay in the app and enter their PIN.`;
+    }
+  }
+
+  async function disputeData(disputeId: string, me: string): Promise<string> {
     const { rows } = await pool.query<{
-      group_id: string;
       circle_name: string;
       kind: string;
       status: string;
@@ -194,7 +233,7 @@ export async function assistantRoutes(
       amount: number | null;
       contribution_amount: number;
     }>(
-      `select d.group_id, g.name as circle_name, d.kind, d.status, d.reason, r.round_number as turn,
+      `select g.name as circle_name, d.kind, d.status, d.reason, r.round_number as turn,
               rb.full_name as raised_by_name, r.collector_id, col.full_name as collector_name,
               c.amount, g.contribution_amount
          from disputes d
@@ -223,26 +262,40 @@ export async function assistantRoutes(
     ]);
     const count = (side: string) => votes.rows.find((v) => v.side === side)?.n ?? 0;
     const voters = eligible.rows[0]!.n;
-    const role =
-      d.collector_id === me ? "the collector" : payers.rows.some((p) => p.id === me) ? "the payer" : "a voter";
+    const needed = Math.floor(voters / 2) + 1;
+    const payerNames = payers.rows.map((p) => shortName(p.name)).join(", ") || "none";
+    const isCollector = d.collector_id === me;
+    const isPayer = payers.rows.some((p) => p.id === me);
+    const open = d.status === "open";
 
-    const lines = [
-      `Circle: ${d.circle_name}`,
-      d.kind === "shortfall"
-        ? `Dispute: the turn ${d.turn} payout was short. Members who had not paid: ${payers.rows.map((p) => shortName(p.name)).join(", ") || "none"}. There is no vote: it closes when every missing payment is confirmed, or the collector marks it settled.`
-        : `Dispute: a payment of ${naira(d.amount ?? d.contribution_amount)} for turn ${d.turn} from ${payers.rows.map((p) => shortName(p.name)).join(", ")} to the collector ${shortName(d.collector_name)}. The payment is frozen until this is decided.`,
-      `Raised by: ${shortName(d.raised_by_name)}`,
-      `Status: ${d.status}`,
-    ];
-    if (d.reason) lines.push(`Reason given: ${d.reason.slice(0, 500)}`);
-    if (d.kind === "payment") {
+    const lines = [`Circle: ${d.circle_name}. This dispute is ${d.status}.`];
+    if (d.kind === "shortfall") {
       lines.push(
-        `Votes: ${count("payer")} say it arrived, ${count("collector")} say it didn't, out of ${voters} members who can vote; ${Math.floor(voters / 2) + 1} votes decide.`,
-        'Outcome: "it arrived" confirms the payment; "it didn\'t arrive" puts it back to unpaid.',
+        `What it is about: the turn ${d.turn} payout to ${shortName(d.collector_name)} was short. Members who had not paid: ${payerNames}.`,
+        "How it ends: there is no vote. It closes when every missing payment is confirmed, or the collector marks it settled.",
+      );
+    } else {
+      lines.push(
+        `What it is about: ${payerNames} says they paid ${naira(d.amount ?? d.contribution_amount)} for turn ${d.turn} to the collector ${shortName(d.collector_name)}. Raised by ${shortName(d.raised_by_name)}. The payment is frozen until this is decided.`,
+        `How it ends: the other members vote "it arrived" or "it didn't arrive". ${voters} members can vote and ${needed} votes decide. So far ${count("payer")} say it arrived and ${count("collector")} say it didn't. Either side can also settle by agreeing with the other. "It arrived" confirms the payment; "it didn't arrive" puts it back to unpaid.`,
       );
     }
-    lines.push(`The member asking is ${role} in this dispute.`);
-    return { circleId: d.group_id, text: lines.join("\n") };
+    if (d.reason) lines.push(`Reason given: ${d.reason.slice(0, 500)}`);
+
+    const role = isCollector ? "the collector" : isPayer ? "the payer" : "a voter";
+    const todo = !open
+      ? "nothing: it is closed."
+      : d.kind === "shortfall"
+        ? isCollector
+          ? "confirm each missing payment when it arrives, or mark the dispute settled."
+          : isPayer
+            ? "pay what is missing and record it in the app."
+            : "nothing; there is no vote on a short payout."
+        : isCollector || isPayer
+          ? "add evidence or a comment, or settle by agreeing with the other side. They cannot vote."
+          : "look at the evidence and vote with their PIN.";
+    lines.push(`The member asking is ${role} in this dispute. What they can do: ${todo}`);
+    return lines.join("\n");
   }
 
   app.post(
@@ -256,18 +309,26 @@ export async function assistantRoutes(
       let data: string;
       let task: string;
       if (body.topic === "dispute") {
-        data = (await disputeData(body.disputeId!, me)).text;
+        data = await disputeData(body.disputeId!, me);
         task = "Explain this dispute to me: what it is about, how it will be decided, and what I can do now.";
       } else if (body.topic === "circle") {
         data = await circleData(body.circleId!, me);
-        task = "Explain this circle to me: how it works, where things stand this turn, and what I need to do next.";
+        task = "Explain this circle to me: how it works, where things stand this turn, and what I should do now.";
       } else {
-        data = body.circleId ? await circleData(body.circleId, me) : "No circle chosen.";
-        task = `My question: ${body.question}`;
+        data = SOVA_FACTS + (body.circleId ? `\n\n${await circleData(body.circleId, me)}` : "");
+        task = `Answer my question using the facts above. My question: ${body.question}`;
       }
 
-      if (!daily.take(me)) {
+      const { rows } = await pool.query<{ result: string }>("select take_assistant_answer($1, $2, $3) as result", [
+        me,
+        limits.perMember,
+        limits.total,
+      ]);
+      if (rows[0]!.result === "member_limit") {
         throw new AppError(429, "assistant_limit", "You've asked a lot today. Ask Sova will answer again tomorrow.");
+      }
+      if (rows[0]!.result === "total_limit") {
+        throw new AppError(429, "assistant_busy", "Ask Sova has answered all it can for today. It will be back tomorrow.");
       }
 
       const messages: ChatMessage[] = [
@@ -278,6 +339,7 @@ export async function assistantRoutes(
         const text = await assistant.reply(messages);
         return { text, model: assistant.model, language: body.language };
       } catch (err) {
+        await pool.query("select give_back_assistant_answer($1)", [me]);
         if (!(err instanceof AssistantUnavailable)) throw err;
         req.log.warn({ reason: err.message }, "assistant: model service unavailable");
         throw new AppError(502, "assistant_unavailable", "Ask Sova couldn't answer just now. Please try again in a minute.");

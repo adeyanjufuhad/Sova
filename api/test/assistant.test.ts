@@ -59,13 +59,13 @@ async function signIn(who: Person) {
   await call(who, "POST", "/me/pin", { pin: PIN });
 }
 
-const config = () =>
-  loadConfig({
-    NODE_ENV: "test",
-    LOG_LEVEL: "silent",
-    JWT_SECRET: "test-secret-that-is-at-least-32-characters-long",
-    OTP_TEST_NUMBERS: Object.values(PEOPLE).map((p) => `${p.phone}:123456`).join(","),
-  });
+const rawConfig = () => ({
+  NODE_ENV: "test",
+  LOG_LEVEL: "silent",
+  JWT_SECRET: "test-secret-that-is-at-least-32-characters-long",
+  OTP_TEST_NUMBERS: Object.values(PEOPLE).map((p) => `${p.phone}:123456`).join(","),
+});
+const config = () => loadConfig(rawConfig());
 
 beforeAll(async () => {
   db = await freshDatabase();
@@ -123,11 +123,15 @@ describe("Ask Sova", () => {
     expect(res.body).toEqual({ text: "Here is how your circle works.", model: "fake-model", language: "pcm" });
 
     const data = assistant.lastData;
-    expect(data).toContain("Circle: Assistant Ajo (status: active)");
-    expect(data).toContain("Payout each turn: ₦10,000");
+    expect(data).toContain("Circle: Assistant Ajo. Status: active.");
+    expect(data).toContain("collects ₦10,000");
+    expect(data).toContain("The collector keeps all of it");
     expect(data).toContain("Ada O.");
-    expect(data).toContain("Current turn: 1 of 3");
-    expect(data).toContain("The member asking: Bayo A.");
+    expect(data).toContain("This turn: turn 1 of 3.");
+    expect(data).toContain("Open disputes: none.");
+    expect(data).toContain("The member asking is Bayo A.");
+    // The next step is worked out by the API, not left to the model.
+    expect(data).toMatch(/What they should do now: (send ₦5,000 to \w+ \w\.|they are collecting this turn)/);
     expect(data).not.toMatch(/\+234|0123456789|Obi|Adeyemi/);
     expect(assistant.prompts.at(-1)![0]!.content).toContain("Nigerian Pidgin");
   });
@@ -136,6 +140,7 @@ describe("Ask Sova", () => {
     const res = await call("chuka", "POST", "/assistant/explain", { topic: "question", question: "Who holds the money?" });
     expect(res.status).toBe(200);
     expect(assistant.lastData).toContain("My question: Who holds the money?");
+    expect(assistant.lastData).toContain("Sova does not give loans.");
     expect(assistant.prompts.at(-1)![0]!.content).toContain("Sova never holds, moves, lends or invests money");
   });
 
@@ -156,6 +161,44 @@ describe("Ask Sova", () => {
     assistant.fail = false;
     expect(down.status).toBe(502);
     expect(down.body.error.code).toBe("assistant_unavailable");
+  });
+});
+
+describe("Ask Sova daily limits", () => {
+  let limited: FastifyInstance;
+  const ask = (who: Person) =>
+    call(who, "POST", "/assistant/explain", { topic: "question", question: "Who holds the money?" }, limited);
+  const usedToday = async () =>
+    (await db.pool.query<{ n: number }>("select coalesce(sum(answers), 0)::int as n from assistant_days")).rows[0]!.n;
+
+  beforeAll(async () => {
+    limited = await buildApp(loadConfig({ ...rawConfig(), AI_DAILY_LIMIT: "2", AI_DAILY_TOTAL: "3" }), db.pool, {
+      storage: null,
+      assistant,
+    });
+    await db.pool.query("delete from assistant_usage; delete from assistant_days");
+  });
+
+  it("caps each member and then the whole service, counted in the database", async () => {
+    expect((await ask("ada")).status).toBe(200);
+    expect((await ask("ada")).status).toBe(200);
+    const third = await ask("ada");
+    expect(third.status).toBe(429);
+    expect(third.body.error.code).toBe("assistant_limit");
+
+    expect((await ask("bayo")).status).toBe(200);
+    const busy = await ask("chuka");
+    expect(busy.status).toBe(429);
+    expect(busy.body.error.code).toBe("assistant_busy");
+    expect(await usedToday()).toBe(3);
+  });
+
+  it("gives the answer back when the model service fails", async () => {
+    await db.pool.query("delete from assistant_usage; delete from assistant_days");
+    assistant.fail = true;
+    expect((await ask("dayo")).status).toBe(502);
+    assistant.fail = false;
+    expect(await usedToday()).toBe(0);
   });
 });
 

@@ -22,6 +22,7 @@ The database holds the rules that protect the records, so they apply no matter w
 | `20261011000000_demo_sandboxes.sql` | `demo_sandboxes`, `sandbox_id` on users and circles; invite codes unique per world; `join_circle` and `request_handover` stay inside a world; `purge_demo_sandboxes()` (security definer) removes expired copies |
 | `20261012000000_demo_spares.sql` | `demo_sandboxes.claimed_at`: spare copies built ahead (null until a visitor claims one) |
 | `20261013000000_tours.sql` | `users.tours_done`: the app's guided tours (`home`, `circle`) each person has finished or skipped |
+| `20261014000000_assistant_limits.sql` | `assistant_days`, `assistant_usage`: Ask Sova answers per day for the whole service and per member; `take_assistant_answer` (locks the day's row) and `give_back_assistant_answer` |
 
 Rules:
 - Files are named `YYYYMMDDHHMMSS_description.sql` and applied in order, once each.

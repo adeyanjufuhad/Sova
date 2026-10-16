@@ -114,7 +114,12 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   await app.register(scoreRoutes, { pool, tokens });
   await app.register(turnRoutes, { pool, tokens });
   await app.register(notificationRoutes, { pool, tokens });
-  await app.register(assistantRoutes, { pool, tokens, assistant, dailyLimit: config.AI_DAILY_LIMIT });
+  await app.register(assistantRoutes, {
+    pool,
+    tokens,
+    assistant,
+    limits: { perMember: config.AI_DAILY_LIMIT, total: config.AI_DAILY_TOTAL },
+  });
   await app.register(waitlistRoutes, { pool });
   await app.register(ledgerRoutes, { pool });
 

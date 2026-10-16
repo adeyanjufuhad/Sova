@@ -64,7 +64,8 @@ Validated at startup (`src/config.ts`); an invalid value stops the server with a
 | `AI_API_KEY` | none | Inference API key; "Ask Sova" is off until set |
 | `AI_MODEL` | `llama3.2:3b` | Model name the service offers |
 | `AI_TIMEOUT_MS` | `25000` | Give up on the model service after this long (`502 assistant_unavailable`) |
-| `AI_DAILY_LIMIT` | `30` | Answers per member per day (in memory, resets on restart) |
+| `AI_DAILY_LIMIT` | `20` | Answers per member per day (Lagos days, counted in the database) |
+| `AI_DAILY_TOTAL` | `60` | Answers the whole service gives per day, so the free inference allowance lasts |
 
 ## Endpoints
 
@@ -80,7 +81,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/auth/logout` | none | `{ refreshToken }` → ends the session family |
 | GET | `/me` | bearer | Current user, with `toursDone` (guided tours finished or skipped) and `assistant` (whether "Ask Sova" is on) |
 | POST | `/me/tours/:tour` | bearer | `home` or `circle`: the app's guided tour was finished or skipped (204) |
-| POST | `/assistant/explain` | bearer | "Ask Sova": `{ topic: "circle" \| "dispute" \| "question", circleId?, disputeId?, question?, language: "en" \| "pcm" }` → `{ text, model, language }`. Members only (404 otherwise); 10/min per IP plus `AI_DAILY_LIMIT` a day; `503 assistant_off` without a key, `502 assistant_unavailable` when the model service fails |
+| POST | `/assistant/explain` | bearer | "Ask Sova": `{ topic: "circle" \| "dispute" \| "question", circleId?, disputeId?, question?, language: "en" \| "pcm" }` → `{ text, model, language }`. Members only (404 otherwise); 10/min per IP; `429 assistant_limit` after `AI_DAILY_LIMIT` answers a member a day, `429 assistant_busy` after `AI_DAILY_TOTAL` for the whole service; `503 assistant_off` without a key, `502 assistant_unavailable` when the model service fails (the answer isn't counted) |
 | PATCH | `/me` | bearer | `{ fullName }` (first and last name) |
 | POST | `/me/pin/change` | bearer | `{ currentPin, newPin }`; a wrong current PIN counts towards the lockout |
 | POST | `/me/delete` | bearer | `{ pin }`; deletes the account (204) once no circle of yours is running; leaves circles still forming, removes receipt photos; 403 on the demo account |
@@ -129,7 +130,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 
 Money actions need the PIN. Anyone outside a circle gets `404` for it, so ids reveal nothing.
 
-**Ask Sova.** The API builds every prompt itself from the database: the circle's amounts, rules, payout order, this turn's payment states and open disputes, with people as first name and initial ("Ada O."). Phones, bank details, PINs and receipt photos are never sent. Text members wrote (rules, dispute reasons) goes inside a `<data>` block that the system prompt says to treat as information, not instructions. The system prompt also carries Sova's fixed facts (Sova never holds money, payout = contribution × (members − 1), the fair draw, how disputes are decided) and forbids financial, loan or legal advice. The app labels every answer as written by AI.
+**Ask Sova.** The API builds every prompt itself from the database: the circle's amounts, rules, payout order, this turn's payment states and open disputes, with people as first name and initial ("Ada O."). It also works out what the member should do next and spells out facts a small model gets wrong (the collector keeps the whole payout; "Open disputes: none"), so the model only rephrases. General questions carry a fixed list of Sova facts. Phones, bank details, PINs and receipt photos are never sent. Text members wrote (rules, dispute reasons) goes inside a `<data>` block that the system prompt says to treat as information, not instructions. The system prompt also carries Sova's fixed facts (Sova never holds money, payout = contribution × (members − 1), the fair draw, how disputes are decided) and forbids financial, loan or legal advice. The app labels every answer as written by AI.
 
 **Private demos.** `POST /auth/demo` builds a fresh copy of the seeded demo (same people, circles, history and verifiable draws) for each visit, tagged with a sandbox id; it lasts 24 hours and expired copies are purged when the next visitor arrives. The API keeps `DEMO_SPARES` copies built in advance (one at startup, the next after each claim): a visit claims the oldest ready one in one update, and only builds on the spot when none is ready. Unclaimed spares are thrown away after 6 hours, so their dates stay current. A copy is a closed world: its invite codes only reach its own circles, its people have no phone numbers, handovers can't leave it, and its circles are never published as ledger anchors. Its demo member can't change name, bank details or PIN, or delete the account (`403`).
 

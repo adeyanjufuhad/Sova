@@ -91,8 +91,10 @@ const schema = z
       .transform((v) => v || undefined),
     AI_MODEL: z.string().trim().min(1).default("llama3.2:3b"),
     AI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(25_000),
-    /** Answers each member can ask for per day. */
-    AI_DAILY_LIMIT: z.coerce.number().int().min(1).max(1_000).default(30),
+    /** Answers each member can ask for per day (days in Lagos, counted in the database). */
+    AI_DAILY_LIMIT: z.coerce.number().int().min(1).max(1_000).default(20),
+    /** Answers the whole service gives per day, so the free inference allowance lasts. */
+    AI_DAILY_TOTAL: z.coerce.number().int().min(1).max(100_000).default(60),
   })
   .superRefine((c, ctx) => {
     if (c.NODE_ENV === "production" && !c.JWT_SECRET) {
