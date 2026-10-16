@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { AdireStrip } from "@/components/ui/adire";
 import { Logo } from "@/components/ui/logo";
@@ -60,7 +61,15 @@ export function Footer() {
           </div>
 
           <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-start sm:justify-between">
-            <p>© {new Date().getFullYear()} Sova. All rights reserved.</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p>© {new Date().getFullYear()} Sova. All rights reserved.</p>
+              <Link href="/privacy/" className="text-white/70 transition-colors hover:text-white">
+                Privacy
+              </Link>
+              <Link href="/terms/" className="text-white/70 transition-colors hover:text-white">
+                Terms
+              </Link>
+            </div>
             <p className="max-w-lg sm:text-right">
               Sova is a record-keeping service, not a bank, lender or wallet. We never hold, lend or invest members&apos;
               money. Contributions move directly between members.
