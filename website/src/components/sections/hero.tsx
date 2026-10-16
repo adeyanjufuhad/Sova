@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowRight, Check, CheckCheck, Clock3, Landmark, Lock, MapPin, ReceiptText, UsersRound } from "lucide-react";
+import { ArrowRight, Check, CheckCheck, Clock3, Download, Landmark, Lock, MapPin, ReceiptText, UsersRound } from "lucide-react";
 import { AdirePattern } from "@/components/ui/adire";
 import DotGrid from "@/components/ui/dot-grid";
 import RotatingText from "@/components/ui/rotating-text";
@@ -213,6 +213,15 @@ export function Hero() {
               className="inline-flex items-center gap-2 rounded-2xl border border-navy-900/15 bg-white px-6 py-4 font-semibold text-navy-900 transition hover:border-electric/40 hover:bg-mist active:scale-[0.98]"
             >
               Join the waitlist
+            </a>
+            <a
+              href={site.androidApkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-semibold text-electric underline-offset-4 transition hover:underline"
+            >
+              <Download className="size-4" />
+              Download for Android
             </a>
           </motion.div>
 

@@ -9,6 +9,30 @@ function AndroidGlyph({ className }: { className?: string }) {
   );
 }
 
+/** The Android app (APK) from GitHub Releases, available now. */
+export function ApkButton({ className, tone = "light" }: { className?: string; tone?: "light" | "blue" }) {
+  return (
+    <a
+      href={site.androidApkUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "group inline-flex items-center gap-3 rounded-2xl border px-5 py-3 text-left transition active:scale-[0.98]",
+        tone === "light"
+          ? "border-navy-900/15 bg-white text-navy-900 hover:border-electric/40 hover:bg-mist"
+          : "border-white bg-white text-navy-900 hover:bg-mist",
+        className,
+      )}
+    >
+      <AndroidGlyph className="size-6 text-electric" />
+      <span className="leading-tight">
+        <span className="block text-[11px] uppercase tracking-wider text-slate-500">Download for</span>
+        <span className="block font-medium">Android (APK)</span>
+      </span>
+    </a>
+  );
+}
+
 /**
  * Points to Google Play once NEXT_PUBLIC_PLAY_STORE_URL is set.
  * Until then it's an honest "coming soon" that scrolls to the waitlist.

@@ -13,9 +13,11 @@ export const site = {
     "https://raw.githubusercontent.com/adeyanjufuhad/Sova/ledger-anchors/anchors.json",
   /** Where anyone can see when each anchor was published (the branch's git history). */
   anchorsHistoryUrl: "https://github.com/adeyanjufuhad/Sova/commits/ledger-anchors/anchors.json",
-  // Set NEXT_PUBLIC_PLAY_STORE_URL once the app is live on Google Play. Until then
-  // the download buttons send people to the waitlist instead of a raw APK.
+  // Set NEXT_PUBLIC_PLAY_STORE_URL once the app is live on Google Play; until then
+  // the Google Play button is an honest "coming soon".
   playStoreUrl: process.env.NEXT_PUBLIC_PLAY_STORE_URL || "",
+  /** The Android app (APK) on GitHub Releases, built by .github/workflows/android-apk.yml on each v* tag. */
+  androidApkUrl: process.env.NEXT_PUBLIC_ANDROID_APK_URL || "https://github.com/adeyanjufuhad/Sova/releases/latest",
   // The owner's inbox for privacy and terms questions (shown on /privacy and /terms).
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "adeyanjufuhad@gmail.com",
   nav: [

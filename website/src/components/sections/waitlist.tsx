@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
-import { DownloadButton } from "@/components/ui/download-button";
+import { ApkButton, DownloadButton } from "@/components/ui/download-button";
 import { Reveal } from "@/components/ui/reveal";
 import { AdirePattern } from "@/components/ui/adire";
 import { callApi } from "@/lib/api";
@@ -57,9 +57,10 @@ export function Waitlist() {
           </h2>
           <p className="mt-5 max-w-md text-lg text-white/80">
             We&apos;re opening Sova to a small group of circles first. Join the list and we&apos;ll contact you
-            when it&apos;s your turn. You can already try the live demo.
+            when it&apos;s your turn. You can already try the live demo or install the Android app.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-wrap gap-3">
+            <ApkButton tone="blue" />
             <DownloadButton tone="blue" />
           </div>
         </Reveal>

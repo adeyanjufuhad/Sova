@@ -32,7 +32,7 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "When can I download the app?",
-      a: "You can try Sova right now in your browser with the live demo link at the top of this page. The Android app comes to Google Play after our beta; join the waitlist to hear when it's ready.",
+      a: "Now. Try Sova in your browser with the live demo link at the top of this page, or install the Android app (an APK from our GitHub releases page; Android may ask you to allow installs from your browser). It comes to Google Play after our beta; join the waitlist to hear when.",
     },
     {
       q: "Is my information safe?",
@@ -62,7 +62,7 @@ const faqs: Record<"en" | "pcm", QA[]> = {
     },
     {
       q: "When app go ready?",
-      a: "You fit try Sova now now for your browser with the live demo link for top of this page. Android app go enter Google Play after our beta; join the waitlist make we tell you as e ready.",
+      a: "E don ready. You fit try Sova now now for your browser with the live demo link for top of this page, or install the Android app (APK from our GitHub releases page; Android fit ask you to allow install from your browser). E go enter Google Play after our beta; join the waitlist make we tell you.",
     },
     {
       q: "My information dey safe?",
