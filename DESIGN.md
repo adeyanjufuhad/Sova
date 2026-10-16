@@ -248,6 +248,12 @@ Oversized words (800 weight, navy at 3–4% opacity) behind a section to set its
 ### Footer (website)
 Navy, opening with a large conversational headline and one white button, then the links, the safety note and the "not a bank, lender or wallet" disclosure.
 
+### Guided tour (app)
+Shown once after sign-in (every new account and every private demo) and the first time someone opens a running circle; replayable from Record → Help. The page dims under a flat navy scrim with a rounded window around the part being explained, outlined by a 2 px sky hairline. Next to it sits a white card with a hairline border and no shadow: "2 of 9", a sentence-case title, one or two sentences, then "Skip tour", "Back" and "Next"/"Done". The system back gesture ends the tour.
+
+### Ask Sova (app)
+A bottom sheet opened from the chat icon on Home, a circle or a dispute, and from Record → Help. English/Pidgin chips at the top right, the answer in a mist box with a hairline border, and a caption under it saying it was written by AI from the circle's record (the offline demo says its answer is a fixed template). Loading shows skeleton lines; errors use the notice box.
+
 ### Empty state (app)
 A white card with a 64 px adire tile holding a white icon, a short title, one sentence on what to do, and up to two full-width actions. Used when a whole list is empty (circles, activity, disputes) and for the "page not found" screen.
 
