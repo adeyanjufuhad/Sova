@@ -62,7 +62,7 @@ const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 const pinBody = z.object({ pin });
 const payoutBody = z.object({ amount: naira(1_000_000_000), pin });
 
-type Status = "forming" | "active" | "paused" | "completed";
+type Status = "forming" | "active" | "paused" | "completed" | "cancelled";
 
 interface CircleRow {
   id: string;
@@ -295,6 +295,28 @@ export async function circleRoutes(
   app.get("/circles/:id", async (req) => {
     const { id } = idParam.parse(req.params);
     return circleDetail(id, userIdOf(req));
+  });
+
+  /** A member leaves a circle that is still forming; their place opens up again. */
+  app.post("/circles/:id/leave", { config: limited }, async (req, reply) => {
+    const me = userIdOf(req);
+    const { id } = idParam.parse(req.params);
+    const { pin } = pinBody.parse(req.body);
+    await loadCircle(id, me);
+    await verifyPin(pool, me, pin);
+    await pool.query("select leave_circle($1, $2)", [me, id]);
+    return reply.code(204).send();
+  });
+
+  /** The admin cancels a circle that is still forming. */
+  app.post("/circles/:id/cancel", { config: limited }, async (req) => {
+    const me = userIdOf(req);
+    const { id } = idParam.parse(req.params);
+    const { pin } = pinBody.parse(req.body);
+    await loadCircle(id, me);
+    await verifyPin(pool, me, pin);
+    await pool.query("select cancel_circle($1, $2)", [me, id]);
+    return circleDetail(id, me);
   });
 
   app.post("/circles/:id/rules/accept", async (req) => {

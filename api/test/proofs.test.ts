@@ -19,6 +19,9 @@ class FakeStorage implements ProofStorage {
   async exists(key: string) {
     return this.objects.has(key);
   }
+  async remove(key: string) {
+    this.objects.delete(key);
+  }
 }
 
 const HALIMA = "+2348000000003"; // collects turn 3 of Office Esusu

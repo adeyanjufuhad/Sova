@@ -11,6 +11,7 @@ import type { Config } from "./config.js";
 import { AppError, registerErrorHandler } from "./lib/errors.js";
 import { createProofStorage, type ProofStorage } from "./lib/storage.js";
 import { authRoutes } from "./routes/auth.js";
+import { accountRoutes } from "./routes/account.js";
 import { circleRoutes } from "./routes/circles.js";
 import { disputeRoutes } from "./routes/disputes.js";
 import { scoreRoutes } from "./routes/score.js";
@@ -100,6 +101,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   });
   const storage = overrides.storage !== undefined ? overrides.storage : createProofStorage(config);
   await app.register(circleRoutes, { pool, tokens, storage });
+  await app.register(accountRoutes, { pool, tokens, storage });
   await app.register(disputeRoutes, { pool, tokens });
   await app.register(scoreRoutes, { pool, tokens });
   await app.register(turnRoutes, { pool, tokens });

@@ -79,7 +79,7 @@ export async function authRoutes(
   const auth = requireUser(tokens);
 
   const findUser = async (id: string) => {
-    const { rows } = await pool.query<UserRow>(`select ${USER_COLUMNS} from users where id = $1`, [
+    const { rows } = await pool.query<UserRow>(`select ${USER_COLUMNS} from users where id = $1 and deleted_at is null`, [
       id,
     ]);
     if (!rows[0]) throw new AppError(401, "unauthorized", "Please sign in again.");

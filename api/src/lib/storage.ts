@@ -1,4 +1,4 @@
-import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import type { Config } from "../config.js";
@@ -13,6 +13,8 @@ export interface ProofStorage {
   /** A link to view the photo, for a few minutes. */
   viewUrl(key: string): Promise<string>;
   exists(key: string): Promise<boolean>;
+  /** Removes a photo (when its owner deletes their account). */
+  remove(key: string): Promise<void>;
 }
 
 const VIEW_TTL_SECONDS = 300;
@@ -38,6 +40,10 @@ export class S3ProofStorage implements ProofStorage {
 
   viewUrl(key: string) {
     return getSignedUrl(this.s3, new GetObjectCommand({ Bucket: this.bucket, Key: key }), { expiresIn: VIEW_TTL_SECONDS });
+  }
+
+  async remove(key: string) {
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
   async exists(key: string) {

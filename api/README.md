@@ -73,6 +73,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | GET | `/me` | bearer | Current user |
 | PATCH | `/me` | bearer | `{ fullName }` (first and last name) |
 | POST | `/me/pin/change` | bearer | `{ currentPin, newPin }`; a wrong current PIN counts towards the lockout |
+| POST | `/me/delete` | bearer | `{ pin }`; deletes the account (204) once no circle of yours is running; leaves circles still forming, removes receipt photos; 403 on the demo account |
 | POST | `/me/pin` | bearer | `{ pin }` sets the first PIN (4 digits, not trivial) |
 | POST | `/me/pin/verify` | bearer | `{ pin }` → `204`, `401` with attempts left, or `423` when locked |
 | PUT | `/me/bank` | bearer | `{ bankName, accountNumber, accountName, pin }`: where this person receives payouts |
@@ -89,6 +90,8 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/circles/join` | bearer | `{ code, voucherId?, rulesVersion, pin }`; the last member to join starts the circle |
 | GET | `/circles/:id` | member | Detail: members and turns, rules, draw, current turn with each payment |
 | POST | `/circles/:id/rules/accept` | member | `{ version }` |
+| POST | `/circles/:id/leave` | member, not admin | `{ pin }`; only while forming (204) |
+| POST | `/circles/:id/cancel` | admin | `{ pin }`; only while forming; the circle becomes `cancelled` |
 | GET | `/circles/:id/rounds` | member | Every turn with payout received and payment counts |
 | POST | `/circles/:id/rounds/:n/pay` | member | `{ bankReference?, proofKey?, pin }`: "I sent my contribution" (with the uploaded photo, if any) |
 | POST | `/circles/:id/rounds/:n/proof` | member | Raw image body (`Content-Type: image/jpeg|png|webp`, ≤ 5 MB) → `{ key }`. The API checks the bytes really are an image and stores it in the private bucket |
