@@ -95,6 +95,19 @@ With today's small tables the planner chooses sequential scans everywhere, which
 
 Database settings seen: `shared_buffers` 64 MB, `work_mem` 4 MB, `max_connections` 100.
 
+## Demo sign-in
+
+Measured later on 16 October, after "Try the demo" started giving each visitor a private copy of the demo world (`POST /auth/demo`, one request each, from the same client):
+
+| When | Time |
+|---|---|
+| Building the copy during the request (first version) | 5,568 ms, 6,469 ms |
+| A spare copy ready (first request, new connection) | 1,171 ms |
+| Straight after, while the next spare was still being built | 2,588 ms |
+| A spare ready again (after 25 s waits) | 548 ms, 367 ms |
+
+Four requests with spares, so treat these as an indication, not a benchmark. The API keeps one spare built in advance by default (`DEMO_SPARES`).
+
 ## Limits of the Free size
 
 - **It always sleeps when idle.** The first visitor after a quiet spell waits for the container to start (see Cold start). This is the biggest effect on what a judge would notice, and only a paid size with scale-to-zero off removes it.
