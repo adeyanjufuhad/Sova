@@ -1,0 +1,55 @@
+# Publishes every circle's chain head to the public `ledger-anchors` branch
+# (docs/ledger.md, "Public anchors"). Checkpoints are appended as new commits,
+# never force-pushed, so git history records when each one was published.
+# Run it by hand after reseeding the demo so the new demo circles are anchored.
+name: Ledger anchors
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ledger-anchors
+  cancel-in-progress: false
+
+jobs:
+  anchor:
+    runs-on: ubuntu-latest
+    env:
+      SOVA_API_URL: ${{ vars.SOVA_API_URL || 'https://sova-api.rumptycloud.app' }}
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check out the ledger-anchors branch
+        run: |
+          remote="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$remote" ledger-anchors > /dev/null; then
+            git clone -q --single-branch -b ledger-anchors "$remote" anchors
+          else
+            mkdir anchors && git -C anchors init -q -b ledger-anchors
+          fi
+
+      - name: Append new chain heads
+        run: node .github/scripts/anchor-ledgers.mjs anchors/anchors.json
+
+      - name: Publish
+        working-directory: anchors
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898315+github-actions[bot]@users.noreply.github.com"
+          git add anchors.json README.md
+          if git diff --cached --quiet; then
+            echo "No chain heads changed."
+            exit 0
+          fi
+          git commit -q -m "Anchor chain heads at $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ledger-anchors

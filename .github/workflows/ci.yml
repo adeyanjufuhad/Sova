@@ -22,6 +22,16 @@ jobs:
             exit 1
           fi
 
+  scripts:
+    name: Workflow scripts (test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test .github/scripts/anchor-ledgers.test.mjs
+
   api:
     name: API (typecheck, test, build)
     runs-on: ubuntu-latest
