@@ -3,6 +3,7 @@ import type pg from "pg";
 import { z } from "zod";
 
 import { notFound } from "../lib/errors.js";
+import { anchorKey } from "../lib/ledger.js";
 
 const params = z.object({ id: z.uuid("Not a valid circle id.") });
 
@@ -20,6 +21,23 @@ export async function ledgerRoutes(app: FastifyInstance, opts: { pool: pg.Pool }
         where u.phone like '+2348000000%' order by g.name`,
     );
     return { circles: rows };
+  });
+
+  /**
+   * Every circle's chain head, keyed by anchorKey (never the circle id), for the
+   * scheduled job that publishes them outside Sova's database (docs/ledger.md).
+   */
+  app.get("/public/chain-heads", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async () => {
+    const { rows } = await opts.pool.query<{ group_id: string; seq: number; hash: string }>(
+      "select distinct on (group_id) group_id, seq, hash from ledger_entries order by group_id, seq desc",
+    );
+    return {
+      keyRule: 'key = SHA-256("sova-anchor|" + circle id), hex',
+      at: new Date().toISOString(),
+      heads: rows
+        .map((r) => ({ key: anchorKey(r.group_id), seq: r.seq, hash: r.hash }))
+        .sort((a, b) => (a.key < b.key ? -1 : 1)),
+    };
   });
 
   app.get("/public/circles/:id/ledger", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (req) => {

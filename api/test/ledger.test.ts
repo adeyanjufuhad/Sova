@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { commitmentOf, drawOrder } from "../src/lib/draw.js";
-import { firstBrokenEntry, type ChainEntry } from "../src/lib/ledger.js";
+import { anchorKey, firstBrokenEntry, type ChainEntry } from "../src/lib/ledger.js";
 import { seedDemo } from "../src/seed/demo.js";
 import { freshDatabase } from "./setup/db.js";
 
@@ -104,6 +104,19 @@ describe("ledger", () => {
   it("lists the demo circles for the verify page", async () => {
     const res = await app.inject({ method: "GET", url: "/public/demo-circles" });
     expect(res.json().circles.map((c: { name: string }) => c.name)).toContain("Yaba Traders Circle");
+  });
+
+  it("publishes every chain head under a hashed key, never the circle id", async () => {
+    const res = await app.inject({ method: "GET", url: "/public/chain-heads" });
+    expect(res.statusCode).toBe(200);
+    const { heads } = res.json() as { heads: { key: string; seq: number; hash: string }[] };
+    const { rows } = await db.pool.query<{ id: string }>("select distinct group_id as id from ledger_entries");
+    expect(heads).toHaveLength(rows.length);
+    expect(res.body).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/);
+
+    const id = await circleId("YBTR4K");
+    const { head } = await ledger("YBTR4K");
+    expect(heads.find((h) => h.key === anchorKey(id))).toEqual({ key: anchorKey(id), seq: head.seq, hash: head.hash });
   });
 
   it("answers 404 for unknown circles", async () => {

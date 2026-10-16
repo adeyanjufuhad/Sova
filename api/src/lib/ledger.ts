@@ -27,3 +27,11 @@ export function firstBrokenEntry(entries: ChainEntry[]): number | null {
   }
   return null;
 }
+
+/**
+ * The key a circle's chain heads are published under (docs/ledger.md, "Public anchors").
+ * A hash of the id, so the public anchor file can't be used to find circles:
+ * only someone who already has a circle's link can look its anchors up.
+ */
+export const anchorKey = (circleId: string) =>
+  createHash("sha256").update(`sova-anchor|${circleId}`, "utf8").digest("hex");

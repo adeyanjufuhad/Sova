@@ -110,6 +110,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/handovers/:id/approve`, `/reject` | admin | Approve needs `{ pin }` |
 | POST | `/handovers/:id/cancel` | member | Withdraw the offer |
 | GET | `/public/demo-circles` | none | Demo circles for the website's verify page |
+| GET | `/public/chain-heads` | none | Every circle's chain head under `SHA-256("sova-anchor|" + id)`, for the public anchors (docs/ledger.md) |
 | GET | `/public/circles/:id/ledger` | none | A circle's hash chain and draw; people appear as id + "Ada O." |
 | GET | `/public/scores/:token` | none | A shared score snapshot |
 
