@@ -15,7 +15,7 @@ Built for Devcenter Hacktober 2026. First users are self-run circles of friends,
 
 Every service runs on RumptyCloud's free size, which sleeps when idle: the first request after a quiet spell takes about 8 seconds while it wakes. The app waits for it.
 
-The demo account's PIN is `2580` (the app shows it on every PIN sheet). [docs/demo-script.md](docs/demo-script.md) walks through the demo step by step.
+Every "Try the demo" tap gets a private copy of the demo, fresh for each visitor and deleted after 24 hours. The demo account's PIN is `2580` (the app shows it on every PIN sheet). [docs/demo-script.md](docs/demo-script.md) walks through the demo step by step.
 
 ## What it does
 

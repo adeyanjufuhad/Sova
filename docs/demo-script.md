@@ -4,7 +4,7 @@ A walk through Sova on the live services, for judging day and anyone trying it f
 
 ## Before the demo
 
-1. **Reset the demo data.** Everyone who taps "Try the demo" shares one account (Ada Obi), so earlier visitors may have paid, voted or joined already. From a computer with the admin connection string in `api/.env` (`MIGRATION_DATABASE_URL`):
+1. **Reset the shared demo data.** Each "Try the demo" tap gets its own private copy of the demo, created fresh and deleted after 24 hours, so visitors never see each other's payments, votes or joins, and the app itself needs no reset. The shared seeded circles are still what the website's verify page lists, and their dates are relative to the day they were seeded, so reseed them on the day. From a computer with the admin connection string in `api/.env` (`MIGRATION_DATABASE_URL`):
 
    ```bash
    cd api
