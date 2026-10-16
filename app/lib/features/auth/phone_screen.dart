@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
@@ -44,6 +45,9 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     }
   }
 
+  /// The terms and privacy policy live on the website.
+  void _open(String page) => launchUrl(Uri.parse('$siteUrl/$page/'), mode: LaunchMode.externalApplication);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,7 +88,18 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                   ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: SovaColors.white))
                   : const Text('Send code'),
             ),
-            const SizedBox(height: SovaSpacing.xl2),
+            const SizedBox(height: SovaSpacing.sm),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Text('By continuing you agree to the', style: SovaText.bodySmall),
+                TextButton(onPressed: () => _open('terms'), child: const Text('Terms')),
+                const Text('and', style: SovaText.bodySmall),
+                TextButton(onPressed: () => _open('privacy'), child: const Text('Privacy policy')),
+              ],
+            ),
+            const SizedBox(height: SovaSpacing.lg),
             const NoticeBox(
               'Sova will never call or text to ask for your PIN or this code. Never share them with anyone.',
               icon: Icons.shield_outlined,
