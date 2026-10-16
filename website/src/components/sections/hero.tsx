@@ -3,7 +3,8 @@
 import { motion } from "motion/react";
 import { ArrowRight, Check, CheckCheck, Clock3, Landmark, Lock, MapPin, ReceiptText, UsersRound } from "lucide-react";
 import { AdirePattern } from "@/components/ui/adire";
-import { LightRays } from "@/components/ui/light-rays";
+import DotGrid from "@/components/ui/dot-grid";
+import RotatingText from "@/components/ui/rotating-text";
 import { site } from "@/lib/site";
 
 const members = [
@@ -130,20 +131,20 @@ function PhoneMock() {
 export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden pt-36 pb-20 sm:pt-44 lg:pb-28">
-      {/* backdrop: blue light rays from the top */}
-      <div className="absolute inset-0">
-        <LightRays
-          raysOrigin="top-center"
-          raysColor="#3b6ae8"
-          raysSpeed={1}
-          lightSpread={0.9}
-          rayLength={2.2}
-          fadeDistance={1.4}
-          followMouse
-          mouseInfluence={0.08}
-          noiseAmount={0.05}
-          distortion={0.04}
-          lightMode
+      {/* backdrop: a quiet dot grid, like ledger paper; still until the cursor moves through it */}
+      <div aria-hidden className="absolute inset-0">
+        <DotGrid
+          dotSize={3}
+          gap={22}
+          baseColor="#D3DCEE"
+          activeColor="#1D4ED8"
+          proximity={120}
+          strength={0.8}
+          shockRadius={240}
+          shockStrength={3}
+          swell={0.6}
+          glow={0}
+          fade={0.6}
         />
       </div>
 
@@ -162,9 +163,21 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.7 }}
-            className="mt-6 font-display text-[3.4rem] font-extrabold leading-[0.95] tracking-[-0.04em] text-navy-900 sm:text-7xl lg:text-8xl"
+            className="mt-6 font-display text-[clamp(2.75rem,14.5vw,3.4rem)] font-extrabold leading-[0.95] tracking-[-0.04em] text-navy-900 sm:text-7xl lg:text-8xl"
           >
-            Your ajo,
+            <span className="inline-flex">
+              Your&nbsp;
+              {/* plays once through the three names and settles back on ajo */}
+              <RotatingText
+                texts={["ajo", "esusu", "adashe", "ajo"]}
+                loop={false}
+                rotationInterval={1700}
+                staggerDuration={0.025}
+                mainClassName="overflow-hidden pb-[0.14em] -mb-[0.14em]"
+              />
+              {/* split letters lose the o-comma kerning; pull the comma back in */}
+              <span className="-ml-[0.06em]">,</span>
+            </span>
             <br />
             <span className="text-electric">on record.</span>
           </motion.h1>
