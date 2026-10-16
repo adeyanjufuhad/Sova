@@ -45,6 +45,10 @@ const collected: { what: string; why: ReactNode }[] = [
     why: "Only if you attach one to a payment. Kept in a private storage bucket; members of that circle view it through links that expire after 5 minutes.",
   },
   {
+    what: "Ask Sova questions",
+    why: "If you use Ask Sova, your question and the facts of the circle or dispute it is about (amounts, rules, turn order and payment states, with people as first name and initial) are sent to the AI model that writes the answer. Phone numbers, bank details, PINs and receipt photos are never sent. Questions and answers are not stored.",
+  },
+  {
     what: "Sova Score",
     why: "Worked out from your circle record. If you choose to share it, a snapshot is published behind a random link (see “Who can see what”).",
   },
@@ -178,12 +182,13 @@ export default function PrivacyPage() {
                 active.
               </li>
               <li>
-                <strong>Everyone using the demo:</strong> “Try the demo” signs everyone into the same shared account.
-                Don&apos;t enter real personal or bank information there.
+                <strong>Everyone using the demo:</strong> “Try the demo” gives each visit its own private copy with
+                pretend people, which is deleted after 24 hours. Don&apos;t enter real personal or bank information there.
               </li>
               <li>
                 <strong>Service providers.</strong> RumptyCloud hosts the database, API, file storage, web app and
-                website. GitHub stores Sova&apos;s code and the public anchors, and builds the app and website. Sign-in
+                website, and runs the open AI model behind Ask Sova on its own servers in Lagos (RumptyCloud says
+                prompts are not used for training). GitHub stores Sova&apos;s code and the public anchors, and builds the app and website. Sign-in
                 codes currently work only for a fixed list of test numbers, so no text messages are sent. Before
                 opening to everyone we will use a paid SMS provider, which will receive your phone number and code;
                 we will name it here first.
