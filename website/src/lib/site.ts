@@ -16,9 +16,8 @@ export const site = {
   // Set NEXT_PUBLIC_PLAY_STORE_URL once the app is live on Google Play. Until then
   // the download buttons send people to the waitlist instead of a raw APK.
   playStoreUrl: process.env.NEXT_PUBLIC_PLAY_STORE_URL || "",
-  // Placeholder until the owner confirms a real inbox: the .example domain can't
-  // receive mail. Set NEXT_PUBLIC_CONTACT_EMAIL (privacy and terms pages use it).
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "privacy@sova.example",
+  // The owner's inbox for privacy and terms questions (shown on /privacy and /terms).
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "adeyanjufuhad@gmail.com",
   nav: [
     { label: "How it works", href: "#how" },
     { label: "Features", href: "#features" },
