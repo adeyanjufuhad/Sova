@@ -17,7 +17,8 @@
     "migrate:prod": "node dist/cli/migrate.js",
     "seed": "tsx --env-file-if-exists=.env src/cli/seed.ts",
     "seed:prod": "node dist/cli/seed.js",
-    "db:create-app-role": "tsx --env-file-if-exists=.env src/cli/create-app-role.ts"
+    "db:create-app-role": "tsx --env-file-if-exists=.env src/cli/create-app-role.ts",
+    "db:local": "tsx src/cli/local-db.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",

@@ -4,3 +4,5 @@ dist/
 .env.*
 !.env.example
 coverage/
+# npm run db:local
+.local-db/
