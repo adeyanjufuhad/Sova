@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { AdirePattern } from "@/components/ui/adire";
+import CountUp from "@/components/ui/count-up";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { cn } from "@/lib/utils";
@@ -113,7 +114,8 @@ export function PayoutCalculator() {
                 <div>
                   <p className="text-sm text-white/75">On your turn you collect</p>
                   <p className="mt-1 font-display text-5xl font-extrabold tracking-[-0.03em] tabular-nums sm:text-6xl">
-                    {naira.format(payout)}
+                    {/* digits roll to the new figure as the inputs change */}
+                    <CountUp to={payout} prefix="₦" separator="," mode="roll" duration={0.9} />
                   </p>
                   <p className="mt-2 text-sm text-white/75">
                     {naira.format(amount)} from each of the other {members - 1} member{members === 2 ? "" : "s"}
