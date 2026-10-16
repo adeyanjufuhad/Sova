@@ -173,6 +173,7 @@ The start command sets `PATH` itself because RumptyCloud runs it in a shell that
 |---|---|---|
 | `.github/workflows/app-web.yml` | `flutter build web` with `SOVA_API_URL` and `SOVA_SITE_URL` | branch `app-web` |
 | `.github/workflows/site-web.yml` | `next build` (static export) | branch `site-web` |
+| `.github/workflows/android-apk.yml` | `flutter build apk` against the live API, on a `v*` tag | a GitHub Release (see [app/README.md](app/README.md#android)) |
 
 Create two RumptyCloud deployments of type Static Site/SPA, one serving branch `app-web` and one serving `site-web`, both with auto-deploy on push. The addresses the builds point at come from the repository variables `SOVA_API_URL`, `SITE_URL` and `APP_URL`, falling back to the live addresses above.
 

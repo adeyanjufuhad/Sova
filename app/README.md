@@ -58,3 +58,18 @@ The access token stays in memory. The refresh token is kept in secure storage on
 `.github/workflows/app-web.yml` tests and builds the web app on every push to `main` that touches `app/`, then publishes `build/web` to the `app-web` branch, which RumptyCloud serves as a static site. RumptyCloud's builder has no Flutter SDK, which is why GitHub Actions builds it.
 
 To preview a local release build: `flutter build web`, then `python tool/serve_web.py` (port 3300, or `$PORT`).
+
+## Android
+
+`.github/workflows/android-apk.yml` tests the app and builds a release APK against the live API (`SOVA_API_URL`, `SITE_URL` repository variables, falling back to the live addresses). Push a tag such as `v1.0.0` to publish the APK on a GitHub Release; running the workflow by hand keeps the APK as a workflow artifact for 14 days.
+
+Release signing comes from `android/key.properties` (git-ignored). In CI it is written from four repository secrets:
+
+| Secret | What |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | The upload keystore (`.jks`), base64-encoded |
+| `ANDROID_KEYSTORE_PASSWORD` | Its store password |
+| `ANDROID_KEY_ALIAS` | The key's alias |
+| `ANDROID_KEY_PASSWORD` | The key's password |
+
+Create a keystore once with `keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload` and keep it safe: Google Play needs the same key for every update. Without these secrets the APK is signed with a throwaway debug key, which installs fine but can't be updated in place by a later signed build.
