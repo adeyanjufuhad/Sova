@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import type { ProofStorage } from "../src/lib/storage.js";
-import { DEMO_PIN, seedDemo } from "../src/seed/demo.js";
+import { DEMO_PHONE, DEMO_PIN, seedDemo } from "../src/seed/demo.js";
 import { freshDatabase } from "./setup/db.js";
 
 /** In-memory stand-in for the bucket. */
@@ -40,7 +40,7 @@ const config = () =>
     LOG_LEVEL: "silent",
     JWT_SECRET: "test-secret-that-is-at-least-32-characters-long",
     DEMO_LOGIN_ENABLED: "true",
-    OTP_TEST_NUMBERS: `${HALIMA}:123456`,
+    OTP_TEST_NUMBERS: `${HALIMA}:123456,${DEMO_PHONE}:123456`,
   });
 
 async function call(target: FastifyInstance, who: string | null, method: "GET" | "POST", url: string, payload?: object) {
@@ -70,7 +70,9 @@ beforeAll(async () => {
   await seedDemo(db.pool);
   storage = new FakeStorage();
   app = await buildApp(config(), db.pool, { storage });
-  tokens.ada = (await call(app, null, "POST", "/auth/demo")).body.accessToken;
+  // The shared seeded Ada (Halima's circle-mate), not a private demo copy.
+  await call(app, null, "POST", "/auth/otp/request", { phone: DEMO_PHONE });
+  tokens.ada = (await call(app, null, "POST", "/auth/otp/verify", { phone: DEMO_PHONE, code: "123456" })).body.accessToken;
   await call(app, null, "POST", "/auth/otp/request", { phone: HALIMA });
   tokens.halima = (await call(app, null, "POST", "/auth/otp/verify", { phone: HALIMA, code: "123456" })).body.accessToken;
   office = (await db.pool.query("select id from groups where invite_code = 'K7QX2M'")).rows[0].id;

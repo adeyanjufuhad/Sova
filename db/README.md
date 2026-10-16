@@ -19,6 +19,7 @@ The database holds the rules that protect the records, so they apply no matter w
 | `20261008000000_swaps_handovers.sql` | Swap requests and answers, handovers with replacement and admin approval, applied as a turn ends |
 | `20261009000000_notifications.sql` | `notify()` and triggers that write in-app notifications with an app link; `change_pin` |
 | `20261010000000_leave_cancel_delete.sql` | `leave_circle`, `cancel_circle` (status `cancelled`) and `delete_account`; ledger entries `member_left`, `circle_cancelled`; cancelled circles left out of the Sova Score |
+| `20261011000000_demo_sandboxes.sql` | `demo_sandboxes`, `sandbox_id` on users and circles; invite codes unique per world; `join_circle` and `request_handover` stay inside a world; `purge_demo_sandboxes()` (security definer) removes expired copies |
 
 Rules:
 - Files are named `YYYYMMDDHHMMSS_description.sql` and applied in order, once each.

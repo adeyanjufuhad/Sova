@@ -260,20 +260,10 @@ describe("demo login", () => {
     expect((await app.inject({ method: "POST", url: "/auth/demo" })).statusCode).toBe(404);
   });
 
-  it("explains when the demo account hasn't been seeded", async () => {
-    const app = await newApp({ DEMO_LOGIN_ENABLED: "true" });
-    const res = await app.inject({ method: "POST", url: "/auth/demo" });
-    expect(res.statusCode).toBe(503);
-    expect(res.json().error.code).toBe("demo_not_seeded");
-  });
-
-  it("signs into the seeded demo account", async () => {
-    await db.pool.query(
-      "insert into users (phone, full_name, is_demo) values ('+2348000000000', 'Demo Member', true) on conflict do nothing",
-    );
+  it("signs into a private demo, shown with the demo number", async () => {
     const app = await newApp({ DEMO_LOGIN_ENABLED: "true" });
     const res = await app.inject({ method: "POST", url: "/auth/demo" });
     expect(res.statusCode).toBe(200);
-    expect(res.json().user).toMatchObject({ isDemo: true, fullName: "Demo Member" });
+    expect(res.json().user).toMatchObject({ isDemo: true, fullName: "Ada Obi", phone: "+2348000000000" });
   });
 });

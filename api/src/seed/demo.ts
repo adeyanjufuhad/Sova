@@ -26,7 +26,12 @@ export const DEMO_PHONE = "+2348000000000";
 export const DEMO_PIN = "2580";
 const SEEDED_PHONES = "+2348000000%";
 
-type Ctx = { client: pg.PoolClient; users: Map<string, string> };
+/** `sandboxId` set: a visitor's private copy (people without phone numbers); null: the shared seeded demo. */
+type Ctx = { client: pg.PoolClient; users: Map<string, string>; sandboxId: string | null };
+
+/** How long a visitor's private demo lives, and how many may exist at once. */
+export const SANDBOX_TTL_HOURS = 24;
+export const SANDBOX_LIMIT = 300;
 
 const day = (offset: number) => {
   const d = new Date();
@@ -57,14 +62,18 @@ const PEOPLE: [key: string, name: string, bank?: [string, string]][] = [
   ["blessing", "Blessing Uche", ["Providus Bank", "1302345678"]],
 ];
 
+/** Hashing the demo PIN is deliberately slow, so it's done once per process. */
+let demoPinHash: Promise<string> | null = null;
+
 async function addUsers(ctx: Ctx) {
-  const pinHash = await hashPin(DEMO_PIN);
+  const pinHash = await (demoPinHash ??= hashPin(DEMO_PIN));
   for (const [i, [key, name, bank]] of PEOPLE.entries()) {
-    const phone = `+2348000000${String(i).padStart(3, "0")}`;
+    // Sandbox people have no phone numbers, so nobody can reach them from outside.
+    const phone = ctx.sandboxId ? null : `+2348000000${String(i).padStart(3, "0")}`;
     const { rows } = await ctx.client.query<{ id: string }>(
-      `insert into users (phone, full_name, pin_hash, bank_name, account_number, account_name, is_demo)
-       values ($1, $2, $3, $4, $5, $2, $6) returning id`,
-      [phone, name, pinHash, bank?.[0] ?? null, bank?.[1] ?? null, key === "ada"],
+      `insert into users (phone, full_name, pin_hash, bank_name, account_number, account_name, is_demo, sandbox_id)
+       values ($1, $2, $3, $4, $5, $2, $6, $7) returning id`,
+      [phone, name, pinHash, bank?.[0] ?? null, bank?.[1] ?? null, key === "ada", ctx.sandboxId],
     );
     ctx.users.set(key, rows[0]!.id);
   }
@@ -247,7 +256,7 @@ function hash(s: string): number {
   return h;
 }
 
-/** Deletes previous demo data and recreates it. Runs in one transaction. */
+/** Deletes the shared demo data and recreates it. Runs in one transaction. */
 export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people: number }> {
   const client = await pool.connect();
   try {
@@ -269,230 +278,7 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
     );
     await client.query("delete from users where phone like $1", [SEEDED_PHONES]);
 
-    const ctx: Ctx = { client, users: new Map() };
-    await addUsers(ctx);
-
-    // 1. Office Esusu: weekly, turn 3 active, Ada still owes Halima.
-    const office: CircleSpec = {
-      name: "Office Esusu",
-      admin: "ifeoma",
-      amount: 20000,
-      cycle: "weekly",
-      start: -12,
-      code: "K7QX2M",
-      size: 6,
-      members: [
-        { key: "ifeoma", position: 1 },
-        { key: "bayo", position: 2 },
-        { key: "halima", position: 3 },
-        { key: "ada", position: 4 },
-        { key: "chuka", position: 5 },
-        { key: "zainab", position: 6, vouchedBy: "ifeoma" },
-      ],
-      rules: {
-        lateFee: 1000,
-        graceDays: 1,
-        earlyExit: "find_replacement",
-        emergency: "If a member falls ill, the group can agree to move their turn earlier.",
-      },
-      status: "active",
-    };
-    const officeId = await addCircle(ctx, office);
-    await addRounds(ctx, officeId, office, 3, {
-      activeLast: true,
-      overrides: { 3: { ifeoma: "fully_confirmed", bayo: "fully_confirmed", chuka: "payer_confirmed" } },
-    });
-    // Zainab (turn 6) asks Ada (turn 4) to swap; both turns are still open.
-    await client.query(
-      "insert into swap_requests (group_id, requester_id, target_id, reason, created_at) values ($1, $2, $3, $4, $5)",
-      [officeId, id(ctx, "zainab"), id(ctx, "ada"), "My shop rent is due before my turn. Could we swap?", at(day(-1), 15)],
-    );
-
-    // 2. Unilag Class of '24 Ajo: Ada is admin and collecting turn 2.
-    const unilag: CircleSpec = {
-      name: "Unilag Class of '24 Ajo",
-      admin: "ada",
-      amount: 10000,
-      cycle: "monthly",
-      start: -21,
-      code: "P4DN8R",
-      size: 5,
-      members: [
-        { key: "tolu", position: 1 },
-        { key: "ada", position: 2 },
-        { key: "emeka", position: 3 },
-        { key: "amina", position: 4 },
-        { key: "david", position: 5, vouchedBy: "tolu" },
-      ],
-      rules: { lateFee: 500, graceDays: 2, earlyExit: "refund_after_cycle" },
-      status: "active",
-    };
-    const unilagId = await addCircle(ctx, unilag);
-    await addRounds(ctx, unilagId, unilag, 2, {
-      activeLast: true,
-      overrides: { 2: { tolu: "fully_confirmed", emeka: "payer_confirmed" } },
-    });
-
-    // 3. Ikeja Tech Hub Esusu: new, 4 of 8 joined, turns not drawn. Ada can join with T7KP9Q.
-    const techHub: CircleSpec = {
-      name: "Ikeja Tech Hub Esusu",
-      admin: "kemi",
-      amount: 15000,
-      cycle: "weekly",
-      start: 10,
-      code: "T7KP9Q",
-      size: 8,
-      members: [
-        { key: "kemi", position: null },
-        { key: "femi", position: null },
-        { key: "ngozi", position: null },
-        { key: "sani", position: null, vouchedBy: "kemi" },
-      ],
-      rules: {
-        lateFee: 1000,
-        graceDays: 1,
-        earlyExit: "find_replacement",
-        emergency: "Members can swap turns for emergencies if both agree.",
-      },
-      status: "forming",
-      adminCollectsLast: true,
-    };
-    await addCircle(ctx, techHub);
-
-    // 4. Church Adashe: completed four-person circle.
-    const church: CircleSpec = {
-      name: "Church Adashe",
-      admin: "grace",
-      amount: 5000,
-      cycle: "weekly",
-      start: -60,
-      code: "CHRDA9",
-      size: 4,
-      members: [
-        { key: "grace", position: 1 },
-        { key: "ada", position: 2 },
-        { key: "peter", position: 3 },
-        { key: "blessing", position: 4 },
-      ],
-      rules: { lateFee: 0, graceDays: 2, earlyExit: "forfeit_fee" },
-      status: "completed",
-    };
-    const churchId = await addCircle(ctx, church);
-    await addRounds(ctx, churchId, church, 4);
-
-    // 5. Yaba Traders Circle: Musa collected turn 1 then missed turn 2; Peter's payout came up short.
-    const yaba: CircleSpec = {
-      name: "Yaba Traders Circle",
-      admin: "peter",
-      amount: 10000,
-      cycle: "weekly",
-      start: -16,
-      code: "YBTR4K",
-      size: 4,
-      members: [
-        { key: "musa", position: 1 },
-        { key: "peter", position: 2 },
-        { key: "ada", position: 3 },
-        { key: "sani", position: 4 },
-      ],
-      rules: { lateFee: 1000, graceDays: 1, earlyExit: "find_replacement" },
-      status: "active",
-    };
-    const yabaId = await addCircle(ctx, yaba);
-    await addRounds(ctx, yabaId, yaba, 3, {
-      activeLast: true,
-      overrides: { 2: { musa: "missing" }, 3: { musa: "missing", peter: "fully_confirmed", sani: "fully_confirmed" } },
-      shortPayout: { 2: 20000 },
-      // The short payout opens a dispute straight away, as it does in the app.
-      afterPayout: {
-        2: async (roundId, confirmedAt) => {
-          const dispute = await client.query<{ id: string }>(
-            `insert into disputes (group_id, round_id, raised_by, against_user_id, reason, created_at)
-             values ($1, $2, $3, $4, $5, $6) returning id`,
-            [
-              yabaId,
-              roundId,
-              id(ctx, "peter"),
-              id(ctx, "musa"),
-              "My turn-2 payout was ₦10,000 short. Musa collected turn 1 and has not paid since.",
-              confirmedAt,
-            ],
-          );
-          for (const [actor, kind, message, hours] of [
-            ["peter", "opened", "Opened after confirming a ₦20,000 payout instead of ₦30,000.", 0],
-            ["ada", "evidence", "My transfer receipt for turn 2 is attached to my contribution.", 20],
-            ["musa", "comment", "I will pay this week. My shop was closed.", 44],
-          ] as const) {
-            await client.query(
-              "insert into dispute_events (dispute_id, actor_id, kind, message, created_at) values ($1, $2, $3, $4, $5)",
-              [dispute.rows[0]!.id, id(ctx, actor), kind, message, at(confirmedAt, hours)],
-            );
-          }
-        },
-      },
-    });
-    // Musa then marks his turn-2 payment as sent, late; Peter says it never
-    // arrived, so the circle votes. Sani has voted; the demo member (Ada) holds
-    // the deciding vote. After turn 3's payments, so the record stays in order.
-    {
-      const turn2 = (
-        await client.query<{ id: string }>("select id from rounds where group_id = $1 and round_number = 2", [yabaId])
-      ).rows[0]!.id;
-      const markedAt = at(day(-2), 10);
-      const late = await client.query<{ id: string }>(
-        `insert into contributions (round_id, group_id, user_id, amount, payer_confirmed, payer_confirmed_at, status, bank_reference)
-         values ($1, $2, $3, $4, true, $5, 'payer_confirmed', 'FT2610038841') returning id`,
-        [turn2, yabaId, id(ctx, "musa"), yaba.amount, markedAt],
-      );
-      const reason = "Musa says he sent turn 2 by transfer, but nothing has reached my account.";
-      const dispute = await client.query<{ id: string }>(
-        `insert into disputes (group_id, contribution_id, round_id, raised_by, against_user_id, reason, kind, created_at)
-         values ($1, $2, $3, $4, $5, $6, 'payment', $7) returning id`,
-        [yabaId, late.rows[0]!.id, turn2, id(ctx, "peter"), id(ctx, "musa"), reason, at(markedAt, 4)],
-      );
-      await client.query("update contributions set status = 'disputed' where id = $1", [late.rows[0]!.id]);
-      const disputeId = dispute.rows[0]!.id;
-      await client.query(
-        `insert into notifications (user_id, group_id, type, title, message, link, created_at)
-         values ($1, $2, 'dispute_vote', 'Your vote is needed', $3, $4, $5)`,
-        [id(ctx, "ada"), yabaId, "Yaba Traders Circle: did Musa's payment reach Peter?", `/circle/${yabaId}/disputes/${disputeId}`, at(markedAt, 4)],
-      );
-      await client.query(
-        "insert into dispute_votes (dispute_id, voter_id, side, created_at, updated_at) values ($1, $2, 'collector', $3, $3)",
-        [disputeId, id(ctx, "sani"), at(markedAt, 21)],
-      );
-      for (const [actor, kind, message, hours] of [
-        ["peter", "opened", reason, 4],
-        ["musa", "comment", "I sent it from my Moniepoint account. The reference is FT2610038841.", 6],
-        ["peter", "comment", "I have checked my statement twice. Nothing from Musa since turn 1.", 9],
-      ] as const) {
-        await client.query(
-          "insert into dispute_events (dispute_id, actor_id, kind, message, created_at) values ($1, $2, $3, $4, $5)",
-          [disputeId, id(ctx, actor), kind, message, at(markedAt, hours)],
-        );
-      }
-    }
-
-    // The demo member's recent notifications (the triggers write these for real circles).
-    const classId = (await client.query<{ id: string }>("select id from groups where invite_code = 'P4DN8R'")).rows[0]!.id;
-    for (const [group, type, title, message, link, when, read] of [
-      [officeId, "turn_opened", "Turn 3: pay Halima ₦20,000", "Office Esusu. Due in a week.", `/circle/${officeId}`, at(day(-5), 18), true],
-      [classId, "turn_opened", "It's your turn to collect ₦40,000", "Unilag Class of '24 Ajo, turn 2.", `/circle/${classId}`, at(day(-20), 9), true],
-      [classId, "payment_marked", "Emeka marked ₦10,000 as sent", "Unilag Class of '24 Ajo, turn 2. Check your bank, then confirm it arrived.", `/circle/${classId}`, at(day(-1), 11), false],
-      [officeId, "swap_request", "Zainab asks to swap turns with you", "Office Esusu", `/circle/${officeId}/turns`, at(day(-1), 15), false],
-    ] as const) {
-      await client.query(
-        `insert into notifications (user_id, group_id, type, title, message, link, created_at, read)
-         values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [id(ctx, "ada"), group, type, title, message, link, when, read],
-      );
-    }
-
-    // Sova Scores from the database function, for everyone seeded.
-    for (const userId of ctx.users.values()) {
-      await client.query("select calculate_sova_score($1)", [userId]);
-    }
-
+    await buildWorld({ client, users: new Map(), sandboxId: null });
     await client.query("commit");
     return { circles: 5, people: PEOPLE.length };
   } catch (err) {
@@ -501,4 +287,263 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
   } finally {
     client.release();
   }
+}
+
+/**
+ * A visitor's private copy of the demo world, for "Try the demo": the same
+ * people, circles and history as the shared seed, tagged with a new sandbox,
+ * so nothing one visitor does reaches the next. Expired sandboxes are purged
+ * first. Returns the copy's demo member, or null when SANDBOX_LIMIT copies are
+ * already live.
+ */
+export async function createDemoSandbox(pool: pg.Pool, limit = SANDBOX_LIMIT): Promise<string | null> {
+  await pool.query("select purge_demo_sandboxes()");
+  const live = await pool.query<{ n: number }>("select count(*)::int as n from demo_sandboxes");
+  if (live.rows[0]!.n >= limit) return null;
+
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query("set local sova.seeding = 'on'");
+    const { rows } = await client.query<{ id: string }>(
+      `insert into demo_sandboxes (expires_at) values (now() + make_interval(hours => $1)) returning id`,
+      [SANDBOX_TTL_HOURS],
+    );
+    const ada = await buildWorld({ client, users: new Map(), sandboxId: rows[0]!.id });
+    await client.query("commit");
+    return ada;
+  } catch (err) {
+    await client.query("rollback");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/** Creates the demo people and circles in one world. Returns the demo member's id. */
+async function buildWorld(ctx: Ctx): Promise<string> {
+  const { client } = ctx;
+  await addUsers(ctx);
+
+  // 1. Office Esusu: weekly, turn 3 active, Ada still owes Halima.
+  const office: CircleSpec = {
+    name: "Office Esusu",
+    admin: "ifeoma",
+    amount: 20000,
+    cycle: "weekly",
+    start: -12,
+    code: "K7QX2M",
+    size: 6,
+    members: [
+      { key: "ifeoma", position: 1 },
+      { key: "bayo", position: 2 },
+      { key: "halima", position: 3 },
+      { key: "ada", position: 4 },
+      { key: "chuka", position: 5 },
+      { key: "zainab", position: 6, vouchedBy: "ifeoma" },
+    ],
+    rules: {
+      lateFee: 1000,
+      graceDays: 1,
+      earlyExit: "find_replacement",
+      emergency: "If a member falls ill, the group can agree to move their turn earlier.",
+    },
+    status: "active",
+  };
+  const officeId = await addCircle(ctx, office);
+  await addRounds(ctx, officeId, office, 3, {
+    activeLast: true,
+    overrides: { 3: { ifeoma: "fully_confirmed", bayo: "fully_confirmed", chuka: "payer_confirmed" } },
+  });
+  // Zainab (turn 6) asks Ada (turn 4) to swap; both turns are still open.
+  await client.query(
+    "insert into swap_requests (group_id, requester_id, target_id, reason, created_at) values ($1, $2, $3, $4, $5)",
+    [officeId, id(ctx, "zainab"), id(ctx, "ada"), "My shop rent is due before my turn. Could we swap?", at(day(-1), 15)],
+  );
+
+  // 2. Unilag Class of '24 Ajo: Ada is admin and collecting turn 2.
+  const unilag: CircleSpec = {
+    name: "Unilag Class of '24 Ajo",
+    admin: "ada",
+    amount: 10000,
+    cycle: "monthly",
+    start: -21,
+    code: "P4DN8R",
+    size: 5,
+    members: [
+      { key: "tolu", position: 1 },
+      { key: "ada", position: 2 },
+      { key: "emeka", position: 3 },
+      { key: "amina", position: 4 },
+      { key: "david", position: 5, vouchedBy: "tolu" },
+    ],
+    rules: { lateFee: 500, graceDays: 2, earlyExit: "refund_after_cycle" },
+    status: "active",
+  };
+  const unilagId = await addCircle(ctx, unilag);
+  await addRounds(ctx, unilagId, unilag, 2, {
+    activeLast: true,
+    overrides: { 2: { tolu: "fully_confirmed", emeka: "payer_confirmed" } },
+  });
+
+  // 3. Ikeja Tech Hub Esusu: new, 4 of 8 joined, turns not drawn. Ada can join with T7KP9Q.
+  const techHub: CircleSpec = {
+    name: "Ikeja Tech Hub Esusu",
+    admin: "kemi",
+    amount: 15000,
+    cycle: "weekly",
+    start: 10,
+    code: "T7KP9Q",
+    size: 8,
+    members: [
+      { key: "kemi", position: null },
+      { key: "femi", position: null },
+      { key: "ngozi", position: null },
+      { key: "sani", position: null, vouchedBy: "kemi" },
+    ],
+    rules: {
+      lateFee: 1000,
+      graceDays: 1,
+      earlyExit: "find_replacement",
+      emergency: "Members can swap turns for emergencies if both agree.",
+    },
+    status: "forming",
+    adminCollectsLast: true,
+  };
+  await addCircle(ctx, techHub);
+
+  // 4. Church Adashe: completed four-person circle.
+  const church: CircleSpec = {
+    name: "Church Adashe",
+    admin: "grace",
+    amount: 5000,
+    cycle: "weekly",
+    start: -60,
+    code: "CHRDA9",
+    size: 4,
+    members: [
+      { key: "grace", position: 1 },
+      { key: "ada", position: 2 },
+      { key: "peter", position: 3 },
+      { key: "blessing", position: 4 },
+    ],
+    rules: { lateFee: 0, graceDays: 2, earlyExit: "forfeit_fee" },
+    status: "completed",
+  };
+  const churchId = await addCircle(ctx, church);
+  await addRounds(ctx, churchId, church, 4);
+
+  // 5. Yaba Traders Circle: Musa collected turn 1 then missed turn 2; Peter's payout came up short.
+  const yaba: CircleSpec = {
+    name: "Yaba Traders Circle",
+    admin: "peter",
+    amount: 10000,
+    cycle: "weekly",
+    start: -16,
+    code: "YBTR4K",
+    size: 4,
+    members: [
+      { key: "musa", position: 1 },
+      { key: "peter", position: 2 },
+      { key: "ada", position: 3 },
+      { key: "sani", position: 4 },
+    ],
+    rules: { lateFee: 1000, graceDays: 1, earlyExit: "find_replacement" },
+    status: "active",
+  };
+  const yabaId = await addCircle(ctx, yaba);
+  await addRounds(ctx, yabaId, yaba, 3, {
+    activeLast: true,
+    overrides: { 2: { musa: "missing" }, 3: { musa: "missing", peter: "fully_confirmed", sani: "fully_confirmed" } },
+    shortPayout: { 2: 20000 },
+    // The short payout opens a dispute straight away, as it does in the app.
+    afterPayout: {
+      2: async (roundId, confirmedAt) => {
+        const dispute = await client.query<{ id: string }>(
+          `insert into disputes (group_id, round_id, raised_by, against_user_id, reason, created_at)
+           values ($1, $2, $3, $4, $5, $6) returning id`,
+          [
+            yabaId,
+            roundId,
+            id(ctx, "peter"),
+            id(ctx, "musa"),
+            "My turn-2 payout was ₦10,000 short. Musa collected turn 1 and has not paid since.",
+            confirmedAt,
+          ],
+        );
+        for (const [actor, kind, message, hours] of [
+          ["peter", "opened", "Opened after confirming a ₦20,000 payout instead of ₦30,000.", 0],
+          ["ada", "evidence", "My transfer receipt for turn 2 is attached to my contribution.", 20],
+          ["musa", "comment", "I will pay this week. My shop was closed.", 44],
+        ] as const) {
+          await client.query(
+            "insert into dispute_events (dispute_id, actor_id, kind, message, created_at) values ($1, $2, $3, $4, $5)",
+            [dispute.rows[0]!.id, id(ctx, actor), kind, message, at(confirmedAt, hours)],
+          );
+        }
+      },
+    },
+  });
+  // Musa then marks his turn-2 payment as sent, late; Peter says it never
+  // arrived, so the circle votes. Sani has voted; the demo member (Ada) holds
+  // the deciding vote. After turn 3's payments, so the record stays in order.
+  {
+    const turn2 = (
+      await client.query<{ id: string }>("select id from rounds where group_id = $1 and round_number = 2", [yabaId])
+    ).rows[0]!.id;
+    const markedAt = at(day(-2), 10);
+    const late = await client.query<{ id: string }>(
+      `insert into contributions (round_id, group_id, user_id, amount, payer_confirmed, payer_confirmed_at, status, bank_reference)
+       values ($1, $2, $3, $4, true, $5, 'payer_confirmed', 'FT2610038841') returning id`,
+      [turn2, yabaId, id(ctx, "musa"), yaba.amount, markedAt],
+    );
+    const reason = "Musa says he sent turn 2 by transfer, but nothing has reached my account.";
+    const dispute = await client.query<{ id: string }>(
+      `insert into disputes (group_id, contribution_id, round_id, raised_by, against_user_id, reason, kind, created_at)
+       values ($1, $2, $3, $4, $5, $6, 'payment', $7) returning id`,
+      [yabaId, late.rows[0]!.id, turn2, id(ctx, "peter"), id(ctx, "musa"), reason, at(markedAt, 4)],
+    );
+    await client.query("update contributions set status = 'disputed' where id = $1", [late.rows[0]!.id]);
+    const disputeId = dispute.rows[0]!.id;
+    await client.query(
+      `insert into notifications (user_id, group_id, type, title, message, link, created_at)
+       values ($1, $2, 'dispute_vote', 'Your vote is needed', $3, $4, $5)`,
+      [id(ctx, "ada"), yabaId, "Yaba Traders Circle: did Musa's payment reach Peter?", `/circle/${yabaId}/disputes/${disputeId}`, at(markedAt, 4)],
+    );
+    await client.query(
+      "insert into dispute_votes (dispute_id, voter_id, side, created_at, updated_at) values ($1, $2, 'collector', $3, $3)",
+      [disputeId, id(ctx, "sani"), at(markedAt, 21)],
+    );
+    for (const [actor, kind, message, hours] of [
+      ["peter", "opened", reason, 4],
+      ["musa", "comment", "I sent it from my Moniepoint account. The reference is FT2610038841.", 6],
+      ["peter", "comment", "I have checked my statement twice. Nothing from Musa since turn 1.", 9],
+    ] as const) {
+      await client.query(
+        "insert into dispute_events (dispute_id, actor_id, kind, message, created_at) values ($1, $2, $3, $4, $5)",
+        [disputeId, id(ctx, actor), kind, message, at(markedAt, hours)],
+      );
+    }
+  }
+
+  // The demo member's recent notifications (the triggers write these for real circles).
+  const classId = unilagId;
+  for (const [group, type, title, message, link, when, read] of [
+    [officeId, "turn_opened", "Turn 3: pay Halima ₦20,000", "Office Esusu. Due in a week.", `/circle/${officeId}`, at(day(-5), 18), true],
+    [classId, "turn_opened", "It's your turn to collect ₦40,000", "Unilag Class of '24 Ajo, turn 2.", `/circle/${classId}`, at(day(-20), 9), true],
+    [classId, "payment_marked", "Emeka marked ₦10,000 as sent", "Unilag Class of '24 Ajo, turn 2. Check your bank, then confirm it arrived.", `/circle/${classId}`, at(day(-1), 11), false],
+    [officeId, "swap_request", "Zainab asks to swap turns with you", "Office Esusu", `/circle/${officeId}/turns`, at(day(-1), 15), false],
+  ] as const) {
+    await client.query(
+      `insert into notifications (user_id, group_id, type, title, message, link, created_at, read)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id(ctx, "ada"), group, type, title, message, link, when, read],
+    );
+  }
+
+  // Sova Scores from the database function, for everyone seeded.
+  for (const userId of ctx.users.values()) {
+    await client.query("select calculate_sova_score($1)", [userId]);
+  }
+  return id(ctx, "ada");
 }

@@ -29,7 +29,11 @@ export async function ledgerRoutes(app: FastifyInstance, opts: { pool: pg.Pool }
    */
   app.get("/public/chain-heads", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async () => {
     const { rows } = await opts.pool.query<{ group_id: string; seq: number; hash: string }>(
-      "select distinct on (group_id) group_id, seq, hash from ledger_entries order by group_id, seq desc",
+      // Private demos come and go within a day, so they're never anchored.
+      `select distinct on (l.group_id) l.group_id, l.seq, l.hash
+         from ledger_entries l join groups g on g.id = l.group_id
+        where g.sandbox_id is null
+        order by l.group_id, l.seq desc`,
     );
     return {
       keyRule: 'key = SHA-256("sova-anchor|" + circle id), hex',

@@ -8,6 +8,7 @@ import { assertStrongPin, hashPin, verifyPin } from "../auth/pin.js";
 import type { TokenService } from "../auth/tokens.js";
 import { AppError, conflict, forbidden } from "../lib/errors.js";
 import { displayPhone, normalisePhone } from "../lib/phone.js";
+import { createDemoSandbox } from "../seed/demo.js";
 
 const phoneField = z
   .string()
@@ -47,7 +48,8 @@ const changePinBody = z.object({
 
 interface UserRow {
   id: string;
-  phone: string;
+  /** Null for a private demo's people (and deleted accounts). */
+  phone: string | null;
   full_name: string | null;
   pin_hash: string | null;
   is_demo: boolean;
@@ -58,9 +60,10 @@ interface UserRow {
 
 const USER_COLUMNS = "id, phone, full_name, pin_hash, is_demo, bank_name, account_number, account_name";
 
-export const toUser = (u: UserRow) => ({
+/** `demoPhone` is shown as the number of a private demo's member, who has none. */
+export const toUser = (u: UserRow, demoPhone: string) => ({
   id: u.id,
-  phone: u.phone,
+  phone: u.phone ?? (u.is_demo ? demoPhone : ""),
   fullName: u.full_name,
   hasPin: u.pin_hash !== null,
   isDemo: u.is_demo,
@@ -77,6 +80,7 @@ export async function authRoutes(
 ) {
   const { pool, otp, tokens } = opts;
   const auth = requireUser(tokens);
+  const view = (u: UserRow) => toUser(u, opts.demoPhone);
 
   const findUser = async (id: string) => {
     const { rows } = await pool.query<UserRow>(`select ${USER_COLUMNS} from users where id = $1 and deleted_at is null`, [
@@ -102,24 +106,25 @@ export async function authRoutes(
       [phone],
     );
     const user = rows[0]!;
-    return { ...(await tokens.issue(user.id, req.headers["user-agent"])), user: toUser(user) };
+    return { ...(await tokens.issue(user.id, req.headers["user-agent"])), user: view(user) };
   });
 
-  app.post("/auth/demo", { config: moderate }, async (req) => {
+  /**
+   * "Try the demo": a private copy of the demo world for this visitor (see
+   * createDemoSandbox), so nothing they do reaches the next visitor. It lasts
+   * SANDBOX_TTL_HOURS; tapping "Try the demo" again starts a fresh one.
+   */
+  app.post("/auth/demo", { config: strict }, async (req) => {
     if (!opts.demoEnabled) throw new AppError(404, "demo_disabled", "The demo is not available here.");
-    const { rows } = await pool.query<UserRow>(
-      `select ${USER_COLUMNS} from users where phone = $1 and is_demo`,
-      [opts.demoPhone],
-    );
-    const user = rows[0];
-    if (!user) throw new AppError(503, "demo_not_seeded", "The demo account hasn't been set up yet.");
-    return { ...(await tokens.issue(user.id, req.headers["user-agent"])), user: toUser(user) };
+    const adaId = await createDemoSandbox(pool);
+    if (!adaId) throw new AppError(503, "demo_busy", "The demo is busy right now. Please try again in a few minutes.");
+    return { ...(await tokens.issue(adaId, req.headers["user-agent"])), user: view(await findUser(adaId)) };
   });
 
   app.post("/auth/refresh", { config: moderate }, async (req) => {
     const { refreshToken } = refreshBody.parse(req.body);
     const { userId, tokens: pair } = await tokens.rotate(refreshToken, req.headers["user-agent"]);
-    return { ...pair, user: toUser(await findUser(userId)) };
+    return { ...pair, user: view(await findUser(userId)) };
   });
 
   app.post("/auth/logout", async (req, reply) => {
@@ -128,7 +133,7 @@ export async function authRoutes(
     return reply.code(204).send();
   });
 
-  app.get("/me", { preHandler: auth }, async (req) => toUser(await findUser(userIdOf(req))));
+  app.get("/me", { preHandler: auth }, async (req) => view(await findUser(userIdOf(req))));
 
   /**
    * Everyone who taps "Try the demo" shares one account, so its name, bank
@@ -148,7 +153,7 @@ export async function authRoutes(
       `update users set full_name = $2 where id = $1 returning ${USER_COLUMNS}`,
       [userIdOf(req), fullName],
     );
-    return toUser(rows[0]!);
+    return view(rows[0]!);
   });
 
   /** Where this person receives their payout. */
@@ -162,7 +167,7 @@ export async function authRoutes(
       `update users set bank_name = $2, account_number = $3, account_name = $4 where id = $1 returning ${USER_COLUMNS}`,
       [userIdOf(req), bank.rows[0].name, body.accountNumber, body.accountName],
     );
-    return toUser(rows[0]!);
+    return view(rows[0]!);
   });
 
   app.get("/banks", async () => {
@@ -180,7 +185,7 @@ export async function authRoutes(
       [userIdOf(req), await hashPin(pin)],
     );
     if (!rows[0]) throw conflict("pin_already_set", "You already have a PIN.");
-    return toUser(rows[0]);
+    return view(rows[0]);
   });
 
   /** Changes the PIN: the current one must be right (wrong tries count towards the lockout). */

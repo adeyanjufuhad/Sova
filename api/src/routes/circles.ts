@@ -253,8 +253,9 @@ export async function circleRoutes(
     const { rows } = await pool.query<CircleRow & { admin_name: string | null; commitment: string | null }>(
       `select ${CIRCLE_COLUMNS}, a.full_name as admin_name, d.commitment
          from groups g join users a on a.id = g.admin_id left join circle_draws d on d.group_id = g.id
-        where g.invite_code = $1`,
-      [code],
+        where g.invite_code = $1
+          and g.sandbox_id is not distinct from (select sandbox_id from users where id = $2)`,
+      [code, me],
     );
     const g = rows[0];
     if (!g) throw new AppError(404, "circle_not_found", "No circle uses that code. Check it and try again.");

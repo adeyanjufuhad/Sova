@@ -67,7 +67,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | GET | `/health` | none | `200` when up; `503` if the database is configured but unreachable |
 | POST | `/auth/otp/request` | none | `{ phone }` → sends a code (test numbers: fixed code). 5/min per IP, 3 per 10 min per phone |
 | POST | `/auth/otp/verify` | none | `{ phone, code }` → `{ accessToken, refreshToken, expiresIn, user }`. Creates the user on first sign-in |
-| POST | `/auth/demo` | none | Signs into the seeded demo account (when enabled) |
+| POST | `/auth/demo` | none | Creates a private copy of the demo world and signs into its demo member (when enabled); 5 a minute per IP; `503 demo_busy` at 300 live copies |
 | POST | `/auth/refresh` | none | `{ refreshToken }` → new token pair (rotation; reuse revokes the family) |
 | POST | `/auth/logout` | none | `{ refreshToken }` → ends the session family |
 | GET | `/me` | bearer | Current user |
@@ -119,7 +119,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 
 Money actions need the PIN. Anyone outside a circle gets `404` for it, so ids reveal nothing.
 
-The shared demo account (`POST /auth/demo`) can't change its name, bank details or PIN (`403`), so one visitor can't lock out the next.
+**Private demos.** `POST /auth/demo` builds a fresh copy of the seeded demo (same people, circles, history and verifiable draws) for each visit, tagged with a sandbox id; it lasts 24 hours and expired copies are purged when the next visitor arrives. A copy is a closed world: its invite codes only reach its own circles, its people have no phone numbers, handovers can't leave it, and its circles are never published as ledger anchors. Its demo member can't change name, bank details or PIN, or delete the account (`403`).
 
 ## How a circle runs
 
