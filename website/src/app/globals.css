@@ -84,6 +84,27 @@ body {
   background-size: 56px 56px;
 }
 
+/* Body text of the privacy and terms pages: lists, links and tables. */
+.legal-prose ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.legal-prose li + li {
+  margin-top: 0.375rem;
+}
+.legal-prose li::marker {
+  color: var(--color-electric);
+}
+.legal-prose a {
+  color: var(--color-electric);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal-prose strong {
+  font-weight: 600;
+  color: var(--color-navy-900);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

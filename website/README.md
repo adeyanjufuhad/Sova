@@ -9,6 +9,8 @@ It also has two pages that work with live data:
 | `/verify/?c=<circle id>` | Downloads a circle's ledger from the API and recomputes every SHA-256 link and the fair draw in the browser. Without `c` it lists the demo circles. |
 | `/score/?t=<token>` | Shows a Sova Score someone chose to share. Not indexed by search engines. |
 
+Plus `/privacy/` and `/terms/`, linked from the footer and the app's phone sign-in screen.
+
 ## Run
 
 ```bash
@@ -25,6 +27,7 @@ The site is at http://localhost:3000. Set `NEXT_PUBLIC_API_URL=http://localhost:
 | `NEXT_PUBLIC_APP_URL` | The web app ("Try the live demo") |
 | `NEXT_PUBLIC_API_URL` | The Sova API (waitlist, verify, shared scores); it must list this site in `CORS_ORIGINS` |
 | `NEXT_PUBLIC_PLAY_STORE_URL` | Empty until the Android app is on Google Play; the download buttons say "coming soon" until then |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox shown on the privacy and terms pages; the default `privacy@sova.example` is a placeholder |
 
 All of them end up in the static files, so never put secrets here.
 
@@ -41,10 +44,11 @@ npm run build
 
 ```
 src/
-  app/                    page.tsx (home), verify/, score/, layout, globals.css (tokens)
+  app/                    page.tsx (home), verify/, score/, privacy/, terms/, layout, globals.css (tokens)
   components/sections/    one file per home page section
   components/verify/      the in-browser ledger and draw check
   components/score/       the shared score card
+  components/legal/       the frame shared by the privacy and terms pages
   components/ui/          building blocks, several adapted from 21st.dev and restyled flat
   lib/                    site addresses, API calls with wake-up retries
 ```
