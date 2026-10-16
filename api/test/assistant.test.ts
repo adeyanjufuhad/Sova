@@ -129,9 +129,10 @@ describe("Ask Sova", () => {
     expect(data).toContain("Ada O.");
     expect(data).toContain("This turn: turn 1 of 3.");
     expect(data).toContain("Open disputes: none.");
-    expect(data).toContain("The member asking is Bayo A.");
+    expect(data).toContain("YOU = the member asking.");
+    expect(data).not.toContain("Bayo A."); // the asker is "YOU", never their name
     // The next step is worked out by the API, not left to the model.
-    expect(data).toMatch(/What they should do now: (send ₦5,000 to \w+ \w\.|they are collecting this turn)/);
+    expect(data).toMatch(/What you should do now: (you have not paid this turn\. Send ₦5,000 to \w+ \w\.|you are collecting this turn)/);
     expect(data).not.toMatch(/\+234|0123456789|Obi|Adeyemi/);
     expect(assistant.prompts.at(-1)![0]!.content).toContain("Nigerian Pidgin");
   });

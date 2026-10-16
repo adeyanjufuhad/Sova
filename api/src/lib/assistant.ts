@@ -104,6 +104,7 @@ export function systemPrompt(language: Language): string {
     "Sova never holds, moves, lends or invests money. Members pay each other directly.",
     "",
     "Rules:",
+    "- In the data, YOU means the member you are talking to. Call them \"you\", never by name.",
     "- Use only what is between <data> and </data>. Repeat its names, amounts, dates and counts exactly. Do not add anything it doesn't say.",
     "- If the data says \"Open disputes: none\", there is no dispute. Never invent one.",
     "- The collector keeps the whole payout. Never say it is shared out or paid back.",

@@ -37,9 +37,9 @@ const EXIT_POLICIES: Record<string, string> = {
 };
 
 const CONTRIBUTION_STATES: Record<string, string> = {
-  payer_confirmed: "has marked it as sent; the collector hasn't confirmed it yet",
-  fully_confirmed: "has paid (confirmed by the collector)",
-  disputed: "has a payment under dispute",
+  payer_confirmed: "marked as sent, not confirmed yet",
+  fully_confirmed: "paid and confirmed",
+  disputed: "payment under dispute",
 };
 
 export interface AssistantLimits {
@@ -118,7 +118,8 @@ export async function assistantRoutes(
       ),
     ]);
 
-    const nameOf = new Map(members.rows.map((m) => [m.id, shortName(m.name)]));
+    // The person asking is "you" everywhere, so a small model doesn't mistake them for someone else.
+    const nameOf = new Map(members.rows.map((m) => [m.id, m.id === me ? "YOU" : shortName(m.name)]));
     const payout = g.contribution_amount * (g.member_count - 1);
     const lines = [
       `Circle: ${g.name}. Status: ${g.status}.`,
@@ -142,8 +143,8 @@ export async function assistantRoutes(
         .filter((m) => m.position !== null)
         .map((m) => {
           const t = byCollector.get(m.id);
-          const state = t?.status === "completed" ? "has collected" : t?.status === "active" ? "is collecting now" : "is waiting";
-          return `${m.position}. ${nameOf.get(m.id)} ${state}`;
+          const state = t?.status === "completed" ? "collected already" : t?.status === "active" ? "collecting now" : "waiting";
+          return `${m.position}. ${nameOf.get(m.id)}: ${state}`;
         });
       lines.push(`Payout order (drawn fairly): ${order.join("; ")}.`);
     } else {
@@ -161,9 +162,9 @@ export async function assistantRoutes(
       statusOfMine = statusOf.get(me);
       const payments = members.rows
         .filter((m) => m.id !== current.collector_id)
-        .map((m) => `${nameOf.get(m.id)} ${CONTRIBUTION_STATES[statusOf.get(m.id) ?? ""] ?? "has not paid yet"}`);
+        .map((m) => `${nameOf.get(m.id)}: ${CONTRIBUTION_STATES[statusOf.get(m.id) ?? ""] ?? "not paid yet"}`);
       lines.push(
-        `This turn: turn ${current.number} of ${g.member_count}. ${nameOf.get(current.collector_id)} is collecting ${naira(payout)}, due ${dateInLagos(current.due_date)}.`,
+        `This turn: turn ${current.number} of ${g.member_count}. Collector this turn: ${nameOf.get(current.collector_id)}, who receives ${naira(payout)} by ${dateInLagos(current.due_date)}. Each member collects only once in the circle.`,
         `Payments this turn: ${payments.join("; ")}.`,
       );
     }
@@ -184,11 +185,10 @@ export async function assistantRoutes(
     const mine = members.rows.find((m) => m.id === me);
     const myTurn = byCollector.get(me);
     lines.push(
-      `The member asking is ${nameOf.get(me)}` +
-        (mine?.position ? `, number ${mine.position} in the payout order` : "") +
-        (myTurn?.status === "completed" ? ", and has already collected" : "") +
-        ".",
-      `What they should do now: ${nextStep(g, current, statusOfMine, me, nameOf)}`,
+      "YOU = the member asking." +
+        (mine?.position ? ` You are number ${mine.position} in the payout order.` : "") +
+        (myTurn?.status === "completed" ? " You have already collected." : ""),
+      `What you should do now: ${nextStep(g, current, statusOfMine, me, nameOf)}`,
     );
     return lines.join("\n");
   }
@@ -200,23 +200,23 @@ export async function assistantRoutes(
     me: string,
     nameOf: Map<string, string>,
   ): string {
-    if (g.status === "forming") return "wait for the circle to fill up; share the invite code with people they trust.";
+    if (g.status === "forming") return "wait for the circle to fill up; share the invite code with people you trust.";
     if (g.status === "completed") return "nothing: every turn has been paid out.";
     if (g.status === "cancelled") return "nothing: the circle was cancelled before it started.";
     if (!current) return "nothing right now.";
     if (current.collector_id === me) {
-      return "they are collecting this turn: check their bank for each payment and confirm it in the app with their PIN, then confirm the payout.";
+      return "you are collecting this turn: check your bank for each payment and confirm it in the app with your PIN, then confirm the payout.";
     }
     const collector = nameOf.get(current.collector_id);
     switch (mine) {
       case "payer_confirmed":
-        return `wait for ${collector} to confirm their payment.`;
+        return `wait for ${collector} to confirm your payment.`;
       case "fully_confirmed":
-        return "nothing: their payment this turn is confirmed.";
+        return "nothing: your payment this turn is confirmed.";
       case "disputed":
-        return "their payment is under dispute; open the dispute to see the vote.";
+        return "your payment is under dispute; open the dispute to see the vote.";
       default:
-        return `send ${naira(g.contribution_amount)} to ${collector} by bank transfer or cash, then tap Pay in the app and enter their PIN.`;
+        return `you have not paid this turn. Send ${naira(g.contribution_amount)} to ${collector} by bank transfer or cash, then tap Pay in the app and enter your PIN.`;
     }
   }
 
@@ -292,9 +292,9 @@ export async function assistantRoutes(
             ? "pay what is missing and record it in the app."
             : "nothing; there is no vote on a short payout."
         : isCollector || isPayer
-          ? "add evidence or a comment, or settle by agreeing with the other side. They cannot vote."
-          : "look at the evidence and vote with their PIN.";
-    lines.push(`The member asking is ${role} in this dispute. What they can do: ${todo}`);
+          ? "add evidence or a comment, or settle by agreeing with the other side. You cannot vote."
+          : "look at the evidence and vote with your PIN.";
+    lines.push(`YOU = the member asking. You are ${role} in this dispute. What you can do: ${todo}`);
     return lines.join("\n");
   }
 
