@@ -1,0 +1,42 @@
+{
+  "about": "Chain heads of Sova circle ledgers, published outside Sova's database so later changes to a record are visible. Checkpoints are appended, never replaced; git history shows when each one was published.",
+  "keyRule": "key = SHA-256(\"sova-anchor|\" + circle id), hex",
+  "checkRule": "For every checkpoint of a circle, ledger entry number `seq` must have hash `hash`. A chain only grows, so a checkpoint that no longer matches means the record changed after it was published.",
+  "circles": {
+    "0c930a7f300ec7bc9df47c2cbd3007edf9ac6540dcdd0d8e6b8d4c437e9612b9": [
+      {
+        "seq": 29,
+        "hash": "34cc3f277bc8d38b69264588240513ab02ea52732551ad6fb7bd72d3373a8181",
+        "at": "2026-10-16T09:48:54.249Z"
+      }
+    ],
+    "36ae171eb114ffe042bbdd7a636658a4432b5508ebac985de65b52cff2616a37": [
+      {
+        "seq": 12,
+        "hash": "ed67bd67aff9912de4d889cb679ae28727b307b3af6ebf92107dbf75aaebbd00",
+        "at": "2026-10-16T09:48:54.249Z"
+      }
+    ],
+    "511e82ba98618db497e2eebea30e39e0c38472e931569eb7283aab2fdedd5658": [
+      {
+        "seq": 35,
+        "hash": "98fc52b932d8d01262dc5b5d0db6d0cb8e9c3bc1e6e6a325168beb6583edde16",
+        "at": "2026-10-16T09:48:54.249Z"
+      }
+    ],
+    "5cd8905d4fffadb28ddd8b01b8d2dd6b6302e33057166e9af04cbd9dc1132c29": [
+      {
+        "seq": 44,
+        "hash": "5d1116f3bfb6d7d06719db1af6a93dada115bf8b133348c9d1bab693a5e40fa6",
+        "at": "2026-10-16T09:48:54.249Z"
+      }
+    ],
+    "e15254ee706084e158520451624acbc532491e180e759ae40cf06197ea10a71c": [
+      {
+        "seq": 47,
+        "hash": "d38ac36cf917e1ec6923f3c8cf4b124230a26835a03b0e76a88e544678909142",
+        "at": "2026-10-16T09:48:54.249Z"
+      }
+    ]
+  }
+}
