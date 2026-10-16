@@ -73,7 +73,7 @@ flowchart LR
 | `app/` | Flutter app (Android + web), package `ng.sova.app` | [app/README.md](app/README.md) |
 | `website/` | Next.js marketing site, `/verify` and `/score` pages | [website/README.md](website/README.md) |
 | `db/migrations/` | Ordered SQL migrations | [db/README.md](db/README.md) |
-| `docs/` | Status report, ledger and fair draw design, demo script | [docs/STATUS.md](docs/STATUS.md) |
+| `docs/` | Status report, ledger and fair draw design, demo script, performance | [docs/STATUS.md](docs/STATUS.md) |
 | `DESIGN.md` | Design system: tokens, components, do's and don'ts | |
 
 ## Run it locally
@@ -177,6 +177,8 @@ The start command sets `PATH` itself because RumptyCloud runs it in a shell that
 Create two RumptyCloud deployments of type Static Site/SPA, one serving branch `app-web` and one serving `site-web`, both with auto-deploy on push. The addresses the builds point at come from the repository variables `SOVA_API_URL`, `SITE_URL` and `APP_URL`, falling back to the live addresses above.
 
 **Before judging.** Free deployments always sleep when idle. Paid sizes can turn scale-to-zero off; [docs/STATUS.md](docs/STATUS.md) tracks that decision.
+
+**Performance.** Cold start, warm latency, throughput and database query plans measured on the live Free deployment are in [docs/performance.md](docs/performance.md).
 
 ## Security
 

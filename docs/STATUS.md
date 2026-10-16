@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 16 October 2026 (Devcenter Hacktober build phase, day 16). Phases 4, 5 and 6 done early.
+Last updated: 16 October 2026 (Devcenter Hacktober build phase, day 16; sprint week 3: performance measured). Phases 4, 5 and 6 done early.
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -161,6 +161,12 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - Demo circles have a realistic, chronological history (tested).
 - `docs/ledger.md`, `docs/fair-draw.md`. API tests: 59.
 - **Public anchors (16 Oct):** `GET /public/chain-heads` (hashed keys only); `.github/workflows/ledger-anchors.yml` + `.github/scripts/anchor-ledgers.mjs` append checkpoints to the `ledger-anchors` branch every 6 hours; CI runs the script's tests; the verify page checks every checkpoint (match / changed after it was published / not published yet / couldn't load). Checked locally against the real database with a deliberately wrong checkpoint. API ledger tests: 10.
+
+### Performance measured (16 Oct, sprint week 3)
+- `docs/performance.md` (linked from the root README): method, numbers and date for the live API on the Free size. Gentle runs only (autocannon up to 10 connections for 10 s; ledger and chain heads kept under their rate limits); no errors or refusals.
+- Cold start: one clean sample, the wake page in 0.7 s and the API answering within 11 s (process up after 3–5 s); a second attempt found the API already woken by someone else. Warm one-at-a-time p50: `/health` 79 ms, public ledger 150 ms; p95 0.2–0.8 s with occasional 1–1.6 s outliers on the half CPU. Peak seen: `/health` 96 requests/s, demo circles 63/s, ledger burst 16/s.
+- Database: `EXPLAIN ANALYZE` on the ledger, chain heads, circle screen, circles list and notifications queries as `sova_app` (read-only, rolled back): each under 1 ms, and every one has an index path when seq scans are forced off, so **no index migration was needed**. Watch item: `/public/demo-circles` scans `groups` (no index on `admin_id`); harmless at demo size.
+- For the paid-size decision: the sleep, not throughput or the database, is what a judge would notice on the Free size.
 
 ### Website (`website/`)
 - Honest copy (4 Oct): only built features are described; reminders, voice, languages, offline, swaps, collector mode, USSD, Sova Score card and credit history are labelled "coming soon" or listed in the new Roadmap section (the Collectors section is gone). Payout maths corrected (contribution × (members − 1)). "Try the live demo" is the hero's main button.
