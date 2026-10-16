@@ -78,6 +78,21 @@ const schema = z
     S3_BUCKET: z.string().trim().optional(),
     S3_ACCESS_KEY_ID: z.string().trim().optional(),
     S3_SECRET_ACCESS_KEY: z.string().trim().optional(),
+
+    /**
+     * "Ask Sova": an OpenAI-compatible chat API (RumptyCloud AI inference).
+     * Switched off until AI_API_KEY is set.
+     */
+    AI_BASE_URL: z.url().default("https://chat.rumptycloud.com/v1"),
+    AI_API_KEY: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => v || undefined),
+    AI_MODEL: z.string().trim().min(1).default("llama3.2:3b"),
+    AI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(25_000),
+    /** Answers each member can ask for per day. */
+    AI_DAILY_LIMIT: z.coerce.number().int().min(1).max(1_000).default(30),
   })
   .superRefine((c, ctx) => {
     if (c.NODE_ENV === "production" && !c.JWT_SECRET) {

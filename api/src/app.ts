@@ -8,10 +8,12 @@ import type pg from "pg";
 import { OtpService, SmsProvider, TestNumbersProvider, type OtpProvider } from "./auth/otp.js";
 import { TokenService } from "./auth/tokens.js";
 import type { Config } from "./config.js";
+import { createAssistant, type Assistant } from "./lib/assistant.js";
 import { AppError, registerErrorHandler } from "./lib/errors.js";
 import { createProofStorage, type ProofStorage } from "./lib/storage.js";
 import { authRoutes } from "./routes/auth.js";
 import { accountRoutes } from "./routes/account.js";
+import { assistantRoutes } from "./routes/assistant.js";
 import { circleRoutes } from "./routes/circles.js";
 import { disputeRoutes } from "./routes/disputes.js";
 import { scoreRoutes } from "./routes/score.js";
@@ -27,6 +29,8 @@ export interface AppOverrides {
   otpProvider?: OtpProvider;
   /** Replaces the S3 bucket (tests). */
   storage?: ProofStorage | null;
+  /** Replaces the model service behind "Ask Sova" (tests). */
+  assistant?: Assistant | null;
 }
 
 /**
@@ -92,6 +96,8 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   const otp = new OtpService(pool, provider, secret, config.OTP_TTL_SECONDS);
   const tokens = new TokenService(pool, secret, config.ACCESS_TOKEN_TTL_SECONDS, config.REFRESH_TOKEN_TTL_DAYS);
 
+  const assistant = overrides.assistant !== undefined ? overrides.assistant : createAssistant(config);
+
   await app.register(authRoutes, {
     pool,
     otp,
@@ -99,6 +105,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
     demoEnabled: config.DEMO_LOGIN_ENABLED,
     demoPhone: config.DEMO_PHONE,
     demoSpares: config.DEMO_SPARES,
+    assistantOn: assistant !== null,
   });
   const storage = overrides.storage !== undefined ? overrides.storage : createProofStorage(config);
   await app.register(circleRoutes, { pool, tokens, storage });
@@ -107,6 +114,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   await app.register(scoreRoutes, { pool, tokens });
   await app.register(turnRoutes, { pool, tokens });
   await app.register(notificationRoutes, { pool, tokens });
+  await app.register(assistantRoutes, { pool, tokens, assistant, dailyLimit: config.AI_DAILY_LIMIT });
   await app.register(waitlistRoutes, { pool });
   await app.register(ledgerRoutes, { pool });
 

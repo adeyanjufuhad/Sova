@@ -56,18 +56,28 @@ interface UserRow {
   bank_name: string | null;
   account_number: string | null;
   account_name: string | null;
+  tours_done: string[];
 }
 
-const USER_COLUMNS = "id, phone, full_name, pin_hash, is_demo, bank_name, account_number, account_name";
+const USER_COLUMNS = "id, phone, full_name, pin_hash, is_demo, bank_name, account_number, account_name, tours_done";
 
-/** `demoPhone` is shown as the number of a private demo's member, who has none. */
-export const toUser = (u: UserRow, demoPhone: string) => ({
+/** Guided tours in the app; see db/migrations/20261013000000_tours.sql. */
+const TOURS = ["home", "circle"] as const;
+const tourParam = z.object({ tour: z.enum(TOURS) });
+
+/**
+ * `demoPhone` is shown as the number of a private demo's member, who has none.
+ * `assistant` says whether "Ask Sova" is switched on for this API.
+ */
+export const toUser = (u: UserRow, demoPhone: string, assistant = false) => ({
   id: u.id,
   phone: u.phone ?? (u.is_demo ? demoPhone : ""),
   fullName: u.full_name,
   hasPin: u.pin_hash !== null,
   isDemo: u.is_demo,
   bank: u.account_number ? { bankName: u.bank_name, accountNumber: u.account_number, accountName: u.account_name } : null,
+  toursDone: u.tours_done,
+  assistant,
 });
 
 /** Per-IP limits for sensitive endpoints, on top of the per-phone limits in the database. */
@@ -83,11 +93,12 @@ export async function authRoutes(
     demoEnabled: boolean;
     demoPhone: string;
     demoSpares: number;
+    assistantOn?: boolean;
   },
 ) {
   const { pool, otp, tokens } = opts;
   const auth = requireUser(tokens);
-  const view = (u: UserRow) => toUser(u, opts.demoPhone);
+  const view = (u: UserRow) => toUser(u, opts.demoPhone, opts.assistantOn ?? false);
 
   const findUser = async (id: string) => {
     const { rows } = await pool.query<UserRow>(`select ${USER_COLUMNS} from users where id = $1 and deleted_at is null`, [
@@ -158,6 +169,16 @@ export async function authRoutes(
   });
 
   app.get("/me", { preHandler: auth }, async (req) => view(await findUser(userIdOf(req))));
+
+  /** A guided tour was finished or skipped; it isn't offered again (the app can still replay it). */
+  app.post("/me/tours/:tour", { preHandler: auth, config: moderate }, async (req, reply) => {
+    const { tour } = tourParam.parse(req.params);
+    await pool.query(
+      "update users set tours_done = array_append(tours_done, $2) where id = $1 and not ($2 = any(tours_done))",
+      [userIdOf(req), tour],
+    );
+    return reply.code(204).send();
+  });
 
   /**
    * Everyone who taps "Try the demo" shares one account, so its name, bank

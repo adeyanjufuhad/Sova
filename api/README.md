@@ -60,6 +60,11 @@ Validated at startup (`src/config.ts`); an invalid value stops the server with a
 | `DEMO_PHONE` | `+2348000000000` | Seeded demo account; also the number shown for a private demo's member |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` | none, `auto`, none | Private bucket for receipt photos |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none | Bucket access key; photo uploads are off until set |
+| `AI_BASE_URL` | `https://chat.rumptycloud.com/v1` | OpenAI-compatible chat API behind "Ask Sova" (RumptyCloud AI inference) |
+| `AI_API_KEY` | none | Inference API key; "Ask Sova" is off until set |
+| `AI_MODEL` | `llama3.2:3b` | Model name the service offers |
+| `AI_TIMEOUT_MS` | `25000` | Give up on the model service after this long (`502 assistant_unavailable`) |
+| `AI_DAILY_LIMIT` | `30` | Answers per member per day (in memory, resets on restart) |
 
 ## Endpoints
 
@@ -73,7 +78,9 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/auth/demo` | none | Creates a private copy of the demo world and signs into its demo member (when enabled); 5 a minute per IP; `503 demo_busy` at 300 live copies |
 | POST | `/auth/refresh` | none | `{ refreshToken }` → new token pair (rotation; reuse revokes the family) |
 | POST | `/auth/logout` | none | `{ refreshToken }` → ends the session family |
-| GET | `/me` | bearer | Current user |
+| GET | `/me` | bearer | Current user, with `toursDone` (guided tours finished or skipped) and `assistant` (whether "Ask Sova" is on) |
+| POST | `/me/tours/:tour` | bearer | `home` or `circle`: the app's guided tour was finished or skipped (204) |
+| POST | `/assistant/explain` | bearer | "Ask Sova": `{ topic: "circle" \| "dispute" \| "question", circleId?, disputeId?, question?, language: "en" \| "pcm" }` → `{ text, model, language }`. Members only (404 otherwise); 10/min per IP plus `AI_DAILY_LIMIT` a day; `503 assistant_off` without a key, `502 assistant_unavailable` when the model service fails |
 | PATCH | `/me` | bearer | `{ fullName }` (first and last name) |
 | POST | `/me/pin/change` | bearer | `{ currentPin, newPin }`; a wrong current PIN counts towards the lockout |
 | POST | `/me/delete` | bearer | `{ pin }`; deletes the account (204) once no circle of yours is running; leaves circles still forming, removes receipt photos; 403 on the demo account |
@@ -121,6 +128,8 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | GET | `/public/scores/:token` | none | A shared score snapshot |
 
 Money actions need the PIN. Anyone outside a circle gets `404` for it, so ids reveal nothing.
+
+**Ask Sova.** The API builds every prompt itself from the database: the circle's amounts, rules, payout order, this turn's payment states and open disputes, with people as first name and initial ("Ada O."). Phones, bank details, PINs and receipt photos are never sent. Text members wrote (rules, dispute reasons) goes inside a `<data>` block that the system prompt says to treat as information, not instructions. The system prompt also carries Sova's fixed facts (Sova never holds money, payout = contribution × (members − 1), the fair draw, how disputes are decided) and forbids financial, loan or legal advice. The app labels every answer as written by AI.
 
 **Private demos.** `POST /auth/demo` builds a fresh copy of the seeded demo (same people, circles, history and verifiable draws) for each visit, tagged with a sandbox id; it lasts 24 hours and expired copies are purged when the next visitor arrives. The API keeps `DEMO_SPARES` copies built in advance (one at startup, the next after each claim): a visit claims the oldest ready one in one update, and only builds on the spot when none is ready. Unclaimed spares are thrown away after 6 hours, so their dates stay current. A copy is a closed world: its invite codes only reach its own circles, its people have no phone numbers, handovers can't leave it, and its circles are never published as ledger anchors. Its demo member can't change name, bank details or PIN, or delete the account (`403`).
 
