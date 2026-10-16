@@ -261,7 +261,7 @@ describe("demo login", () => {
   });
 
   it("signs into a private demo, shown with the demo number", async () => {
-    const app = await newApp({ DEMO_LOGIN_ENABLED: "true" });
+    const app = await newApp({ DEMO_LOGIN_ENABLED: "true", DEMO_SPARES: "0" });
     const res = await app.inject({ method: "POST", url: "/auth/demo" });
     expect(res.statusCode).toBe(200);
     expect(res.json().user).toMatchObject({ isDemo: true, fullName: "Ada Obi", phone: "+2348000000000" });

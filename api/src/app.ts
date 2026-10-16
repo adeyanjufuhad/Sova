@@ -98,6 +98,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
     tokens,
     demoEnabled: config.DEMO_LOGIN_ENABLED,
     demoPhone: config.DEMO_PHONE,
+    demoSpares: config.DEMO_SPARES,
   });
   const storage = overrides.storage !== undefined ? overrides.storage : createProofStorage(config);
   await app.register(circleRoutes, { pool, tokens, storage });

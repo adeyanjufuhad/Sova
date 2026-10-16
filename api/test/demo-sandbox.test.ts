@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { commitmentOf, drawOrder } from "../src/lib/draw.js";
-import { createDemoSandbox, DEMO_PIN } from "../src/seed/demo.js";
+import { claimDemoSandbox, createDemoSandbox, DEMO_PIN, topUpDemoSpares } from "../src/seed/demo.js";
 import { freshDatabase } from "./setup/db.js";
 
 const REAL = "+2348031234567";
@@ -52,6 +52,7 @@ beforeAll(async () => {
       LOG_LEVEL: "silent",
       JWT_SECRET: "test-secret-that-is-at-least-32-characters-long",
       DEMO_LOGIN_ENABLED: "true",
+      DEMO_SPARES: "0",
       OTP_TEST_NUMBERS: `${REAL}:123456`,
     }),
     db.pool,
@@ -154,6 +155,45 @@ describe("private demos", () => {
 
   it("stop at the limit instead of growing without bound", async () => {
     const live = (await db.pool.query<{ n: number }>("select count(*)::int as n from demo_sandboxes")).rows[0]!.n;
-    expect(await createDemoSandbox(db.pool, live)).toBeNull();
+    expect(await createDemoSandbox(db.pool, { limit: live })).toBeNull();
+  });
+});
+
+describe("spare demos", () => {
+  const spares = async () =>
+    (await db.pool.query<{ n: number }>("select count(*)::int as n from demo_sandboxes where claimed_at is null")).rows[0]!.n;
+
+  it("are built ahead and handed out whole, one visitor each", async () => {
+    expect(await spares()).toBe(0);
+    expect(await topUpDemoSpares(db.pool, 1)).toBe(1);
+    expect(await topUpDemoSpares(db.pool, 1)).toBe(0); // already one ready
+
+    const spareAda = (
+      await db.pool.query<{ id: string }>(
+        "select u.id from users u join demo_sandboxes s on s.id = u.sandbox_id where s.claimed_at is null and u.is_demo",
+      )
+    ).rows[0]!.id;
+    const res = await call(null, "POST", "/auth/demo");
+    expect(res.body.user.id).toBe(spareAda);
+    expect(await spares()).toBe(0);
+
+    // Claiming starts the visitor's own day.
+    const { rows } = await db.pool.query<{ hours: number }>(
+      `select (extract(epoch from s.expires_at - now()) / 3600)::float8 as hours
+         from demo_sandboxes s join users u on u.sandbox_id = s.id where u.id = $1`,
+      [spareAda],
+    );
+    expect(rows[0]!.hours).toBeGreaterThan(23);
+
+    // With no spare ready, the next visitor still gets a copy, built on the spot.
+    expect((await call(null, "POST", "/auth/demo")).status).toBe(200);
+  });
+
+  it("are thrown away unclaimed after a few hours", async () => {
+    await topUpDemoSpares(db.pool, 1);
+    await db.pool.query("update demo_sandboxes set expires_at = now() - interval '1 minute' where claimed_at is null");
+    expect(await claimDemoSandbox(db.pool)).toBeNull();
+    await db.pool.query("select purge_demo_sandboxes()");
+    expect(await spares()).toBe(0);
   });
 });

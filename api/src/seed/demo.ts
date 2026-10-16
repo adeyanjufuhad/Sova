@@ -29,9 +29,11 @@ const SEEDED_PHONES = "+2348000000%";
 /** `sandboxId` set: a visitor's private copy (people without phone numbers); null: the shared seeded demo. */
 type Ctx = { client: pg.PoolClient; users: Map<string, string>; sandboxId: string | null };
 
-/** How long a visitor's private demo lives, and how many may exist at once. */
+/** How long a visitor's private demo lives, and how many may exist at once (spares included). */
 export const SANDBOX_TTL_HOURS = 24;
 export const SANDBOX_LIMIT = 300;
+/** An unclaimed spare is thrown away after this, so its dates stay close to today. */
+export const SPARE_TTL_HOURS = 6;
 
 const day = (offset: number) => {
   const d = new Date();
@@ -293,10 +295,13 @@ export async function seedDemo(pool: pg.Pool): Promise<{ circles: number; people
  * A visitor's private copy of the demo world, for "Try the demo": the same
  * people, circles and history as the shared seed, tagged with a new sandbox,
  * so nothing one visitor does reaches the next. Expired sandboxes are purged
- * first. Returns the copy's demo member, or null when SANDBOX_LIMIT copies are
- * already live.
+ * first. `spare` builds one ahead of time for claimDemoSandbox. Returns the
+ * copy's demo member, or null when `limit` copies are already live.
  */
-export async function createDemoSandbox(pool: pg.Pool, limit = SANDBOX_LIMIT): Promise<string | null> {
+export async function createDemoSandbox(
+  pool: pg.Pool,
+  { limit = SANDBOX_LIMIT, spare = false }: { limit?: number; spare?: boolean } = {},
+): Promise<string | null> {
   await pool.query("select purge_demo_sandboxes()");
   const live = await pool.query<{ n: number }>("select count(*)::int as n from demo_sandboxes");
   if (live.rows[0]!.n >= limit) return null;
@@ -306,8 +311,9 @@ export async function createDemoSandbox(pool: pg.Pool, limit = SANDBOX_LIMIT): P
     await client.query("begin");
     await client.query("set local sova.seeding = 'on'");
     const { rows } = await client.query<{ id: string }>(
-      `insert into demo_sandboxes (expires_at) values (now() + make_interval(hours => $1)) returning id`,
-      [SANDBOX_TTL_HOURS],
+      `insert into demo_sandboxes (expires_at, claimed_at)
+       values (now() + make_interval(hours => $1), case when $2 then null else now() end) returning id`,
+      [spare ? SPARE_TTL_HOURS : SANDBOX_TTL_HOURS, spare],
     );
     const ada = await buildWorld({ client, users: new Map(), sandboxId: rows[0]!.id });
     await client.query("commit");
@@ -318,6 +324,39 @@ export async function createDemoSandbox(pool: pg.Pool, limit = SANDBOX_LIMIT): P
   } finally {
     client.release();
   }
+}
+
+/**
+ * Claims a spare copy for a visitor: the oldest ready one, atomically, so two
+ * visitors never share it. Its 24 hours start now. Null when none is ready.
+ */
+export async function claimDemoSandbox(pool: pg.Pool): Promise<string | null> {
+  const { rows } = await pool.query<{ ada: string }>(
+    `with spare as (
+       select id from demo_sandboxes
+        where claimed_at is null and expires_at > now()
+        order by created_at limit 1 for update skip locked
+     ), claimed as (
+       update demo_sandboxes s set claimed_at = now(), expires_at = now() + make_interval(hours => $1)
+         from spare where s.id = spare.id returning s.id
+     )
+     select u.id as ada from users u join claimed c on c.id = u.sandbox_id where u.is_demo`,
+    [SANDBOX_TTL_HOURS],
+  );
+  return rows[0]?.ada ?? null;
+}
+
+/** Builds spares until `want` are ready (or the limit is reached). Returns how many it built. */
+export async function topUpDemoSpares(pool: pg.Pool, want: number): Promise<number> {
+  const { rows } = await pool.query<{ n: number }>(
+    "select count(*)::int as n from demo_sandboxes where claimed_at is null and expires_at > now()",
+  );
+  let built = 0;
+  for (let ready = rows[0]!.n; ready < want; ready++) {
+    if (!(await createDemoSandbox(pool, { spare: true }))) break;
+    built++;
+  }
+  return built;
 }
 
 /** Creates the demo people and circles in one world. Returns the demo member's id. */

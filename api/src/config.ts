@@ -55,8 +55,10 @@ const schema = z
     OTP_TEST_NUMBERS: list,
     OTP_TTL_SECONDS: z.coerce.number().int().min(60).max(1_800).default(300),
 
-    /** Enables POST /auth/demo, which signs into the seeded demo account. */
+    /** Enables POST /auth/demo, which signs into a private copy of the demo. */
     DEMO_LOGIN_ENABLED: bool,
+    /** Private demo copies kept built in advance, so "Try the demo" is instant (0 = build on demand). */
+    DEMO_SPARES: z.coerce.number().int().min(0).max(5).default(1),
     DEMO_PHONE: z
       .string()
       .regex(/^\+234[789][01]\d{8}$/)

@@ -40,6 +40,7 @@ const config = () =>
     LOG_LEVEL: "silent",
     JWT_SECRET: "test-secret-that-is-at-least-32-characters-long",
     DEMO_LOGIN_ENABLED: "true",
+    DEMO_SPARES: "0",
     OTP_TEST_NUMBERS: `${HALIMA}:123456,${DEMO_PHONE}:123456`,
   });
 

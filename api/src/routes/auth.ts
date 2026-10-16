@@ -8,7 +8,7 @@ import { assertStrongPin, hashPin, verifyPin } from "../auth/pin.js";
 import type { TokenService } from "../auth/tokens.js";
 import { AppError, conflict, forbidden } from "../lib/errors.js";
 import { displayPhone, normalisePhone } from "../lib/phone.js";
-import { createDemoSandbox } from "../seed/demo.js";
+import { claimDemoSandbox, createDemoSandbox, topUpDemoSpares } from "../seed/demo.js";
 
 const phoneField = z
   .string()
@@ -76,7 +76,14 @@ const moderate = { rateLimit: { max: 20, timeWindow: "1 minute" } };
 
 export async function authRoutes(
   app: FastifyInstance,
-  opts: { pool: pg.Pool; otp: OtpService; tokens: TokenService; demoEnabled: boolean; demoPhone: string },
+  opts: {
+    pool: pg.Pool;
+    otp: OtpService;
+    tokens: TokenService;
+    demoEnabled: boolean;
+    demoPhone: string;
+    demoSpares: number;
+  },
 ) {
   const { pool, otp, tokens } = opts;
   const auth = requireUser(tokens);
@@ -109,15 +116,32 @@ export async function authRoutes(
     return { ...(await tokens.issue(user.id, req.headers["user-agent"])), user: view(user) };
   });
 
+  /** Builds the next spare demo copy in the background, one top-up at a time. */
+  let refilling: Promise<void> | null = null;
+  const refillSpares = () => {
+    if (!opts.demoSpares || refilling) return;
+    refilling = topUpDemoSpares(pool, opts.demoSpares)
+      .then(
+        () => undefined,
+        (err) => app.log.error({ err }, "demo: spare copy not built"),
+      )
+      .finally(() => {
+        refilling = null;
+      });
+  };
+
   /**
    * "Try the demo": a private copy of the demo world for this visitor (see
-   * createDemoSandbox), so nothing they do reaches the next visitor. It lasts
-   * SANDBOX_TTL_HOURS; tapping "Try the demo" again starts a fresh one.
+   * createDemoSandbox), so nothing they do reaches the next visitor. A spare
+   * built in advance is claimed when one is ready (instant); otherwise one is
+   * built now. It lasts SANDBOX_TTL_HOURS; tapping "Try the demo" again starts
+   * a fresh one.
    */
   app.post("/auth/demo", { config: strict }, async (req) => {
     if (!opts.demoEnabled) throw new AppError(404, "demo_disabled", "The demo is not available here.");
-    const adaId = await createDemoSandbox(pool);
+    const adaId = (await claimDemoSandbox(pool)) ?? (await createDemoSandbox(pool));
     if (!adaId) throw new AppError(503, "demo_busy", "The demo is busy right now. Please try again in a few minutes.");
+    refillSpares();
     return { ...(await tokens.issue(adaId, req.headers["user-agent"])), user: view(await findUser(adaId)) };
   });
 

@@ -54,7 +54,8 @@ Validated at startup (`src/config.ts`); an invalid value stops the server with a
 | `OTP_TEST_NUMBERS` | none | `+2348000000001:123456,...` |
 | `OTP_TTL_SECONDS` | `300` | Code lifetime |
 | `DEMO_LOGIN_ENABLED` | `false` | Enables `POST /auth/demo` |
-| `DEMO_PHONE` | `+2348000000000` | Seeded demo account |
+| `DEMO_SPARES` | `1` | Private demo copies kept built in advance so "Try the demo" is instant; `0` builds each one on demand |
+| `DEMO_PHONE` | `+2348000000000` | Seeded demo account; also the number shown for a private demo's member |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` | none, `auto`, none | Private bucket for receipt photos |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none | Bucket access key; photo uploads are off until set |
 
@@ -119,7 +120,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 
 Money actions need the PIN. Anyone outside a circle gets `404` for it, so ids reveal nothing.
 
-**Private demos.** `POST /auth/demo` builds a fresh copy of the seeded demo (same people, circles, history and verifiable draws) for each visit, tagged with a sandbox id; it lasts 24 hours and expired copies are purged when the next visitor arrives. A copy is a closed world: its invite codes only reach its own circles, its people have no phone numbers, handovers can't leave it, and its circles are never published as ledger anchors. Its demo member can't change name, bank details or PIN, or delete the account (`403`).
+**Private demos.** `POST /auth/demo` builds a fresh copy of the seeded demo (same people, circles, history and verifiable draws) for each visit, tagged with a sandbox id; it lasts 24 hours and expired copies are purged when the next visitor arrives. The API keeps `DEMO_SPARES` copies built in advance (one at startup, the next after each claim): a visit claims the oldest ready one in one update, and only builds on the spot when none is ready. Unclaimed spares are thrown away after 6 hours, so their dates stay current. A copy is a closed world: its invite codes only reach its own circles, its people have no phone numbers, handovers can't leave it, and its circles are never published as ledger anchors. Its demo member can't change name, bank details or PIN, or delete the account (`403`).
 
 ## How a circle runs
 

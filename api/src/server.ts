@@ -2,6 +2,7 @@ import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createPool } from "./db.js";
 import { loadMigrations, migrate, resolveMigrationsDir } from "./migrate/runner.js";
+import { topUpDemoSpares } from "./seed/demo.js";
 
 const config = loadConfig();
 const pool = createPool(config);
@@ -31,4 +32,13 @@ try {
 } catch (err) {
   app.log.fatal({ err }, "failed to start");
   process.exit(1);
+}
+
+// A sleeping deployment wakes on its first request: have a demo copy ready by
+// the time that visitor taps "Try the demo".
+if (pool && config.DEMO_LOGIN_ENABLED && config.DEMO_SPARES > 0) {
+  topUpDemoSpares(pool, config.DEMO_SPARES).then(
+    (built) => app.log.info({ built }, "demo: spare copies ready"),
+    (err) => app.log.error({ err }, "demo: spare copy not built"),
+  );
 }
