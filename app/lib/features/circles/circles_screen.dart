@@ -31,7 +31,10 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
           loading: () => const SkeletonList(),
           error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circlesProvider)),
           data: (list) {
-            final shown = list.where((c) => (c.activeRound == null && c.rounds.isNotEmpty) == _completed).toList();
+            // Finished: every turn paid out, or cancelled before it started.
+            final shown = list
+                .where((c) => (c.cancelled || (c.activeRound == null && c.rounds.isNotEmpty)) == _completed)
+                .toList();
             return RefreshIndicator(
               color: SovaColors.electric,
               onRefresh: () => ref.refresh(circlesProvider.future),
@@ -74,7 +77,7 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
                   ),
                   const SizedBox(height: SovaSpacing.xl2),
                   SegmentedChips<bool>(
-                    options: const {false: 'Active', true: 'Completed'},
+                    options: const {false: 'Active', true: 'Finished'},
                     selected: _completed,
                     onChanged: (v) => setState(() => _completed = v),
                   ),
@@ -84,7 +87,7 @@ class _CirclesScreenState extends ConsumerState<CirclesScreen> {
                         ? const EmptyState(
                             icon: Icons.emoji_events_outlined,
                             title: 'No finished circles yet',
-                            message: 'Circles you complete appear here, and every one adds to your record.',
+                            message: 'Completed and cancelled circles appear here. Every completed one adds to your record.',
                           )
                         : EmptyState(
                             icon: Icons.groups_2_outlined,
@@ -252,7 +255,7 @@ class CircleCard extends StatelessWidget {
     final round = c.activeRound;
     final mine = c.memberById(me);
     // Before the first turn, progress shows how full the circle is.
-    final waiting = round == null && c.rounds.isEmpty;
+    final waiting = round == null && c.rounds.isEmpty && !c.cancelled;
     final progress = waiting
         ? c.members.length / c.memberCount
         : (c.payersThisRound == 0 ? 0.0 : c.paidThisRound / c.payersThisRound);
@@ -309,38 +312,45 @@ class CircleCard extends StatelessWidget {
                 if (round != null)
                   Text('Turn ${round.number} of ${c.memberCount}', style: SovaText.label.copyWith(fontSize: 13))
                 else if (waiting)
-                  Text('Waiting for members', style: SovaText.label.copyWith(fontSize: 13)),
+                  Text('Waiting for members', style: SovaText.label.copyWith(fontSize: 13))
+                else if (c.cancelled)
+                  Text('Cancelled', style: SovaText.label.copyWith(fontSize: 13)),
               ],
             ),
-            const SizedBox(height: SovaSpacing.md),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(SovaRadius.full),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                color: SovaColors.electric,
-                backgroundColor: SovaColors.electricTint,
-              ),
-            ),
-            const SizedBox(height: SovaSpacing.md),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              spacing: SovaSpacing.md,
-              runSpacing: SovaSpacing.xs,
-              children: [
-                Text(
-                  waiting
-                      ? '${c.members.length} of ${c.memberCount} joined'
-                      : '${c.paidThisRound} of ${c.payersThisRound} paid this turn',
-                  style: SovaText.caption,
+            if (c.cancelled) ...[
+              const SizedBox(height: SovaSpacing.md),
+              const Text('Cancelled before it started. Nobody paid anything into it.', style: SovaText.caption),
+            ] else ...[
+              const SizedBox(height: SovaSpacing.md),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(SovaRadius.full),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  color: SovaColors.electric,
+                  backgroundColor: SovaColors.electricTint,
                 ),
-                if (mine != null)
+              ),
+              const SizedBox(height: SovaSpacing.md),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: SovaSpacing.md,
+                runSpacing: SovaSpacing.xs,
+                children: [
                   Text(
-                    _myTurnLabel(c, mine.position),
-                    style: SovaText.caption.copyWith(color: SovaColors.electric, fontWeight: FontWeight.w700),
+                    waiting
+                        ? '${c.members.length} of ${c.memberCount} joined'
+                        : '${c.paidThisRound} of ${c.payersThisRound} paid this turn',
+                    style: SovaText.caption,
                   ),
-              ],
-            ),
+                  if (mine != null)
+                    Text(
+                      _myTurnLabel(c, mine.position),
+                      style: SovaText.caption.copyWith(color: SovaColors.electric, fontWeight: FontWeight.w700),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

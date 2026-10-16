@@ -114,6 +114,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings/profile', parentNavigatorKey: _rootKey, builder: (_, _) => const EditProfileScreen()),
       GoRoute(path: '/settings/bank', parentNavigatorKey: _rootKey, builder: (_, _) => const BankDetailsScreen()),
       GoRoute(path: '/settings/pin', parentNavigatorKey: _rootKey, builder: (_, _) => const ChangePinScreen()),
+      GoRoute(path: '/settings/delete', parentNavigatorKey: _rootKey, builder: (_, _) => const DeleteAccountScreen()),
       GoRoute(
         path: '/handover/:id',
         parentNavigatorKey: _rootKey,

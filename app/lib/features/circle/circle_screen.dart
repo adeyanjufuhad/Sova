@@ -104,6 +104,23 @@ class _CircleBody extends ConsumerWidget {
               ],
             ),
           ),
+        if (c.cancelled)
+          AdirePanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Eyebrow('Circle cancelled', onBlue: true),
+                const SizedBox(height: SovaSpacing.md),
+                Text('Cancelled before it started', style: SovaText.h2.copyWith(color: SovaColors.white)),
+                const SizedBox(height: SovaSpacing.xs),
+                Text(
+                  'The admin cancelled the circle while it was still forming, so nobody paid anything into it. '
+                  'Its record stays on the ledger.',
+                  style: SovaText.bodySmall.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
+                ),
+              ],
+            ),
+          ),
         if (round != null && collector != null)
           AdirePanel(
             child: Column(
@@ -174,11 +191,11 @@ class _CircleBody extends ConsumerWidget {
         const Eyebrow('Group rules'),
         const SizedBox(height: SovaSpacing.md),
         _RulesCard(circle: c, me: me),
-        if (!c.forming && c.openDisputes == 0) ...[
+        if (!c.forming && !c.cancelled && c.openDisputes == 0) ...[
           const SizedBox(height: SovaSpacing.md),
           _DisputesCard(circle: c),
         ],
-        if (c.status != CircleStatus.completed) ...[
+        if (c.status != CircleStatus.completed && !c.cancelled) ...[
           const SizedBox(height: SovaSpacing.md),
           _TurnsCard(circle: c),
         ],
@@ -194,6 +211,8 @@ class _CircleBody extends ConsumerWidget {
           const Eyebrow('Invite members'),
           const SizedBox(height: SovaSpacing.md),
           _InviteCard(code: c.inviteCode),
+          const SizedBox(height: SovaSpacing.xl3),
+          _ExitCard(circle: c, me: me),
         ],
       ],
     );
@@ -576,6 +595,67 @@ class _InviteCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The way out while a circle is forming: members leave, the admin cancels.
+class _ExitCard extends ConsumerWidget {
+  const _ExitCard({required this.circle, required this.me});
+
+  final Circle circle;
+  final String me;
+
+  Future<void> _leave(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(repositoryProvider);
+    final ok = await confirmWithPin(
+      context,
+      title: 'Leave ${circle.name}?',
+      subtitle: 'Your place opens up for someone else. You can join again with the code while it is forming.',
+      onPin: (pin) => repo.leaveCircle(circleId: circle.id, pin: pin),
+    );
+    if (!context.mounted || !ok) return;
+    HapticFeedback.mediumImpact();
+    ref.invalidate(circlesProvider);
+    ref.invalidate(inboxProvider);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('You left ${circle.name}.')));
+    context.go('/circles');
+  }
+
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(repositoryProvider);
+    final ok = await confirmWithPin(
+      context,
+      title: 'Cancel ${circle.name}?',
+      subtitle: "Nobody can join any more and the invite code stops working. This can't be undone.",
+      onPin: (pin) => repo.cancelCircle(circleId: circle.id, pin: pin),
+    );
+    if (!context.mounted || !ok) return;
+    HapticFeedback.mediumImpact();
+    refreshCircle(ref, circle.id);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${circle.name} is cancelled.')));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final admin = circle.isAdmin(me);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          admin
+              ? 'Changed your mind? You can cancel the circle until the turns are drawn. Members are told.'
+              : 'Changed your mind? You can leave until the turns are drawn. After that, the way out is handing '
+                  'your place to someone the admin approves.',
+          style: SovaText.caption,
+        ),
+        const SizedBox(height: SovaSpacing.sm),
+        OutlinedButton.icon(
+          onPressed: () => admin ? _cancel(context, ref) : _leave(context, ref),
+          icon: Icon(admin ? Icons.block_rounded : Icons.logout_rounded),
+          label: Text(admin ? 'Cancel this circle' : 'Leave this circle'),
+        ),
+      ],
     );
   }
 }

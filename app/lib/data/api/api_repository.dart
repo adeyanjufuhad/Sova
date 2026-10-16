@@ -83,6 +83,7 @@ class ApiRepository implements SovaRepository {
     final clean = code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
     final j = await _api.get('/circles/preview/$clean') as Map<String, dynamic>;
     if (j['alreadyMember'] == true) throw const SovaException('You are already in this circle.');
+    if (j['status'] == 'cancelled') throw const SovaException('The admin cancelled this circle before it started.');
     if (j['status'] != 'forming') {
       throw const SovaException('This circle has already started. Ask the admin about the next one.');
     }
@@ -129,6 +130,21 @@ class ApiRepository implements SovaRepository {
   @override
   Future<Circle> acceptRules(String circleId, int version) async =>
       _circle(await _api.post('/circles/$circleId/rules/accept', {'version': version}) as Map<String, dynamic>);
+
+  @override
+  Future<void> leaveCircle({required String circleId, required String pin}) =>
+      _api.post('/circles/$circleId/leave', {'pin': pin});
+
+  @override
+  Future<Circle> cancelCircle({required String circleId, required String pin}) async =>
+      _circle(await _api.post('/circles/$circleId/cancel', {'pin': pin}) as Map<String, dynamic>);
+
+  @override
+  Future<void> deleteAccount({required String pin}) async {
+    await _api.post('/me/delete', {'pin': pin});
+    // The server already ended every session.
+    await _api.endSession();
+  }
 
   @override
   Future<String> uploadProof({

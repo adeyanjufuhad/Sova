@@ -109,6 +109,9 @@ class AuthNotifier extends Notifier<AuthState> {
     await _repo.signOut();
     state = AuthState(restoring: false, onboarded: state.onboarded);
   }
+
+  /// After the account was deleted (the repository already ended the session).
+  void accountDeleted() => state = AuthState(restoring: false, onboarded: state.onboarded);
 }
 
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

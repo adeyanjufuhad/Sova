@@ -293,6 +293,8 @@ class _Settings extends ConsumerWidget {
           const Divider(),
           row(Icons.lock_outline_rounded, 'Change PIN', onTap: () => context.push('/settings/pin')),
           const Divider(),
+          row(Icons.person_remove_outlined, 'Delete account', onTap: () => context.push('/settings/delete')),
+          const Divider(),
           row(
             Icons.logout_rounded,
             'Sign out',

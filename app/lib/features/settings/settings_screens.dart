@@ -300,3 +300,69 @@ class _ChangePinScreenState extends ConsumerState<ChangePinScreen> {
     );
   }
 }
+
+/// Deleting the account: what goes, what stays, and when it's allowed.
+class DeleteAccountScreen extends ConsumerWidget {
+  const DeleteAccountScreen({super.key});
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(repositoryProvider);
+    final ok = await confirmWithPin(
+      context,
+      title: 'Delete your account?',
+      subtitle: "This can't be undone. Enter your PIN to delete it.",
+      onPin: (pin) => repo.deleteAccount(pin: pin),
+    );
+    if (!ok || !context.mounted) return;
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Your account is deleted.')));
+    ref.read(authProvider.notifier).accountDeleted();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final demo = ref.watch(authProvider).session?.isDemo ?? false;
+    return Scaffold(
+      appBar: AppBar(leading: const SovaBackButton(fallback: '/record'), title: const Text('Delete account')),
+      body: ListView(
+        padding: const EdgeInsets.all(SovaSpacing.screenH),
+        children: [
+          if (demo) ...[
+            const NoticeBox("This is the shared demo account, so it can't be deleted.", icon: Icons.science_outlined),
+            const SizedBox(height: SovaSpacing.lg),
+          ],
+          const Text('What is removed', style: SovaText.h3),
+          const SizedBox(height: SovaSpacing.xs),
+          const Text(
+            'Your name, phone number, PIN and bank details, your sign-in sessions, notifications, Sova Score and '
+            'any score link, and the receipt photos you attached.',
+            style: SovaText.bodySmall,
+          ),
+          const SizedBox(height: SovaSpacing.lg),
+          const Text('What stays', style: SovaText.h3),
+          const SizedBox(height: SovaSpacing.xs),
+          const Text(
+            "Payments and turns in finished circles stay on those circles' records without your name or number, so "
+            "the other members' history still adds up. Ledger entries already written keep your first name and "
+            "initial, because the ledger can't be changed.",
+            style: SovaText.bodySmall,
+          ),
+          const SizedBox(height: SovaSpacing.lg),
+          const Text('When you can delete it', style: SovaText.h3),
+          const SizedBox(height: SovaSpacing.xs),
+          const Text(
+            "Once every circle you're in has finished. Circles still forming are left for you; if you started one, "
+            'cancel it first. Your number can sign up again later as a new account.',
+            style: SovaText.bodySmall,
+          ),
+          const SizedBox(height: SovaSpacing.xl2),
+          FilledButton(
+            onPressed: demo ? null : () => _delete(context, ref),
+            style: FilledButton.styleFrom(backgroundColor: SovaColors.navy900),
+            child: const Text('Delete my account'),
+          ),
+        ],
+      ),
+    );
+  }
+}

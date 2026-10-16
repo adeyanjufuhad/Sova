@@ -124,6 +124,28 @@ class DemoRepository implements SovaRepository {
     _pin = newPin;
   }
 
+  @override
+  Future<void> deleteAccount({required String pin}) async {
+    await _latency();
+    _checkPin(pin);
+    if (_session?.isDemo ?? false) throw const SovaException("This is the shared demo account, so it can't be deleted.");
+    final mine = _circles.values.where((c) => c.memberById(me) != null).toList();
+    for (final c in mine) {
+      if (c.forming && c.isAdmin(me)) {
+        throw SovaException("You started ${c.name}, which hasn't begun yet. Cancel it first.");
+      }
+      if (c.status == CircleStatus.active || c.status == CircleStatus.paused) {
+        throw SovaException(
+            "You're in ${c.name}, which is still running. You can delete your account once every circle you're in has finished.");
+      }
+    }
+    for (final c in mine.where((c) => c.forming)) {
+      _leave(c);
+    }
+    _session = null;
+    _pin = null;
+  }
+
   /// Seeded notifications; the server writes these from real events.
   late final _inbox = <AppNotification>[
     AppNotification(
@@ -285,6 +307,7 @@ class DemoRepository implements SovaRepository {
     await _latency();
     final c = _byCode(code);
     if (c.memberById(me) != null) throw const SovaException('You are already in this circle.');
+    if (c.cancelled) throw const SovaException('The admin cancelled this circle before it started.');
     if (!c.forming) throw const SovaException('This circle has already started. Ask the admin about the next one.');
     if (c.members.length >= c.memberCount) throw const SovaException('This circle is already full.');
     return c;
@@ -325,6 +348,60 @@ class DemoRepository implements SovaRepository {
       throw const SovaException('The rules changed while you were reading. Please read them again.');
     }
     return _circles[circleId] = _startIfReady(_copyCircle(c, rules: _withAcceptance(c.rules!, me)));
+  }
+
+  @override
+  Future<void> leaveCircle({required String circleId, required String pin}) async {
+    await _latency();
+    final c = await circle(circleId);
+    _checkPin(pin);
+    if (c.isAdmin(me)) throw const SovaException('You started this circle, so you can cancel it instead of leaving.');
+    if (!c.forming) {
+      throw const SovaException(
+          "The turns have been drawn, so you can't just leave. Hand your place to someone the admin approves.");
+    }
+    _leave(c);
+  }
+
+  /// Takes the signed-in member out of a forming circle, with their acceptance and vouches.
+  void _leave(Circle c) {
+    for (final h in _handovers.where((h) => h.circleId == c.id && h.status.open)) {
+      if (h.leaving.userId == me || h.replacement.userId == me) h.status = HandoverStatus.cancelled;
+    }
+    final rules = c.rules;
+    _circles[c.id] = _copyCircle(
+      c,
+      members: [
+        for (final m in c.members)
+          if (m.userId != me)
+            m.vouchedBy == me
+                ? Member(userId: m.userId, name: m.name, phone: m.phone, position: m.position, bank: m.bank)
+                : m,
+      ],
+      rules: rules == null
+          ? null
+          : GroupRules(
+              version: rules.version,
+              lateFee: rules.lateFee,
+              graceDays: rules.graceDays,
+              earlyExit: rules.earlyExit,
+              emergencyPolicy: rules.emergencyPolicy,
+              acceptedBy: {...rules.acceptedBy}..remove(me),
+            ),
+    );
+  }
+
+  @override
+  Future<Circle> cancelCircle({required String circleId, required String pin}) async {
+    await _latency();
+    final c = await circle(circleId);
+    _checkPin(pin);
+    if (!c.isAdmin(me)) throw const SovaException('Only the admin can cancel the circle.');
+    if (!c.forming) throw const SovaException('The circle has started, so it runs until every turn is paid out.');
+    for (final h in _handovers.where((h) => h.circleId == circleId && h.status.open)) {
+      h.status = HandoverStatus.cancelled;
+    }
+    return _circles[circleId] = _copyCircle(c, status: CircleStatus.cancelled);
   }
 
   @override
@@ -592,7 +669,7 @@ class DemoRepository implements SovaRepository {
     var confirmed = 0, onTime = 0, turns = 0, made = 0, active = 0, completed = 0;
     for (final c in _circles.values.where((c) => c.memberById(me) != null)) {
       if (c.status == CircleStatus.completed) completed++;
-      if (c.status != CircleStatus.completed && c.status != CircleStatus.forming) active++;
+      if (c.status == CircleStatus.active || c.status == CircleStatus.paused) active++;
       for (final r in c.rounds) {
         final x = c.contributionFor(r.id, me);
         if (x?.status == ContributionStatus.fullyConfirmed) {

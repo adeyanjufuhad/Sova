@@ -53,6 +53,13 @@ abstract interface class SovaRepository {
 
   Future<Circle> acceptRules(String circleId, int version);
 
+  /// Leaves a circle that is still forming; the admin can't (they cancel it).
+  /// Their place opens up again. Needs the PIN.
+  Future<void> leaveCircle({required String circleId, required String pin});
+
+  /// The admin cancels a circle that is still forming. Needs the PIN.
+  Future<Circle> cancelCircle({required String circleId, required String pin});
+
   /// Uploads a photo of the payment receipt for this turn and returns its
   /// key, to pass to [confirmMyPayment]. The server keeps it in private
   /// storage; only members of the circle can view it.
@@ -146,6 +153,11 @@ abstract interface class SovaRepository {
 
   /// Changes the PIN; the current one must be right.
   Future<void> changePin({required String currentPin, required String newPin});
+
+  /// Deletes the signed-in account and signs out. Refused while a circle of
+  /// theirs is running or one they run is still forming; circles still forming
+  /// are left. Needs the PIN.
+  Future<void> deleteAccount({required String pin});
 
   /// Notifications and live reminders.
   Future<Inbox> notifications();

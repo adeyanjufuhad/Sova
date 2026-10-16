@@ -10,8 +10,9 @@ enum CycleType {
   final String unit;
 }
 
-/// A circle fills up while 'forming'; the fair draw then starts it.
-enum CircleStatus { forming, active, paused, completed }
+/// A circle fills up while 'forming'; the fair draw then starts it. The admin
+/// can cancel it before then.
+enum CircleStatus { forming, active, paused, completed, cancelled }
 
 enum RoundStatus { pending, active, completed }
 
@@ -194,6 +195,8 @@ class Circle {
   int get payout => contributionAmount * (memberCount - 1);
 
   bool get forming => status == CircleStatus.forming;
+
+  bool get cancelled => status == CircleStatus.cancelled;
 
   Round? get activeRound {
     for (final r in rounds) {
