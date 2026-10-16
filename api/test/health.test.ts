@@ -41,6 +41,7 @@ describe("GET /health", () => {
 describe("config", () => {
   it("rejects a malformed database URL with a clear message", () => {
     expect(() => loadConfig({ DATABASE_URL: "not a url" })).toThrow(/DATABASE_URL/);
+    expect(() => loadConfig({ JWT_SECRET: "too short" })).toThrow(/JWT_SECRET/);
   });
 
   it("parses CORS origins from a comma-separated list", () => {
@@ -50,5 +51,11 @@ describe("config", () => {
 
   it("defaults to port 8080", () => {
     expect(loadConfig({}).PORT).toBe(8080);
+  });
+
+  it("treats the empty values of a copied .env.example as unset", () => {
+    const c = loadConfig({ DATABASE_URL: "", JWT_SECRET: "" });
+    expect(c.DATABASE_URL).toBeUndefined();
+    expect(c.JWT_SECRET).toBeUndefined();
   });
 });

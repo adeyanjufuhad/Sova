@@ -29,7 +29,8 @@ const schema = z
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 
     /** Postgres connection string. Optional until the database is attached. */
-    DATABASE_URL: z.string().url().optional(),
+    // An empty value (as in a copied .env.example) means "not set".
+    DATABASE_URL: z.string().url().optional().or(z.literal("").transform(() => undefined)),
     /**
      * TLS to Postgres. "auto" follows the URL's sslmode (require/prefer encrypt without
      * verifying, verify-ca/verify-full verify, otherwise off). RumptyCloud's public
@@ -45,7 +46,11 @@ const schema = z
     CORS_ORIGINS: list,
 
     /** Secret for signing access tokens and hashing OTP codes. At least 32 characters. */
-    JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters").optional(),
+    JWT_SECRET: z
+      .string()
+      .min(32, "JWT_SECRET must be at least 32 characters")
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(86_400).default(900),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
 
