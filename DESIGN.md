@@ -202,7 +202,7 @@ There are **no drop shadows, glows, gradients or glass effects**. Elevation is e
 2. a change of surface (white on mist, or white on royal blue),
 3. a heavier border for the selected item (royal blue 1 px).
 
-The only exceptions are the website hero's subtle blue light rays and the faint blueprint grid, both decorative, behind content, and stopped for people who prefer reduced motion.
+The only exceptions are the website hero's dot grid (React Bits DotGrid: 3 px dots in pale blue-grey `#D3DCEE` on a 22 px pitch, faded at the edges, no glow) and the faint blueprint grid, both decorative and behind content. The dot grid is still until the cursor moves through it or a click sends a ripple, then settles and stops drawing; it never moves on its own and stays still for people who prefer reduced motion. (The blue light rays that used to sit behind the hero were removed on 16 Oct.)
 
 ## Shapes
 
@@ -237,7 +237,7 @@ Inline information or error: blue tint background, blue 25% border, navy text, a
 Split by default: eyebrow and a heavy headline (800, tight tracking, up to 60 px) on the left, the supporting sentence on the right, bottom-aligned; it stacks on phones. Centred only for narrow or radial sections (FAQ, the orbit of names). Headlines in half-width columns stop at 48 px.
 
 ### Payout calculator (website)
-The signature interactive card: contribution, members and frequency in a white card with a hairline border, and the result in an adire panel below it: what you collect (contribution × (members − 1)), how long the cycle lasts, and that you pay in exactly what you collect. Arithmetic only, never projections.
+The signature interactive card: contribution, members and frequency in a white card with a hairline border, and the result in an adire panel below it: what you collect (contribution × (members − 1)), how long the cycle lasts, and that you pay in exactly what you collect. Arithmetic only, never projections. The payout figure rolls digit by digit to its new value (React Bits CountUp, roll mode) when an input changes.
 
 ### Record band (website)
 A full-width navy band that shows the product as the visual: a mockup of the circle record (entry kinds and the hash rule, hashes labelled as examples) with a white "rechecked in your browser" card overlapping its corner. Depth comes from the overlap, not a shadow. One white button per band.
@@ -252,7 +252,7 @@ Navy, opening with a large conversational headline and one white button, then th
 A white card with a 64 px adire tile holding a white icon, a short title, one sentence on what to do, and up to two full-width actions. Used when a whole list is empty (circles, activity, disputes) and for the "page not found" screen.
 
 ### Motion
-Short and purposeful: staggered entrances (60–80 ms apart), count-up for the next payout, 200–300 ms transitions on transform and opacity only. Buttons press to 0.98 scale; cards lift 2 px on hover. Every animation is skipped when the system asks for reduced motion.
+Short and purposeful: staggered entrances (60–80 ms apart), count-up for the next payout, 200–300 ms transitions on transform and opacity only. Buttons press to 0.98 scale; cards lift 2 px on hover. Every animation is skipped when the system asks for reduced motion. The hero headline names ajo, esusu and adashe once (React Bits RotatingText) and settles on ajo; it does not cycle.
 
 ## Do's and Don'ts
 

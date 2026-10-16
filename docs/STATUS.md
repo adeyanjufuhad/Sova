@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 7 October 2026 (Devcenter Hacktober build phase, day 7). Phases 4, 5 and 6 done early.
+Last updated: 16 October 2026 (Devcenter Hacktober build phase, day 16). Phases 4, 5 and 6 done early.
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -65,6 +65,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 7 Oct | **Sova Score (owner may change):** v1 formula kept (60% on time, 25% every turn paid, 15% circles finished). Shown only after 3 confirmed payments. Turns not yet due and payments sent back to unpaid don't count. Bands: Excellent 90+, Strong 75–89, Fair 50–74, Building under 50. Sharing publishes a snapshot behind a random link (PIN needed): first name + initial, score, rates and counts only; one live link at a time; stop sharing any time. Described as "your record, not a credit rating". |
 | 7 Oct | **Shared demo account (owner may change):** everyone who taps "Try the demo" signs in as Ada Obi, so the API refuses changes to that account's name, bank details and PIN (403), and the app shows the demo PIN (`2580`) on every PIN sheet. Five wrong PINs still lock it for 15 minutes like any account; reseeding resets it. |
 | 7 Oct | **Real users after judging (owner):** until judging ends (7 Nov) Sova stays demo-only: the shared demo account plus the test-number list. Opening to the public after judging needs a real SMS provider for sign-in codes (paid per message), a paid API size that doesn't sleep, and a privacy policy. Twilio (checked 7 Oct): $0.3868 per SMS segment to Nigeria; Verify adds $0.05 per successful check. Compare local gateways before choosing. |
+| 16 Oct | **Landing page backdrop (owner):** the blue light rays behind the hero are removed. The hero uses the React Bits DotGrid instead (pale dots, no glow, still until the cursor or a click disturbs it). Also from React Bits: RotatingText names ajo, esusu and adashe once in the headline and settles on ajo; CountUp rolls the payout calculator's figure. React Bits components are copied into `website/src/components/ui` and recoloured to the tokens. |
 | 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
 
 ## Built and working
@@ -162,6 +163,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 ### Website (`website/`)
 - Honest copy (4 Oct): only built features are described; reminders, voice, languages, offline, swaps, collector mode, USSD, Sova Score card and credit history are labelled "coming soon" or listed in the new Roadmap section (the Collectors section is gone). Payout maths corrected (contribution × (members − 1)). "Try the live demo" is the hero's main button.
 - Static export (`output: "export"`), published to the `site-web` branch by `.github/workflows/site-web.yml`. The waitlist posts to the API (`POST /waitlist`) and retries while the API wakes up.
+- Landing refresh (16 Oct): hero backdrop is the React Bits DotGrid (light rays and the `ogl` dependency removed); the headline word rotates once through ajo, esusu, adashe (RotatingText); the payout figure rolls to each new value (CountUp). The headline scales down below 375 px so "adashe" fits at 320 px.
 - Sections: anti-fraud notice bar; navbar; hero; how it works; "money moves between members"; features grid; "missed payments can't hide" timeline; "one tradition, many names"; markets ticker; roadmap; "Our promise"; app preview; FAQ (English + Pidgin, now with "how is the order fair?"); waitlist; footer with disclosure. Plus `/verify`.
 
 ### Database (`db/migrations/`)
