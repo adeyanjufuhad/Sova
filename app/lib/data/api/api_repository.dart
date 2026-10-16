@@ -203,7 +203,7 @@ class ApiRepository implements SovaRepository {
   static Session _session(Map<String, dynamic> u) {
     final bank = u['bank'] as Map<String, dynamic>?;
     return Session(
-      phone: u['phone'] as String,
+      phone: (u['phone'] as String?) ?? '',
       userId: u['id'] as String,
       fullName: u['fullName'] as String?,
       hasPin: u['hasPin'] as bool,
