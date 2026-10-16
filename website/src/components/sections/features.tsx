@@ -105,7 +105,6 @@ const trust: Item[] = [
     icon: ArrowLeftRight,
     title: "Swap turns, hand over a slot",
     body: "Swap your turn with a willing member, or hand your place to someone the admin approves.",
-    soon: true,
   },
 ];
 

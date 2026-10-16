@@ -64,8 +64,8 @@ export function Protection() {
             </h2>
             <p className="mt-4 text-lg text-slate-600">
               Most circles don&apos;t collapse from one bad person. They collapse from small gaps nobody tracked.
-              In Sova, every naira has two witnesses and every shortfall leaves a mark. Reminders before the due day
-              are coming soon.
+              In Sova, every naira has two witnesses and every shortfall leaves a mark. In-app reminders flag
+              what&apos;s due in the next two days and anything overdue.
             </p>
           </Reveal>
         }

@@ -1,11 +1,10 @@
-import { ArrowLeftRight, ArrowRight, Bell, CloudOff, Landmark, Mic, Phone, Store } from "lucide-react";
+import { ArrowRight, Bell, CloudOff, Landmark, Mic, Phone, Store } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { AdirePattern } from "@/components/ui/adire";
 
 // What's next, honestly labelled. Nothing here is built yet.
 const next = [
-  { icon: ArrowLeftRight, title: "Swap turns, hand over a slot", body: "Swap your turn with a willing member, or hand your place to someone the admin approves." },
-  { icon: Bell, title: "Reminders", body: "In-app reminders before your day first; SMS and WhatsApp later." },
+  { icon: Bell, title: "SMS and WhatsApp reminders", body: "In-app reminders are live; reminders by text and WhatsApp come next." },
   { icon: Store, title: "Collector mode", body: "For alajo and market collectors: a daily list of who's owing across many groups." },
   { icon: Phone, title: "USSD for basic phones", body: "Record and check payments without a smartphone or data." },
   { icon: Mic, title: "Voice and local languages", body: "Spoken prompts in Pidgin, Yoruba, Hausa and Igbo." },
