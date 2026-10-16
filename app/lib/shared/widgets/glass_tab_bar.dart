@@ -5,6 +5,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/theme.dart';
+import 'tour.dart';
 
 class GlassTab {
   const GlassTab({required this.icon, required this.selectedIcon, required this.label});
@@ -160,7 +161,10 @@ class _GlassTabBarState extends State<GlassTabBar> with TickerProviderStateMixin
                           Row(
                             children: [
                               const SizedBox(width: _pad),
-                              for (var i = 0; i < n; i++) Expanded(child: _item(i)),
+                              for (var i = 0; i < n; i++)
+                                Expanded(
+                                  child: TourTarget(id: 'tab.$i', child: _item(i)),
+                                ),
                               const SizedBox(width: _pad),
                             ],
                           ),

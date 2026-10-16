@@ -6,10 +6,14 @@ import 'package:intl/intl.dart';
 import '../../core/format.dart';
 import '../../core/theme/theme.dart';
 import '../../data/insights.dart';
+import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/app_shell.dart' show tabBarInset;
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
+import '../../shared/widgets/tour.dart';
+import '../assistant/ask_sova_sheet.dart';
+import '../tour/tours.dart';
 import 'score_card.dart';
 
 /// The member's own savings record: the thing that earns trust (and, later,
@@ -128,6 +132,10 @@ class RecordScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: SovaSpacing.xl3),
+                const SectionHeader('Help'),
+                const SizedBox(height: SovaSpacing.sm),
+                const _Help(),
                 const SizedBox(height: SovaSpacing.xl3),
                 const SectionHeader('Settings'),
                 const SizedBox(height: SovaSpacing.sm),
@@ -300,6 +308,54 @@ class _Settings extends ConsumerWidget {
             'Sign out',
             trailing: const SizedBox.shrink(),
             onTap: () => ref.read(authProvider.notifier).signOut(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ask Sova (when it's switched on) and the guided tour, to take again.
+class _Help extends ConsumerWidget {
+  const _Help();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assistant = ref.watch(authProvider.select((s) => s.session?.assistant ?? false));
+
+    Widget row(IconData icon, String title, String subtitle, VoidCallback onTap) => ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: SovaSpacing.lg),
+      leading: Icon(icon, color: SovaColors.navy900),
+      title: Text(title, style: SovaText.label),
+      subtitle: Text(subtitle, style: SovaText.caption),
+      trailing: const Icon(Icons.chevron_right_rounded, color: SovaColors.textMuted),
+      onTap: onTap,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(SovaRadius.xl),
+        border: Border.all(color: SovaColors.border),
+      ),
+      child: Column(
+        children: [
+          if (assistant) ...[
+            TourTarget(
+              id: 'record.ask',
+              child: row(
+                Icons.chat_bubble_outline_rounded,
+                'Ask Sova',
+                'Questions about how Sova works, in English or Pidgin',
+                () => showAskSova(context, topic: AssistantTopic.question),
+              ),
+            ),
+            const Divider(),
+          ],
+          row(
+            Icons.explore_outlined,
+            'Take the tour again',
+            'A quick look at where everything is',
+            () => startHomeTour(context, ref),
           ),
         ],
       ),

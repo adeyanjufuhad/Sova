@@ -265,6 +265,8 @@ class Session {
     this.hasPin = false,
     this.isDemo = false,
     this.bank,
+    this.pendingTours = const {},
+    this.assistant = false,
   });
 
   final String phone;
@@ -278,16 +280,47 @@ class Session {
   /// Where members send this person's payout.
   final BankDetails? bank;
 
+  /// Guided tours this person hasn't finished or skipped yet.
+  final Set<Tour> pendingTours;
+
+  /// Whether "Ask Sova" is switched on.
+  final bool assistant;
+
   bool get profileComplete => (fullName?.isNotEmpty ?? false) && hasPin;
 
-  Session copyWith({String? fullName, bool? hasPin, BankDetails? bank}) => Session(
+  Session copyWith({String? fullName, bool? hasPin, BankDetails? bank, Set<Tour>? pendingTours}) => Session(
         phone: phone,
         userId: userId,
         fullName: fullName ?? this.fullName,
         hasPin: hasPin ?? this.hasPin,
         isDemo: isDemo,
         bank: bank ?? this.bank,
+        pendingTours: pendingTours ?? this.pendingTours,
+        assistant: assistant,
       );
+}
+
+/// The app's guided tours: the main screens, and a circle the first time one opens.
+enum Tour { home, circle }
+
+/// What "Ask Sova" can explain.
+enum AssistantTopic { circle, dispute, question }
+
+/// Languages "Ask Sova" answers in.
+enum AssistantLanguage {
+  english('en', 'English'),
+  pidgin('pcm', 'Pidgin');
+
+  const AssistantLanguage(this.code, this.label);
+  final String code;
+  final String label;
+}
+
+/// An answer from "Ask Sova": a model's explanation, never the record itself.
+class AssistantAnswer {
+  const AssistantAnswer({required this.text, required this.model});
+  final String text;
+  final String model;
 }
 
 /// What the admin fills in when starting a circle.

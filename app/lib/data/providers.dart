@@ -110,6 +110,19 @@ class AuthNotifier extends Notifier<AuthState> {
     state = AuthState(restoring: false, onboarded: state.onboarded);
   }
 
+  /// A guided tour was finished or skipped: it isn't offered again. If the
+  /// server can't be told, it is simply offered again next time.
+  Future<void> finishTour(Tour tour) async {
+    final s = state.session;
+    if (s == null || !s.pendingTours.contains(tour)) return;
+    state = state.copyWith(session: s.copyWith(pendingTours: {...s.pendingTours}..remove(tour)));
+    try {
+      await _repo.markTourDone(tour);
+    } on SovaException {
+      // Offered again on the next sign-in.
+    }
+  }
+
   /// After the account was deleted (the repository already ended the session).
   void accountDeleted() => state = AuthState(restoring: false, onboarded: state.onboarded);
 }

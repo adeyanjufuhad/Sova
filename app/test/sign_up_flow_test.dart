@@ -64,6 +64,22 @@ void main() {
     await tapKeys(tester, '2580');
     await settle(tester);
 
+    // A new account gets the guided tour once: step through it to the end.
+    await settle(tester);
+    expect(find.text('Welcome to Sova'), findsOneWidget);
+    final steps = ['Your next payout', 'Pay, start or join', 'Reminders', 'Ask Sova', 'Your circles', 'Activity', 'Your record'];
+    for (final title in steps) {
+      await tester.tap(find.text('Next'));
+      await settle(tester);
+      expect(find.text(title), findsWidgets, reason: 'tour step "$title"');
+    }
+    await tester.tap(find.text('Next'));
+    await settle(tester);
+    expect(find.text("You're set"), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await settle(tester);
+    expect(find.text('Skip tour'), findsNothing);
+
     // Home: name in the header, the nudge to pay Halima, and the payments list.
     expect(find.text('Ada Obi'), findsOneWidget);
     expect(find.text('Pay Halima now'), findsOneWidget);

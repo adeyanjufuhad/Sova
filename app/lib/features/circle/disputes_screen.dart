@@ -12,6 +12,7 @@ import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/pin_pad.dart';
+import '../assistant/ask_sova_sheet.dart';
 
 /// Short title for a dispute, from the signed-in member's point of view.
 String disputeTitle(Dispute d, String me) {
@@ -155,7 +156,18 @@ class DisputeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(disputeProvider(disputeId));
     return Scaffold(
-      appBar: AppBar(leading: SovaBackButton(fallback: '/circle/$circleId'), title: const Text('Dispute')),
+      appBar: AppBar(
+        leading: SovaBackButton(fallback: '/circle/$circleId'),
+        title: const Text('Dispute'),
+        actions: [
+          if (ref.watch(authProvider.select((s) => s.session?.assistant ?? false)))
+            IconButton(
+              tooltip: 'Ask Sova about this dispute',
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              onPressed: () => showAskSova(context, topic: AssistantTopic.dispute, disputeId: disputeId),
+            ),
+        ],
+      ),
       body: async.when(
         loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(disputeProvider(disputeId))),

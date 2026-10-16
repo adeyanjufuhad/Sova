@@ -208,6 +208,11 @@ class ApiRepository implements SovaRepository {
       fullName: u['fullName'] as String?,
       hasPin: u['hasPin'] as bool,
       isDemo: (u['isDemo'] as bool?) ?? false,
+      // An API without tours reports none, so nothing is offered.
+      pendingTours: u['toursDone'] is List
+          ? Tour.values.where((t) => !(u['toursDone'] as List).contains(t.name)).toSet()
+          : const {},
+      assistant: (u['assistant'] as bool?) ?? false,
       bank: bank == null
           ? null
           : BankDetails(
@@ -442,6 +447,29 @@ class ApiRepository implements SovaRepository {
         '/handovers/$handoverId/${accept ? 'accept' : 'decline'}',
         accept ? {'rulesVersion': rulesVersion, 'pin': pin} : null,
       ) as Map<String, dynamic>);
+
+  @override
+  Future<void> markTourDone(Tour tour) async => _api.post('/me/tours/${tour.name}');
+
+  @override
+  Future<AssistantAnswer> askSova({
+    required AssistantTopic topic,
+    String? circleId,
+    String? disputeId,
+    String? question,
+    AssistantLanguage language = AssistantLanguage.english,
+  }) async {
+    final res =
+        await _api.post('/assistant/explain', {
+              'topic': topic.name,
+              'circleId': ?circleId,
+              'disputeId': ?disputeId,
+              'question': ?question,
+              'language': language.code,
+            })
+            as Map<String, dynamic>;
+    return AssistantAnswer(text: res['text'] as String, model: res['model'] as String);
+  }
 
   static TurnPerson _turnPerson(Map<String, dynamic> p) =>
       TurnPerson(id: p['id'] as String, name: p['name'] as String, turn: p['turn'] as int?);

@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/theme.dart';
+import '../../data/models.dart';
+import '../../data/providers.dart';
+import '../../features/tour/tours.dart';
 import 'glass_tab_bar.dart';
+import 'tour.dart';
 
 /// The four main tabs under a floating glass tab bar. Each tab keeps its own
 /// navigation stack and scroll position. Content scrolls behind the bar (so
 /// the glass has something to blur); tab screens pad their lists with
 /// [tabBarInset] so nothing stays hidden under it.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell});
 
   final StatefulNavigationShell shell;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  final _tour = TourLauncher();
 
   static const _tabs = [
     GlassTab(icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
@@ -22,6 +34,12 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shell = widget.shell;
+    // New accounts and every private demo get the main tour once.
+    _tour.maybeStart(
+      ref.watch(authProvider.select((s) => s.session?.pendingTours.contains(Tour.home) ?? false)),
+      () => startHomeTour(context, ref),
+    );
     return Scaffold(
       extendBody: true,
       body: shell,

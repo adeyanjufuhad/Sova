@@ -13,6 +13,8 @@ import '../circle/handover_offer_screen.dart' show HandoverOffersCard;
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
+import '../../shared/widgets/tour.dart';
+import '../assistant/ask_sova_sheet.dart';
 
 String _greeting() {
   final h = DateTime.now().hour;
@@ -153,82 +155,104 @@ class _Header extends ConsumerWidget {
                   ),
                   _RoundIcon(icon: Icons.search_rounded, label: 'Find a circle', onTap: () => context.go('/circles')),
                   const SizedBox(width: SovaSpacing.sm),
-                  const _Bell(),
-                ],
-              ),
-              const SizedBox(height: SovaSpacing.xl3),
-              Row(
-                children: [
-                  Text('Your next payout', style: SovaText.bodySmall.copyWith(color: onBlueMuted)),
-                  const SizedBox(width: SovaSpacing.xs),
-                  IconButton(
-                    tooltip: hidden ? 'Show amounts' : 'Hide amounts',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => ref.read(hideAmountsProvider.notifier).toggle(),
-                    icon: Icon(hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: onBlueMuted),
-                  ),
-                ],
-              ),
-              const SizedBox(height: SovaSpacing.xs),
-              Money(
-                next?.circle.payout ?? 0,
-                animate: true,
-                style: SovaText.moneyLarge.copyWith(color: SovaColors.white, fontSize: 38),
-              ),
-              const SizedBox(height: SovaSpacing.sm),
-              if (next != null)
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        '${next.circle.name} · ${shortDate(next.date)}',
-                        style: SovaText.bodySmall.copyWith(color: onBlueMuted),
-                        overflow: TextOverflow.ellipsis,
+                  if (session?.assistant ?? false) ...[
+                    TourTarget(
+                      id: 'home.ask',
+                      child: _RoundIcon(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: 'Ask Sova',
+                        onTap: () => showAskSova(context, topic: AssistantTopic.question),
                       ),
                     ),
                     const SizedBox(width: SovaSpacing.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: SovaSpacing.sm, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: SovaColors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(SovaRadius.full),
+                  ],
+                  const TourTarget(id: 'home.bell', child: _Bell()),
+                ],
+              ),
+              const SizedBox(height: SovaSpacing.xl3),
+              TourTarget(
+                id: 'home.payout',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text('Your next payout', style: SovaText.bodySmall.copyWith(color: onBlueMuted)),
+                        const SizedBox(width: SovaSpacing.xs),
+                        IconButton(
+                          tooltip: hidden ? 'Show amounts' : 'Hide amounts',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => ref.read(hideAmountsProvider.notifier).toggle(),
+                          icon: Icon(hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: onBlueMuted),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: SovaSpacing.xs),
+                    Money(
+                      next?.circle.payout ?? 0,
+                      animate: true,
+                      style: SovaText.moneyLarge.copyWith(color: SovaColors.white, fontSize: 38),
+                    ),
+                    const SizedBox(height: SovaSpacing.sm),
+                    if (next != null)
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              '${next.circle.name} · ${shortDate(next.date)}',
+                              style: SovaText.bodySmall.copyWith(color: onBlueMuted),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: SovaSpacing.sm),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: SovaSpacing.sm, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: SovaColors.white.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(SovaRadius.full),
+                            ),
+                            child: Text(relativeDay(next.date),
+                                style: SovaText.caption.copyWith(color: SovaColors.white, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      )
+                    else
+                      Text('Join or start a circle to get a turn.', style: SovaText.bodySmall.copyWith(color: onBlueMuted)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: SovaSpacing.xl2),
+              TourTarget(
+                id: 'home.actions',
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _PillButton(
+                        icon: Icons.north_east_rounded,
+                        label: 'Pay',
+                        onTap: firstPay == null
+                            ? () => ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(content: Text('You have nothing to pay right now.')))
+                            : () => context.push('/circle/${firstPay!.circle.id}/pay'),
                       ),
-                      child: Text(relativeDay(next.date),
-                          style: SovaText.caption.copyWith(color: SovaColors.white, fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(width: SovaSpacing.md),
+                    Expanded(
+                      child: _PillButton(icon: Icons.add_rounded, label: 'Start', onTap: () => context.push('/create')),
+                    ),
+                    const SizedBox(width: SovaSpacing.md),
+                    Pressable(
+                      onTap: () => context.push('/join'),
+                      semanticLabel: 'Join a circle with an invite code',
+                      child: Container(
+                        width: 54,
+                        height: 52,
+                        decoration: BoxDecoration(color: SovaColors.navy900, borderRadius: BorderRadius.circular(SovaRadius.lg)),
+                        child: const Icon(Icons.qr_code_scanner_rounded, color: SovaColors.white),
+                      ),
                     ),
                   ],
-                )
-              else
-                Text('Join or start a circle to get a turn.', style: SovaText.bodySmall.copyWith(color: onBlueMuted)),
-              const SizedBox(height: SovaSpacing.xl2),
-              Row(
-                children: [
-                  Expanded(
-                    child: _PillButton(
-                      icon: Icons.north_east_rounded,
-                      label: 'Pay',
-                      onTap: firstPay == null
-                          ? () => ScaffoldMessenger.of(context)
-                              .showSnackBar(const SnackBar(content: Text('You have nothing to pay right now.')))
-                          : () => context.push('/circle/${firstPay!.circle.id}/pay'),
-                    ),
-                  ),
-                  const SizedBox(width: SovaSpacing.md),
-                  Expanded(
-                    child: _PillButton(icon: Icons.add_rounded, label: 'Start', onTap: () => context.push('/create')),
-                  ),
-                  const SizedBox(width: SovaSpacing.md),
-                  Pressable(
-                    onTap: () => context.push('/join'),
-                    semanticLabel: 'Join a circle with an invite code',
-                    child: Container(
-                      width: 54,
-                      height: 52,
-                      decoration: BoxDecoration(color: SovaColors.navy900, borderRadius: BorderRadius.circular(SovaRadius.lg)),
-                      child: const Icon(Icons.qr_code_scanner_rounded, color: SovaColors.white),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: SovaSpacing.xl2),
               _NudgeCard(firstPay: firstPay),

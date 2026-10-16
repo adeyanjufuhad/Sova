@@ -169,6 +169,19 @@ abstract interface class SovaRepository {
 
   /// The replacement accepts (agreeing to the rules, PIN) or declines.
   Future<List<HandoverOffer>> answerHandover({required String handoverId, required bool accept, int? rulesVersion, String? pin});
+
+  /// A guided tour was finished or skipped, so it isn't offered again.
+  Future<void> markTourDone(Tour tour);
+
+  /// "Ask Sova": a short explanation of a circle, a dispute or a question,
+  /// written by a model from the circle's record. Only when [Session.assistant].
+  Future<AssistantAnswer> askSova({
+    required AssistantTopic topic,
+    String? circleId,
+    String? disputeId,
+    String? question,
+    AssistantLanguage language = AssistantLanguage.english,
+  });
 }
 
 class SovaException implements Exception {

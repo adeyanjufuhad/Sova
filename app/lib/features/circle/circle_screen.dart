@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,18 +13,50 @@ import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/pin_pad.dart';
+import '../../shared/widgets/tour.dart';
+import '../assistant/ask_sova_sheet.dart';
+import '../tour/tours.dart';
 import 'disputes_screen.dart';
 
-class CircleScreen extends ConsumerWidget {
+class CircleScreen extends ConsumerStatefulWidget {
   const CircleScreen({super.key, required this.circleId});
 
   final String circleId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CircleScreen> createState() => _CircleScreenState();
+}
+
+class _CircleScreenState extends ConsumerState<CircleScreen> {
+  final _tour = TourLauncher();
+
+  String get circleId => widget.circleId;
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(circleProvider(circleId));
+    final session = ref.watch(authProvider).session;
+    // The first circle someone opens that is running gets a short tour.
+    _tour.maybeStart(
+      (session?.pendingTours.contains(Tour.circle) ?? false) && async.value?.activeRound != null,
+      () => startCircleTour(context, ref),
+    );
     return Scaffold(
-      appBar: AppBar(leading: const SovaBackButton(), title: Text(async.value?.name ?? '')),
+      appBar: AppBar(
+        leading: const SovaBackButton(),
+        title: Text(async.value?.name ?? ''),
+        actions: [
+          if ((session?.assistant ?? false) && async.hasValue)
+            TourTarget(
+              id: 'circle.ask',
+              child: IconButton(
+                tooltip: 'Ask Sova about this circle',
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                onPressed: () => showAskSova(context, topic: AssistantTopic.circle, circleId: circleId),
+              ),
+            ),
+        ],
+      ),
       body: async.when(
         loading: () => const SkeletonList(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(circleProvider(circleId))),
@@ -51,11 +84,17 @@ class _CircleBody extends ConsumerWidget {
     final iCollect = round != null && round.collectorId == me;
 
     return ListView(
+      // The screen is short, so build all of it: the circle tour can then find
+      // and scroll to every part.
+      scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
       padding: const EdgeInsets.fromLTRB(SovaSpacing.screenH, SovaSpacing.lg, SovaSpacing.screenH, SovaSpacing.xl4),
       children: [
-        Text(
-          '${naira(c.contributionAmount)} ${c.cycle.label.toLowerCase()} · ${c.memberCount} members',
-          style: SovaText.bodySmall,
+        TourTarget(
+          id: 'circle.summary',
+          child: Text(
+            '${naira(c.contributionAmount)} ${c.cycle.label.toLowerCase()} · ${c.memberCount} members',
+            style: SovaText.bodySmall,
+          ),
         ),
         const SizedBox(height: SovaSpacing.lg),
         if (c.forming)
@@ -122,37 +161,40 @@ class _CircleBody extends ConsumerWidget {
             ),
           ),
         if (round != null && collector != null)
-          AdirePanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Eyebrow('Turn ${round.number} of ${c.memberCount}', onBlue: true),
-                const SizedBox(height: SovaSpacing.md),
-                Text(
-                  iCollect ? 'You collect ${naira(c.payout)}' : '${collector.firstName} collects ${naira(c.payout)}',
-                  style: SovaText.h2.copyWith(color: SovaColors.white),
-                ),
-                const SizedBox(height: SovaSpacing.xs),
-                Text(
-                  'Due ${longDate(round.dueDate)} (${relativeDay(round.dueDate)})',
-                  style: SovaText.bodySmall.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
-                ),
-                const SizedBox(height: SovaSpacing.lg),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(SovaRadius.full),
-                  child: LinearProgressIndicator(
-                    value: c.payersThisRound == 0 ? 0 : c.paidThisRound / c.payersThisRound,
-                    minHeight: 6,
-                    color: SovaColors.white,
-                    backgroundColor: SovaColors.white.withValues(alpha: 0.25),
+          TourTarget(
+            id: 'circle.turn',
+            child: AdirePanel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Eyebrow('Turn ${round.number} of ${c.memberCount}', onBlue: true),
+                  const SizedBox(height: SovaSpacing.md),
+                  Text(
+                    iCollect ? 'You collect ${naira(c.payout)}' : '${collector.firstName} collects ${naira(c.payout)}',
+                    style: SovaText.h2.copyWith(color: SovaColors.white),
                   ),
-                ),
-                const SizedBox(height: SovaSpacing.sm),
-                Text(
-                  '${c.paidThisRound} of ${c.payersThisRound} payments confirmed',
-                  style: SovaText.caption.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
-                ),
-              ],
+                  const SizedBox(height: SovaSpacing.xs),
+                  Text(
+                    'Due ${longDate(round.dueDate)} (${relativeDay(round.dueDate)})',
+                    style: SovaText.bodySmall.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
+                  ),
+                  const SizedBox(height: SovaSpacing.lg),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(SovaRadius.full),
+                    child: LinearProgressIndicator(
+                      value: c.payersThisRound == 0 ? 0 : c.paidThisRound / c.payersThisRound,
+                      minHeight: 6,
+                      color: SovaColors.white,
+                      backgroundColor: SovaColors.white.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  const SizedBox(height: SovaSpacing.sm),
+                  Text(
+                    '${c.paidThisRound} of ${c.payersThisRound} payments confirmed',
+                    style: SovaText.caption.copyWith(color: SovaColors.white.withValues(alpha: 0.85)),
+                  ),
+                ],
+              ),
             ),
           ),
         const SizedBox(height: SovaSpacing.lg),
@@ -160,21 +202,24 @@ class _CircleBody extends ConsumerWidget {
           _DisputesCard(circle: c),
           const SizedBox(height: SovaSpacing.lg),
         ],
-        if (round != null) _MyAction(circle: c, round: round, me: me),
+        if (round != null) TourTarget(id: 'circle.action', child: _MyAction(circle: c, round: round, me: me)),
         const SizedBox(height: SovaSpacing.xl3),
         // Wraps the link under the heading on narrow screens with large text.
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Eyebrow(c.forming ? 'Members' : 'Payout order'),
-            if (c.draw != null)
-              TextButton.icon(
-                onPressed: () => context.push('/circle/${c.id}/draw'),
-                icon: const Icon(Icons.casino_outlined, size: 18),
-                label: Text(c.draw!.revealed ? 'How it was drawn' : 'Fair draw'),
-              ),
-          ],
+        TourTarget(
+          id: 'circle.order',
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Eyebrow(c.forming ? 'Members' : 'Payout order'),
+              if (c.draw != null)
+                TextButton.icon(
+                  onPressed: () => context.push('/circle/${c.id}/draw'),
+                  icon: const Icon(Icons.casino_outlined, size: 18),
+                  label: Text(c.draw!.revealed ? 'How it was drawn' : 'Fair draw'),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: SovaSpacing.xs),
         Card(
@@ -204,7 +249,10 @@ class _CircleBody extends ConsumerWidget {
           const SizedBox(height: SovaSpacing.xl3),
           const Eyebrow('Tamper-evident record'),
           const SizedBox(height: SovaSpacing.md),
-          _VerifyCard(circleId: c.id),
+          TourTarget(
+            id: 'circle.verify',
+            child: _VerifyCard(circleId: c.id),
+          ),
         ],
         const SizedBox(height: SovaSpacing.xl3),
         if (c.forming) ...[

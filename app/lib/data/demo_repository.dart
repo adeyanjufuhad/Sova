@@ -49,7 +49,7 @@ class DemoRepository implements SovaRepository {
   Future<Session> verifyOtp(String phone, String code) async {
     await _latency();
     if (code != demoOtp) throw const SovaException('That code is not correct. Check the SMS and try again.');
-    return _session = Session(phone: phone, userId: me);
+    return _session = Session(phone: phone, userId: me, pendingTours: Tour.values.toSet(), assistant: true);
   }
 
   @override
@@ -57,7 +57,15 @@ class DemoRepository implements SovaRepository {
     await _latency();
     _pin = demoPin;
     _renameMe('Ada Obi', '+2348000000000');
-    return _session = const Session(phone: '+2348000000000', userId: me, fullName: 'Ada Obi', hasPin: true, isDemo: true);
+    return _session = Session(
+      phone: '+2348000000000',
+      userId: me,
+      fullName: 'Ada Obi',
+      hasPin: true,
+      isDemo: true,
+      pendingTours: Tour.values.toSet(),
+      assistant: true,
+    );
   }
 
   @override
@@ -951,6 +959,89 @@ class DemoRepository implements SovaRepository {
     }
     h.status = HandoverStatus.accepted;
     return handoverOffers();
+  }
+
+  @override
+  Future<void> markTourDone(Tour tour) async {
+    final s = _session;
+    if (s != null) _session = s.copyWith(pendingTours: {...s.pendingTours}..remove(tour));
+  }
+
+  /// The offline demo has no model: it fills in a template from the record,
+  /// so the sheet, its labels and its errors can be tried without a network.
+  @override
+  Future<AssistantAnswer> askSova({
+    required AssistantTopic topic,
+    String? circleId,
+    String? disputeId,
+    String? question,
+    AssistantLanguage language = AssistantLanguage.english,
+  }) async {
+    await _latency();
+    final pidgin = language == AssistantLanguage.pidgin;
+    final String text;
+    switch (topic) {
+      case AssistantTopic.circle:
+        final c = await circle(circleId!);
+        final round = c.activeRound;
+        final collector = c.currentCollector;
+        final mine = round == null ? null : c.contributionFor(round.id, me);
+        final buf = StringBuffer(
+          pidgin
+              ? '${c.name} na ${c.cycle.label.toLowerCase()} circle of ${c.memberCount} people. Everybody dey put ${naira(c.contributionAmount)}, and whoever collect go receive ${naira(c.payout)} from the others. Sova no dey hold the money: una dey pay each other direct.'
+              : '${c.name} is a ${c.cycle.label.toLowerCase()} circle of ${c.memberCount} people. Each person puts in ${naira(c.contributionAmount)}, and the collector receives ${naira(c.payout)} from the others. Sova never holds the money: members pay each other directly.',
+        );
+        if (c.forming) {
+          buf.write(
+            pidgin
+                ? ' E still dey wait for ${c.memberCount - c.members.length} more people. Once e full, Sova go draw the payout order.'
+                : ' It is waiting for ${c.memberCount - c.members.length} more people. Once it is full, Sova draws the payout order.',
+          );
+        } else if (round != null && collector != null) {
+          final you = collector.userId == me;
+          buf.write(
+            pidgin
+                ? ' Na turn ${round.number} now, ${you ? 'and na you dey collect' : '${collector.firstName} dey collect'}, due ${shortDate(round.dueDate)}.'
+                : ' This is turn ${round.number}. ${you ? 'You are collecting' : '${collector.firstName} is collecting'}, due ${shortDate(round.dueDate)}.',
+          );
+          if (!you) {
+            final paid = mine != null && mine.status != ContributionStatus.pending;
+            buf.write(
+              pidgin
+                  ? (paid
+                        ? ' You don pay this turn.'
+                        : ' You never pay this turn: send ${naira(c.contributionAmount)} to ${collector.firstName}, then tap Pay to record am.')
+                  : (paid
+                        ? ' You have paid this turn.'
+                        : ' You have not paid this turn yet: send ${naira(c.contributionAmount)} to ${collector.firstName}, then tap Pay to record it.'),
+            );
+          }
+        }
+        text = buf.toString();
+      case AssistantTopic.dispute:
+        final d = await dispute(disputeId!);
+        text = d.kind == DisputeKind.shortfall
+            ? (pidgin
+                  ? 'The turn ${d.turn} payout no complete. E go close once every missing payment don confirm, or ${d.collector.name.split(' ').first} mark am settled. No vote for this one.'
+                  : 'The turn ${d.turn} payout was short. This closes once every missing payment is confirmed, or ${d.collector.name.split(' ').first} marks it settled. There is no vote.')
+            : (pidgin
+                  ? 'Na about one payment for turn ${d.turn}. The members wey no be payer or collector go vote "e reach" or "e no reach"; more than half go decide. The payment dey frozen until then.'
+                  : 'This is about one payment for turn ${d.turn}. Members who aren\'t the payer or the collector vote "it arrived" or "it didn\'t arrive"; more than half of them decides. The payment is frozen until then.');
+      case AssistantTopic.question:
+        final q = (question ?? '').toLowerCase();
+        text = q.contains('money') || q.contains('hold')
+            ? (pidgin
+                  ? 'Sova no dey hold, move, lend or invest money. Una dey pay each other direct; Sova just keep the record.'
+                  : 'Sova never holds, moves, lends or invests money. Members pay each other directly; Sova keeps the record.')
+            : q.contains('order') || q.contains('first')
+            ? (pidgin
+                  ? 'Once the circle full, Sova draw the order with a fair draw wey anybody fit check. The admin fit promise to collect last. To pay early no dey change the order.'
+                  : 'Once the circle is full, Sova draws the order with a fair draw anyone can check. The admin can promise to collect last. Paying early doesn\'t change the order.')
+            : (pidgin
+                  ? 'For this offline demo, Ask Sova fit answer about who hold the money and how the order dey work. The live app go answer more.'
+                  : 'In this offline demo, Ask Sova can answer who holds the money and how the order works. The live app answers more.');
+    }
+    return AssistantAnswer(text: text, model: 'demo');
   }
 
   /// The replacement takes the leaving member's place and turn.

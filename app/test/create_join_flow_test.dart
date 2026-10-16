@@ -19,6 +19,15 @@ void main() {
     }
   }
 
+  /// Closes a guided tour if one is showing.
+  Future<void> skipTour(WidgetTester tester) async {
+    await settle(tester);
+    if (find.text('Skip tour').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Skip tour'));
+      await settle(tester);
+    }
+  }
+
   Future<void> signUp(WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: SovaApp()));
     await settle(tester);
@@ -34,6 +43,7 @@ void main() {
     await settle(tester);
     await tapKeys(tester, '25802580');
     await settle(tester);
+    await skipTour(tester);
   }
 
   testWidgets('start a circle and get an invite code', (tester) async {
