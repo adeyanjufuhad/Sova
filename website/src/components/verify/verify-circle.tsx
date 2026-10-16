@@ -119,6 +119,8 @@ function describe(e: Checked): string {
       return `Rules version ${d.version} published (late fee ${naira(d.lateFee)}, ${d.graceDays} day(s) grace)`;
     case "member_joined":
       return `${who(d.member)} joined`;
+    case "member_left":
+      return `${who(d.member)} left before the turns were drawn`;
     case "member_vouched":
       return `${who(d.voucher)} vouched for ${who(d.member)}`;
     case "rules_accepted":
@@ -154,6 +156,8 @@ function describe(e: Checked): string {
       return `Turn ${d.turn} dispute closed: ${d.note}`;
     case "circle_completed":
       return "Circle completed: every turn paid out";
+    case "circle_cancelled":
+      return `${who(d.by)} cancelled the circle before it started`;
     default:
       return e.kind;
   }

@@ -232,7 +232,8 @@ export default function TermsPage() {
           title: "Ending your use",
           body: (
             <p>
-              You can stop using Sova at any time and ask us to delete your account (see the{" "}
+              You can stop using Sova at any time and delete your account in the app once your circles have finished
+              (see the{" "}
               <Link href="/privacy/#your-rights">privacy policy</Link>). We may suspend or close an account that
               breaks these terms. Either way, entries already in a circle&apos;s ledger stay, because other members rely
               on them.

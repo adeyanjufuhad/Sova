@@ -222,14 +222,14 @@ export default function PrivacyPage() {
           title: "How long we keep it",
           body: (
             <ul>
-              <li>Account details: while you have an account, or until you ask us to delete them.</li>
+              <li>Account details: while you have an account, or until you delete it or ask us to.</li>
               <li>Sign-in codes: 5 minutes. Sessions: up to 30 days, or until you sign out.</li>
               <li>
                 Circle records: the ledger is append-only by design, so members can rely on it. Its entries can&apos;t
                 be edited or deleted, by us or anyone else, and they name people only by id and first name plus
                 initial.
               </li>
-              <li>Receipt photos: kept with the circle&apos;s record.</li>
+              <li>Receipt photos: kept with the circle&apos;s record, and deleted when you delete your account.</li>
               <li>
                 Shared scores: when you stop sharing, the snapshot is marked stopped and no longer shown. You can ask
                 us to delete it.
@@ -254,10 +254,13 @@ export default function PrivacyPage() {
                 <li>stop using data you gave with consent (for example, a shared score or the waitlist).</li>
               </ul>
               <p>
-                You can change your name and bank details yourself in the app. The phone number can&apos;t be changed
-                in the app, and there is no delete button yet: write to {email} from or about the number on your
-                account, and we will check it is yours before acting. Deleting an account removes your phone number,
-                bank details, PIN and sessions; ledger entries stay as described above.
+                You can change your name and bank details yourself in the app, and delete your account from the
+                Record tab (Delete account, with your PIN) once every circle you&apos;re in has finished. Deleting it
+                removes your name, phone number, PIN, bank details, sessions, notifications, score history and
+                receipt photos; payments in finished circles stay on those circles&apos; records without your name or
+                number, and ledger entries stay as described above. The phone number can&apos;t be changed in the
+                app. For anything else, write to {email} from or about the number on your account, and we will check
+                it is yours before acting.
               </p>
               <p>
                 If you are unhappy with how we handle your data, you can complain to the Nigeria Data Protection
