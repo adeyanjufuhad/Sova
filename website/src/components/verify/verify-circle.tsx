@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, CircleCheck, CircleX, Dices, Link2, Loader2, ShieldCheck } from "lucide-react";
+import { Anchor, ArrowRight, CircleCheck, CircleX, Dices, ExternalLink, Link2, Loader2, ShieldCheck } from "lucide-react";
 import { callApi } from "@/lib/api";
+import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 type Entry = { seq: number; kind: string; body: string; prevHash: string; hash: string };
@@ -21,7 +22,14 @@ type DrawCheck = {
   adminLast: boolean;
 } | null;
 
-type Result = { ledger: Ledger; entries: Checked[]; firstBroken: number | null; draw: DrawCheck };
+type Checkpoint = { seq: number; hash: string; at: string };
+/** The circle's published chain heads, each checked against this record. */
+type AnchorCheck =
+  | { state: "unreachable" }
+  | { state: "none" }
+  | { state: "checked"; checkpoints: (Checkpoint & { ok: boolean })[]; allOk: boolean };
+
+type Result = { ledger: Ledger; entries: Checked[]; firstBroken: number | null; draw: DrawCheck; anchors: AnchorCheck };
 
 const GENESIS = "0".repeat(64);
 
@@ -32,8 +40,32 @@ async function sha256Hex(data: Uint8Array): Promise<string> {
 const text = (s: string) => new TextEncoder().encode(s);
 const hexBytes = (hex: string) => new Uint8Array(hex.match(/../g)!.map((h) => parseInt(h, 16)));
 
+/**
+ * Fetches the public anchors (docs/ledger.md, "Public anchors"). They live outside
+ * Sova's servers, so failing to load them never blocks the rest of the check.
+ */
+async function loadAnchors(): Promise<Record<string, Checkpoint[]> | null> {
+  try {
+    const res = await fetch(site.anchorsUrl, { cache: "no-store" });
+    if (res.status === 404) return {}; // nothing published yet
+    if (!res.ok) return null;
+    return ((await res.json()) as { circles?: Record<string, Checkpoint[]> }).circles ?? {};
+  } catch {
+    return null;
+  }
+}
+
+/** A chain only grows, so every checkpoint must still be the hash at its seq. */
+async function checkAnchors(circleId: string, entries: Entry[], published: Record<string, Checkpoint[]> | null): Promise<AnchorCheck> {
+  if (!published) return { state: "unreachable" };
+  const list = published[await sha256Hex(text(`sova-anchor|${circleId}`))];
+  if (!list?.length) return { state: "none" };
+  const checkpoints = list.map((c) => ({ ...c, ok: entries[c.seq - 1]?.hash === c.hash }));
+  return { state: "checked", checkpoints, allOk: checkpoints.every((c) => c.ok) };
+}
+
 /** Recomputes every hash and the fair draw, entirely in this browser. */
-async function check(ledger: Ledger): Promise<Result> {
+async function check(ledger: Ledger, published: Record<string, Checkpoint[]> | null): Promise<Result> {
   let prev = GENESIS;
   let firstBroken: number | null = null;
   const entries: Checked[] = [];
@@ -70,7 +102,7 @@ async function check(ledger: Ledger): Promise<Result> {
       adminLast,
     };
   }
-  return { ledger, entries, firstBroken, draw };
+  return { ledger, entries, firstBroken, draw, anchors: await checkAnchors(ledger.circle.id, ledger.entries, published) };
 }
 
 const naira = (n: unknown) => `₦${Number(n).toLocaleString("en-NG")}`;
@@ -141,6 +173,59 @@ function Tick({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
+const day = (iso: string) =>
+  new Date(iso).toLocaleString("en-NG", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+
+function AnchorCard({ anchors }: { anchors: AnchorCheck }) {
+  const title =
+    anchors.state === "checked"
+      ? anchors.allOk
+        ? "Public anchors: every checkpoint matches"
+        : "Public anchors: a checkpoint doesn't match"
+      : anchors.state === "none"
+        ? "Public anchors: not published yet"
+        : "Public anchors: couldn't be loaded";
+  const shown = anchors.state === "checked" ? anchors.checkpoints.slice(-5).reverse() : [];
+  return (
+    <div className="rounded-3xl border border-navy-900/10 bg-white p-6 sm:p-8">
+      <div className="flex items-center gap-3">
+        <Anchor className="size-6 shrink-0 text-electric" />
+        <h2 className="font-display text-xl font-bold text-navy-900">{title}</h2>
+      </div>
+      <p className="mt-3 text-sm text-slate-600">
+        Every 6 hours Sova publishes each circle&apos;s chain head to a public GitHub branch, outside its own database.
+        A record can only grow, so each earlier checkpoint must still match.
+        {anchors.state === "none" && " This circle has no checkpoint yet; it gets one at the next run."}
+        {anchors.state === "unreachable" && " The anchor file couldn't be downloaded just now; the checks above don't depend on it."}
+      </p>
+      {anchors.state === "checked" && (
+        <ul className="mt-5 space-y-3">
+          {shown.map((c) => (
+            <Tick
+              key={`${c.seq}-${c.at}`}
+              ok={c.ok}
+              label={`${day(c.at)}: entry #${c.seq} ${c.ok ? "matches" : "has a different hash now"} (${c.hash.slice(0, 12)}…)`}
+            />
+          ))}
+          {anchors.checkpoints.length > shown.length && (
+            <li className="pl-8 text-sm text-slate-500">
+              and {anchors.checkpoints.length - shown.length} earlier checkpoint(s), {anchors.checkpoints.slice(0, -shown.length).every((c) => c.ok) ? "all matching" : "not all matching"}
+            </li>
+          )}
+        </ul>
+      )}
+      <a
+        href={site.anchorsHistoryUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-electric hover:underline"
+      >
+        When each anchor was published <ExternalLink className="size-3.5" />
+      </a>
+    </div>
+  );
+}
+
 function Picker({ onPick }: { onPick: (id: string) => void }) {
   const [value, setValue] = useState("");
   // null while loading; an empty list if they couldn't be fetched.
@@ -207,8 +292,8 @@ export function VerifyCircle() {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    callApi(`/public/circles/${id}/ledger`)
-      .then((ledger: Ledger) => check(ledger))
+    Promise.all([callApi(`/public/circles/${id}/ledger`) as Promise<Ledger>, loadAnchors()])
+      .then(([ledger, published]) => check(ledger, published))
       .then((result) => !cancelled && setState({ id, result }))
       .catch((err) => !cancelled && setState({ id, error: err instanceof Error ? err.message : "Something went wrong." }));
     return () => {
@@ -236,8 +321,9 @@ export function VerifyCircle() {
     );
   }
 
-  const { ledger, entries, firstBroken, draw } = state.result;
-  const intact = firstBroken === null;
+  const { ledger, entries, firstBroken, draw, anchors } = state.result;
+  const changedSincePublished = anchors.state === "checked" && !anchors.allOk;
+  const intact = firstBroken === null && !changedSincePublished;
   const head = entries[entries.length - 1];
   const drawOk = draw ? draw.commitmentOk && draw.orderOk && draw.sealedFirst : null;
 
@@ -245,12 +331,18 @@ export function VerifyCircle() {
     <div className="space-y-6">
       <div className={cn("rounded-3xl p-6 sm:p-8", intact ? "bg-electric text-white" : "border-2 border-navy-900 bg-white text-navy-900")}>
         <div className="flex items-center gap-3">
-          {intact ? <ShieldCheck className="size-8" /> : <CircleX className="size-8" />}
-          <p className="font-display text-2xl font-bold sm:text-3xl">{intact ? "Record intact" : `Entry ${firstBroken} doesn't match`}</p>
+          {intact ? <ShieldCheck className="size-8 shrink-0" /> : <CircleX className="size-8 shrink-0" />}
+          <p className="font-display text-2xl font-bold sm:text-3xl">
+            {intact ? "Record intact" : firstBroken !== null ? `Entry ${firstBroken} doesn't match` : "Changed after it was published"}
+          </p>
         </div>
         <p className={cn("mt-3", intact ? "text-white/85" : "text-slate-600")}>
           {ledger.circle.name} · {entries.length} entries checked in your browser
-          {intact ? ". Every hash links to the one before it." : ". Everything from this entry on can't be trusted."}
+          {intact
+            ? ". Every hash links to the one before it."
+            : firstBroken !== null
+              ? ". Everything from this entry on can't be trusted."
+              : ". The hashes link up, but they no longer match a chain head published earlier (see below)."}
         </p>
         {head && (
           <p className={cn("mt-4 break-all font-mono text-xs", intact ? "text-white/70" : "text-slate-500")}>
@@ -258,6 +350,8 @@ export function VerifyCircle() {
           </p>
         )}
       </div>
+
+      <AnchorCard anchors={anchors} />
 
       {draw && (
         <div className="rounded-3xl border border-navy-900/10 bg-white p-6 sm:p-8">

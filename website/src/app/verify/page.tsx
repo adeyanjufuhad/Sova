@@ -46,7 +46,7 @@ export default function VerifyPage() {
 
         <p className="mt-10 text-sm text-slate-500">
           Tamper-evident, not tamper-proof: any change to a past entry breaks every hash after it, so it can&apos;t go
-          unnoticed by anyone who saved an earlier chain head. How it works:{" "}
+          unnoticed by anyone who saved an earlier chain head, and Sova publishes every chain head to a public GitHub branch so everyone has one. How it works:{" "}
           <a className="text-electric underline" href="https://github.com/adeyanjufuhad/Sova/blob/main/docs/ledger.md">
             the ledger
           </a>{" "}
