@@ -24,11 +24,11 @@ The demo account's PIN is `2580` (the app shows it on every PIN sheet). [docs/de
 - **Paying and confirming.** Members mark "I sent it" (with a bank reference and an optional receipt photo); the turn's collector confirms each payment and then the payout. The payout is contribution × (members − 1). Money actions need a 4-digit PIN.
 - **Shortfalls and disputes.** A short payout still advances the circle and opens a dispute against those who didn't pay. A payment can be disputed; the other members vote, and either side can settle.
 - **Swaps and handovers.** Members can trade turns, or hand their place to someone else with the admin's approval.
-- **Tamper-evident ledger.** Every change is written by database triggers into a per-circle SHA-256 hash chain that can't be edited or deleted. The website's verify page downloads a chain and rechecks every hash and the draw in the browser. See [docs/ledger.md](docs/ledger.md).
+- **Tamper-evident ledger.** Every change is written by database triggers into a per-circle SHA-256 hash chain that can't be edited or deleted. The website's verify page downloads a chain and rechecks every hash and the draw in the browser. Every 6 hours a GitHub Actions job publishes each circle's chain head (under a hashed key) to the public `ledger-anchors` branch, and the verify page checks the chain against those checkpoints. See [docs/ledger.md](docs/ledger.md).
 - **Sova Score.** A record of on-time payments, turns paid and circles finished, shown after 3 confirmed payments and shareable through a link. It is your record, not a credit rating.
 - **Reminders.** In-app: payments due within 2 days or overdue, payments waiting for you to confirm, and recent events.
 
-Roadmap, not built: push, SMS and WhatsApp reminders; voice prompts and local languages; offline use; USSD; collector (market) mode; publishing the ledger's chain head publicly. [docs/STATUS.md](docs/STATUS.md) lists exactly what is built.
+Roadmap, not built: push, SMS and WhatsApp reminders; voice prompts and local languages; offline use; USSD; collector (market) mode. [docs/STATUS.md](docs/STATUS.md) lists exactly what is built.
 
 ## Architecture
 
