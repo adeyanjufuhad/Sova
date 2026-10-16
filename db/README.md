@@ -36,6 +36,8 @@ cd api
 npm run migrate          # uses MIGRATION_DATABASE_URL, else DATABASE_URL
 ```
 
+For a local database with nothing to install, `npm run db:local` in `api/` starts PostgreSQL 17 on port 5433 (see the root README).
+
 Run it with an admin user. Afterwards the runner grants the restricted `sova_app` role (if it exists) access to every table, minus UPDATE/DELETE on append-only tables.
 
 ## Demo data

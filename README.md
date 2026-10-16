@@ -78,17 +78,26 @@ flowchart LR
 
 ## Run it locally
 
-You need Node.js 22, Flutter 3.44 (stable) and a PostgreSQL 17 database you can create tables in. The API's tests start their own throwaway PostgreSQL, so they need no database.
+You need **Node.js 22** and **Flutter 3.44** (stable). A database is optional to install: `npm run db:local` starts a local PostgreSQL 17 for you. Every block below starts from the repository root. The commands are for Git Bash, macOS or Linux; in PowerShell, use `Copy-Item` where they say `cp`.
 
-**1. API and database**
+**1. Database** (in its own terminal, left open)
 
 ```bash
 cd api
 npm install
+npm run db:local
+```
+
+It prints the `DATABASE_URL` to use (`postgres://postgres:sova-local@localhost:5433/sova`) and keeps its data in `api/.local-db` between runs. Any other PostgreSQL 17 you can create tables in works too.
+
+**2. API** (a second terminal)
+
+```bash
+cd api
 cp .env.example .env
 ```
 
-In `api/.env`, set `DATABASE_URL` to your Postgres URL. The example file already allows the local app and website (`CORS_ORIGINS`), enables the demo login and adds a test phone number. Then:
+In `api/.env`, set `DATABASE_URL` to the address from step 1. Everything else in the example file already works locally: the demo login is on, the local app and website are allowed (`CORS_ORIGINS`), and a blank `JWT_SECRET` means a random one (sign-ins then end when the API restarts). Then:
 
 ```bash
 npm run migrate
@@ -96,9 +105,9 @@ npm run seed
 npm run dev
 ```
 
-The API is at http://localhost:8080/health. `npm run seed` creates 18 demo people and 5 circles; it only ever touches the reserved phone range `+2348000000xxx`.
+The API is at http://localhost:8080/health. `npm run seed` creates the shared demo: 18 people and 5 circles in the reserved phone range `+2348000000xxx`, and nothing else. To sign in with a phone number instead of the demo, use `+2348000000001` with the code `123456` (the test number in `OTP_TEST_NUMBERS`; it is a seeded member, Ifeoma).
 
-**2. App**
+**3. App** (a third terminal)
 
 ```bash
 cd app
@@ -106,9 +115,9 @@ flutter pub get
 flutter run -d chrome --web-port 3300 --dart-define=SOVA_API_URL=http://localhost:8080
 ```
 
-Use `flutter run` on an Android phone or emulator instead of `-d chrome` (an emulator reaches your computer at `http://10.0.2.2:8080`). Without `SOVA_API_URL` the app runs on the in-memory demo backend, with the one-time code `123456` and PIN `2580`.
+Tap **Try the demo**: the API builds you a private copy of the demo (PIN `2580`). Use `flutter run` on an Android phone or emulator instead of `-d chrome` (an emulator reaches your computer at `http://10.0.2.2:8080`). Without `SOVA_API_URL` the app runs on its in-memory demo backend, with the one-time code `123456` and PIN `2580`, and needs no API at all.
 
-**3. Website**
+**4. Website** (a fourth terminal)
 
 ```bash
 cd website
@@ -117,13 +126,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Point `NEXT_PUBLIC_API_URL` in `.env.local` at `http://localhost:8080` to use your local API. The site is at http://localhost:3000.
+In `.env.local`, set `NEXT_PUBLIC_API_URL=http://localhost:8080` to use your local API (the example points at the live one). The site is at http://localhost:3000.
 
 **Checks** (the same ones CI runs on every push and pull request):
 
 | Folder | Commands |
 |---|---|
-| `api/` | `npm run typecheck`, `npm test`, `npm run build` |
+| `api/` | `npm run typecheck`, `npm test`, `npm run build` (tests start their own throwaway PostgreSQL; no database needed) |
 | `app/` | `flutter analyze`, `flutter test` |
 | `website/` | `npm run lint`, `npm run build` |
 

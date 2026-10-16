@@ -11,13 +11,14 @@ Rules that guard the records (constraints, PIN lockout, round advancing, swaps, 
 ```bash
 cd api
 npm install
-cp .env.example .env     # set DATABASE_URL and JWT_SECRET
+npm run db:local         # in its own terminal: a local PostgreSQL 17, nothing to install
+cp .env.example .env     # set DATABASE_URL to the address db:local prints
 npm run migrate          # apply db/migrations
 npm run seed             # optional: demo data
 npm run dev              # http://localhost:8080/health
 ```
 
-The npm scripts read `api/.env` automatically.
+The npm scripts read `api/.env` automatically. A blank `JWT_SECRET` is fine locally (a random one is used, so sign-ins end when the API restarts); production refuses to start without one.
 
 ## Scripts
 
@@ -30,6 +31,7 @@ The npm scripts read `api/.env` automatically.
 | `npm run typecheck` | Type-check source, tests and scripts |
 | `npm run migrate` / `migrate:prod` | Apply pending migrations (as an admin user) |
 | `npm run seed` / `seed:prod` | Recreate demo data (reserved phones `+2348000000xxx` only) |
+| `npm run db:local` | Start a local PostgreSQL 17 (embedded-postgres) on port 5433, data in `api/.local-db`; `LOCAL_DB_PORT` changes the port |
 | `npm run db:create-app-role` | Create or rotate the restricted `sova_app` login and print its connection string once |
 
 ## Environment variables

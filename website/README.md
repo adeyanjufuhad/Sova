@@ -19,7 +19,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The site is at http://localhost:3000. Set `NEXT_PUBLIC_API_URL=http://localhost:8080` in `.env.local` to use a local API.
+The site is at http://localhost:3000. The example file points at the live API; set `NEXT_PUBLIC_API_URL=http://localhost:8080` in `.env.local` to use a local one (see the root README to run it).
 
 | Variable | Purpose |
 |---|---|
@@ -27,7 +27,7 @@ The site is at http://localhost:3000. Set `NEXT_PUBLIC_API_URL=http://localhost:
 | `NEXT_PUBLIC_APP_URL` | The web app ("Try the live demo") |
 | `NEXT_PUBLIC_API_URL` | The Sova API (waitlist, verify, shared scores); it must list this site in `CORS_ORIGINS` |
 | `NEXT_PUBLIC_PLAY_STORE_URL` | Empty until the Android app is on Google Play; the download buttons say "coming soon" until then |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox shown on the privacy and terms pages; the default `privacy@sova.example` is a placeholder |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox shown on the privacy and terms pages (defaults to the owner's address) |
 
 All of them end up in the static files, so never put secrets here.
 
