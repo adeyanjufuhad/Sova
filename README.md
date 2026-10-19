@@ -18,7 +18,7 @@ Every service runs on RumptyCloud's free size, which sleeps when idle: the first
 
 Every "Try the demo" tap gets a private copy of the demo, fresh for each visitor and deleted after 24 hours. The demo account's PIN is `2580` (the app shows it on every PIN sheet). A short guided tour opens on the first visit, and **Ask Sova** (the chat icon) explains a circle or a dispute in plain English, written by an open model on RumptyCloud's AI inference.
 
-The Android APK is built by GitHub Actions on every `v*` tag and talks to the live API. Until a release signing key is set up it is signed with a debug key: it installs normally (Android may ask you to allow installs from your browser), but uninstall it before installing a later signed build. [docs/demo-script.md](docs/demo-script.md) walks through the demo step by step.
+The Android APK is built by GitHub Actions on every `v*` tag and talks to the live API. From v1.0.1 it is signed with the Sova upload key, so later releases install over it (Android may ask you to allow installs from your browser). If you installed v1.0.0, which was signed with a debug key, uninstall it first. [docs/demo-script.md](docs/demo-script.md) walks through the demo step by step.
 
 ## What it does
 

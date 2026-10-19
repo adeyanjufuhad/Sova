@@ -72,4 +72,4 @@ Release signing comes from `android/key.properties` (git-ignored). In CI it is w
 | `ANDROID_KEY_ALIAS` | The key's alias |
 | `ANDROID_KEY_PASSWORD` | The key's password |
 
-Create a keystore once with `keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload` and keep it safe: Google Play needs the same key for every update. Without these secrets the APK is signed with a throwaway debug key, which installs fine but can't be updated in place by a later signed build.
+Create a keystore once with `keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload` and keep it safe: Google Play needs the same key for every update. Without these secrets the APK is signed with a throwaway debug key, which installs fine but can't be updated in place by a later signed build. The secrets are set (19 Oct); v1.0.1 was the first release signed with the upload key.
