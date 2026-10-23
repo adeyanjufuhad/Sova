@@ -180,10 +180,12 @@ class _PinSheetState extends ConsumerState<_PinSheet> {
     }
   }
 
+  // Scrolls on short screens so the bottom row of keys stays reachable; the
+  // error sits above the keypad so it is seen without scrolling.
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(SovaSpacing.screenH, SovaSpacing.lg, SovaSpacing.screenH, SovaSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -203,12 +205,12 @@ class _PinSheetState extends ConsumerState<_PinSheet> {
               const SizedBox(height: SovaSpacing.sm),
               const Text('Demo account PIN: $demoAccountPin', style: SovaText.label, textAlign: TextAlign.center),
             ],
-            const SizedBox(height: SovaSpacing.xl2),
-            PinPad(key: _padKey, busy: _busy, onCompleted: _submit),
             if (_error != null) ...[
               const SizedBox(height: SovaSpacing.md),
               Text(_error!, style: SovaText.label.copyWith(color: SovaColors.electric), textAlign: TextAlign.center),
             ],
+            const SizedBox(height: SovaSpacing.xl2),
+            PinPad(key: _padKey, busy: _busy, onCompleted: _submit),
           ],
         ),
       ),
