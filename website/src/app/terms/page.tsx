@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "The rules for using Sova, a record-keeping service for savings circles. Sova is not a bank, lender or wallet and never holds members' money.",
 };
 
-const UPDATED = "16 October 2026";
+const UPDATED = "23 October 2026";
 
 const email = (
   <a href={`mailto:${site.contactEmail}`} className="whitespace-nowrap">
@@ -48,7 +48,7 @@ export default function TermsPage() {
                 mean the people who run Sova, a service built in Nigeria. “You” means the person using it.
               </p>
               <p>
-                Sova is open as a demo for now. Sign-in works for the shared demo account and a short list of test
+                Sova is open as a demo for now. Sign-in works through “Try the demo” and a short list of test
                 numbers; we will review these terms before opening to everyone.
               </p>
             </>
@@ -205,9 +205,9 @@ export default function TermsPage() {
           title: "The demo account",
           body: (
             <p>
-              “Try the demo” signs everyone into the same shared account with fictional circles. Its name, bank
-              details and PIN can&apos;t be changed, and its data is reset from time to time. Don&apos;t enter real
-              personal or bank information in it.
+              “Try the demo” gives each visit its own private copy of a fictional account and circles, deleted
+              after 24 hours. The demo account&apos;s name, bank details and PIN can&apos;t be changed. Don&apos;t
+              enter real personal or bank information in it.
             </p>
           ),
         },
@@ -232,8 +232,8 @@ export default function TermsPage() {
           title: "Ending your use",
           body: (
             <p>
-              You can stop using Sova at any time and delete your account in the app once your circles have finished
-              (see the{" "}
+              You can stop using Sova at any time and delete your account in the app once none of your circles is
+              running (see the{" "}
               <Link href="/privacy/#your-rights">privacy policy</Link>). We may suspend or close an account that
               breaks these terms. Either way, entries already in a circle&apos;s ledger stay, because other members rely
               on them.

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "What Sova stores, who can see it and how to ask for it to be corrected or deleted. Sova never holds your money, and the website has no ads or trackers.",
 };
 
-const UPDATED = "16 October 2026";
+const UPDATED = "23 October 2026";
 
 const email = (
   <a href={`mailto:${site.contactEmail}`} className="whitespace-nowrap">
@@ -46,7 +46,7 @@ const collected: { what: string; why: ReactNode }[] = [
   },
   {
     what: "Ask Sova questions",
-    why: "If you use Ask Sova, your question and the facts of the circle or dispute it is about (amounts, rules, turn order and payment states, with people as first name and initial) are sent to the AI model that writes the answer. Phone numbers, bank details, PINs and receipt photos are never sent. Questions and answers are not stored.",
+    why: "If you use Ask Sova, your question and the facts of the circle or dispute it is about (amounts, rules, turn order and payment states, with people as first name and initial) are sent to the AI model that writes the answer. Phone numbers, bank details, PINs and receipt photos are never sent. Questions and answers are not stored; only a count of answers per person per day is kept, for the daily limit.",
   },
   {
     what: "Sova Score",
@@ -80,8 +80,8 @@ export default function PrivacyPage() {
         <>
           <p>
             This page explains what Sova stores, why, who can see it and what you can ask us to do with it. It
-            describes Sova as it works today. Sova is open as a demo for now: sign-in works for the shared demo
-            account and a short list of test numbers. We will update this page before opening to everyone.
+            describes Sova as it works today. Sova is open as a demo for now: sign-in works through “Try the demo”
+            and a short list of test numbers. We will update this page before opening to everyone.
           </p>
         </>
       }
@@ -260,7 +260,8 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 You can change your name and bank details yourself in the app, and delete your account from the
-                Record tab (Delete account, with your PIN) once every circle you&apos;re in has finished. Deleting it
+                Record tab (Delete account, with your PIN) once none of your circles is running. Circles that
+                haven&apos;t started are left for you; if you started one, cancel it first. Deleting it
                 removes your name, phone number, PIN, bank details, sessions, notifications, score history and
                 receipt photos; payments in finished circles stay on those circles&apos; records without your name or
                 number, and ledger entries stay as described above. The phone number can&apos;t be changed in the
