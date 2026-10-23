@@ -4,6 +4,31 @@ Sova keeps the record for ajo, esusu and adashe savings circles: who joined, who
 
 Built for Devcenter Hacktober 2026. First users are self-run circles of friends, colleagues and classmates.
 
+## For judges
+
+Sova is live on RumptyCloud. Five minutes shows the core of it:
+
+1. **Sign in.** Open https://sova-app.rumptycloud.app and tap **Try the demo**. You get your own private copy of the demo, so nothing you do changes what other judges see. You are Ada Obi, and the PIN for every money action is `2580`.
+2. **Pay.** Open **Office Esusu** and tap **Pay Halima ₦20,000**: copy her bank details, add a reference and enter the PIN. Sova records the payment; the money itself would go from Ada's bank to Halima's.
+3. **Confirm.** Open **Unilag Class of '24 Ajo**. It is Ada's turn to collect ₦40,000 (₦10,000 from each of the other four members). Confirm Emeka's payment.
+4. **Settle a dispute.** Open **Yaba Traders Circle**. Musa collected first, then stopped paying; vote on his disputed payment. Tap the chat icon at the top right and **Ask Sova** explains the dispute in plain English.
+5. **Check it yourself.** In **Office Esusu**, tap **How it was drawn** to replay the payout draw and recheck it on your device, then **Verify this circle** to recompute the circle's whole hash chain in your browser.
+
+The full 8-minute walkthrough is [docs/demo-script.md](docs/demo-script.md).
+
+| Judged on | Where to look |
+|---|---|
+| Live and fully functional on RumptyCloud | The app, website and API are RumptyCloud deployments, with RumptyCloud's PostgreSQL, a private bucket for receipt photos, and its AI inference for Ask Sova ([Architecture](#architecture)). The Android APK talks to the same live API. |
+| Clean code and docs | [Run it locally](#run-it-locally) sets everything up from a fresh clone; each folder has its own README. CI runs the typecheck, tests, lint and builds on every push to `main` and every pull request. Design notes: [docs/ledger.md](docs/ledger.md), [docs/fair-draw.md](docs/fair-draw.md), [DESIGN.md](DESIGN.md). [docs/STATUS.md](docs/STATUS.md) lists what is built, what is not, and every decision. |
+| Innovation | A commit-reveal draw anyone can recompute, so no one picks their turn. A ledger the database itself keeps as a hash chain, refusing edits and deletes, with checkpoints published every 6 hours to a public branch. Ask Sova answers from the circle's own record. |
+| Practical utility | Built around how ajo already runs: members transfer to each other, the collector confirms, short payouts and late payers become disputes the circle votes on, and members can swap turns or hand over their place. Sova never touches the money. |
+
+Good to know:
+
+- During judging Sova is demo-only. Signing in with your own phone number needs an SMS provider, which isn't connected yet; **Try the demo** needs no phone number.
+- Ask Sova answers in English, up to 20 answers per account and 60 a day across the service.
+- Roadmap items (SMS and WhatsApp reminders, push notifications, voice and local languages, offline use, USSD, collector mode) are labelled as roadmap on the website and are not in the app.
+
 ## Try it
 
 | What | Address |
@@ -14,7 +39,7 @@ Built for Devcenter Hacktober 2026. First users are self-run circles of friends,
 | Verify a circle's record | https://sova.rumptycloud.app/verify/ |
 | API health | https://sova-api.rumptycloud.app/health |
 
-Every service runs on RumptyCloud's free size, which sleeps when idle: the first request after a quiet spell takes about 8 seconds while it wakes. The app waits for it.
+If the first page takes a few seconds, a service is waking from sleep (about 8 seconds on RumptyCloud's free size); the app waits for it.
 
 Every "Try the demo" tap gets a private copy of the demo, fresh for each visitor and deleted after 24 hours. The demo account's PIN is `2580` (the app shows it on every PIN sheet). A short guided tour opens on the first visit, and **Ask Sova** (the chat icon) explains a circle or a dispute in plain English, written by an open model on RumptyCloud's AI inference.
 
@@ -203,4 +228,4 @@ Create two RumptyCloud deployments of type Static Site/SPA, one serving branch `
 
 ## Credits
 
-Several website components are adapted from open-source libraries listed on [21st.dev](https://21st.dev): Aceternity UI (Timeline, Container Scroll Animation), Magic UI (Marquee, Animated Beam, Blur Fade), React Bits (Light Rays) and Orbiting Circles 02, restyled flat to Sova's palette.
+Several website components are adapted from open-source libraries: Aceternity UI (Timeline, Container Scroll Animation), Magic UI (Marquee, Animated Beam, Blur Fade) and Orbiting Circles 02, as listed on [21st.dev](https://21st.dev), and React Bits (DotGrid, RotatingText, CountUp) from [reactbits.dev](https://reactbits.dev), all restyled flat to Sova's palette.
