@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 19 October 2026 (Devcenter Hacktober build phase, day 19; Phase 7, ready for judging: signed Android build). Phases 4, 5 and 6 done early.
+Last updated: 23 October 2026 (Devcenter Hacktober build phase, day 23; Phase 7, ready for judging: signed Android build, paid size for judging). Phases 4, 5 and 6 done early.
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -17,10 +17,10 @@ Update it at the end of every phase.
 
 ## Hackathon (Devcenter Hacktober)
 
-- Build: 1–31 October 2026. Judging: 1–6 November. Live demo day: 7 November.
+- Build: 1–31 October 2026. Submission: 24 October (owner, 23 Oct). Judging: 1–6 November. Live demo day: 7 November.
 - Judged on: live and fully functional on **RumptyCloud**; clean code and docs (setup from README); innovation and practical utility.
 - Milestones: core loop live by **12 Oct**, trust features by **22 Oct**, polish and docs by **28 Oct**, buffer 29–31 Oct.
-- Before 1 November: turn off scale-to-zero on every RumptyCloud deployment.
+- Before submission (24 Oct): move every RumptyCloud deployment to the Tiny size with scale-to-zero off, paid from the owner's RumptyCloud credit (see the 23 Oct decision).
 - On each judging and demo day: reseed the shared demo data (`npm run seed` in `api/`, admin URL) so the verify page's circles have today's dates. "Try the demo" needs no reset: every visit gets a private copy (16 Oct). See `docs/demo-script.md`.
 
 ## Architecture (target)
@@ -72,6 +72,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 16 Oct | **Public ledger anchors (owner may change):** every 6 hours a GitHub Actions job appends each circle's chain head to `anchors.json` on the public `ledger-anchors` branch (append-only commits, never force-pushed). Circles are keyed by `SHA-256("sova-anchor|" + id)` so the file can't be used to find circles. The verify page checks every checkpoint and says "Changed after it was published" on a mismatch. Zero cost (public-repo Actions). Run the workflow by hand after reseeding the demo. Branch protection blocks force-pushes and deletion of `ledger-anchors`, admins included. |
 | 16 Oct | **Ask Sova (owner may change):** an AI helper on RumptyCloud's AI inference (OpenAI-compatible, open models on its GPUs in Lagos; default model `llama3.2:3b`). It explains a circle or a dispute and answers questions about how Sova works, in English (Pidgin hidden in the app since 16 Oct until a model writes it well; the API still accepts it). The API builds every prompt from the database (members only; first name and initial; never phones, bank details, PINs or photos) and holds the key; the app labels answers as written by AI and the circle screen stays the record. No financial, loan or legal advice. Off until `AI_API_KEY` is set. **Switched on 16 Oct:** inference project `sova-ask` (Llama 3.2 3B) in the RumptyCloud console; 1M tokens free per billing cycle shared across models, then NGN 270 per 1M for 3B models; **overage is off**, so it stops at the free allowance and costs nothing (zero-cost rule). Daily limits counted in the database: 20 answers per member and 60 for the whole service (owner asked for a service-wide cap, because every demo visit is a new account). The owner said on 16 Oct the API stays on the Free size for now. |
 | 16 Oct | **Guided tours (owner may change):** a step-by-step tour (dimmed page, highlighted part, Next/Back/Skip) shown once after sign-in to every new account and every private demo: welcome, next payout, pay/start/join, reminders, Ask Sova, then the Circles, Activity and Record tabs. A shorter tour the first time someone opens a running circle. Finished or skipped tours are kept on the account (`users.tours_done`), so they don't come back on another device; Record → Help → "Take the tour again". |
+| 23 Oct | **Awake for judging (owner):** the owner has ₦20,000 of RumptyCloud credit, so the API, app and website move to the Tiny size with scale-to-zero off from submission (24 Oct) to demo day (7 Nov) instead of a keep-awake ping (RumptyCloud's fair-use policy forbids efforts to "bypass limits"). At the 3 Oct price of ₦3.70 an hour each, about ₦4,300 for all three over those 15 days; check the price in the console. Paid from the credit, so the zero-cost rule holds. The ping is not built. |
 | 4 Oct | **Demo draws:** seeded circles that already started use a seed searched to reproduce the scripted payout order, so they still verify. Real circles always get a fresh random seed. |
 
 ## Built and working
@@ -185,7 +186,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 - App: "Leave this circle" / "Cancel this circle" under the invite code while forming; a cancelled panel and a "Finished" tab that holds completed and cancelled circles; Record tab → Delete account (what goes, what stays, when it's allowed; disabled on the demo account). Checked in the browser on the demo backend (join, leave, back on Circles). Flutter tests: 66 (8 new).
 - Website: verify page describes the two new ledger entries; privacy policy and terms describe in-app deletion.
 - Android: `.github/workflows/android-apk.yml`, INTERNET permission in the release manifest, release signing from `key.properties` (see `app/README.md`). A release APK built locally (53.7 MB, debug-signed). **v1.0.0 published (16 Oct):** tag `v1.0.0` → GitHub Release "Sova v1.0.0" with `sova-v1.0.0.apk` (56.6 MB, against the live API, debug-signed because no upload key is in the repository secrets yet). "Download for Android" links to https://github.com/adeyanjufuhad/Sova/releases/latest from the README, the website (hero link, an APK button beside "Coming soon to Google Play" in the waitlist section, both FAQ answers; `NEXT_PUBLIC_ANDROID_APK_URL` overrides it) and the demo script, which now also covers the guided tour and Ask Sova.
-- **Upload key and v1.0.1 (19 Oct, Phase 7):** an upload keystore (PKCS12, RSA 2048, alias `upload`, valid 10,000 days; certificate SHA-256 `23:DB:A4:13:…:08:62`) kept outside the repository in the owner's `%USERPROFILE%\sova-signing` folder with its passwords, never committed; the four `ANDROID_*` repository secrets set from it. App version 1.0.1+2. Tag `v1.0.1` → GitHub Release "Sova v1.0.1" with `sova-v1.0.1.apk` (56.6 MB), built by CI with the upload key. Anyone with v1.0.0 (debug key) must uninstall it once; later releases install over v1.0.1. **Owner to do:** back up that folder somewhere safe (losing it means a new key and a new app identity on Google Play). Not yet installed on a phone.
+- **Upload key and v1.0.1 (19 Oct, Phase 7):** an upload keystore (PKCS12, RSA 2048, alias `upload`, valid 10,000 days; certificate SHA-256 `23:DB:A4:13:…:08:62`) kept outside the repository in the owner's `%USERPROFILE%\sova-signing` folder with its passwords, never committed; the four `ANDROID_*` repository secrets set from it. App version 1.0.1+2. Tag `v1.0.1` → GitHub Release "Sova v1.0.1" with `sova-v1.0.1.apk` (56.6 MB), built by CI with the upload key. Anyone with v1.0.0 (debug key) must uninstall it once; later releases install over v1.0.1. **Owner to do:** back up that folder somewhere safe (losing it means a new key and a new app identity on Google Play). **Installed on the owner's Android phone (21 Oct): works fine** (owner's report). The full demo script on a phone and a slow-connection run are still to do.
 
 ### Performance measured (16 Oct, sprint week 3)
 - `docs/performance.md` (linked from the root README): method, numbers and date for the live API on the Free size. Gentle runs only (autocannon up to 10 connections for 10 s; ledger and chain heads kept under their rate limits); no errors or refusals.
@@ -251,7 +252,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 4. Fair draw + trust screens ✅ (early, 7 Oct) | 17–22 Oct | Commit-reveal draw with animation and verification; Sova Score card from the database; swaps, handovers, disputes with votes; collected-then-stopped flag |
 | 5. Settings + reminders ✅ (early, 7 Oct) | 22–25 Oct | Edit profile, bank details, change PIN; in-app notifications |
 | 6. Docs + polish ✅ (early, 7 Oct) | 25–28 Oct | Root README with Mermaid diagram and RumptyCloud deployment; folder READMEs; demo script |
-| 7. Ready for judging (started 19 Oct) | 19–31 Oct | 19–22 Oct: APK signed with an upload key (v1.0.1); keep-awake ping built and tested, switched on only for 31 Oct–7 Nov (RumptyCloud fair-use checked first). 23–28 Oct: demo script on a real phone; `web-design-guidelines` audit; owner signs off the 18+ rule, privacy policy and terms; "For judges" README section. 29–31 Oct: backup video and pitch deck, then a full rehearsal. 1–7 Nov: reseed, run ledger anchors and check health each morning |
+| 7. Ready for judging (started 19 Oct) | 19–31 Oct | 19–22 Oct: APK signed with an upload key (v1.0.1); keep-awake ping dropped (23 Oct): Tiny size with scale-to-zero off from 24 Oct to 7 Nov, paid from RumptyCloud credit. 23–28 Oct: demo script on a real phone; `web-design-guidelines` audit; owner signs off the 18+ rule, privacy policy and terms; "For judges" README section. 29–31 Oct: backup video and pitch deck, then a full rehearsal. 1–7 Nov: reseed, run ledger anchors and check health each morning |
 
 ## RumptyCloud facts (observed 3 Oct)
 
@@ -263,7 +264,7 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
   `export PATH="/mise/shims:$(echo /mise/installs/node/*/bin):$PATH"; exec node dist/server.js`
 - **Build:** `npm ci && npm run build` with root `api`; only that folder is in the build context, so `db/migrations` is not copied into the image (migrations run from a laptop as the admin user).
 - **API environment on RumptyCloud:** `NODE_ENV`, `LOG_LEVEL`, `DEMO_LOGIN_ENABLED`, `OTP_PROVIDER`, `OTP_TEST_NUMBERS`, `DATABASE_URL` (internal host `pg-c69bfa.db.rumpty.internal`, user `sova_app`), `JWT_SECRET`. `CORS_ORIGINS` to add once the app and website URLs exist.
-- **Before judging:** Free apps cannot disable sleep. Decide by late October whether to move the API (and possibly the app) to Tiny with scale-to-zero off for 1–7 Nov.
+- **Before judging:** Free apps cannot disable sleep. **Decided 23 Oct:** the API, app and website go to Tiny with scale-to-zero off from 24 Oct to 7 Nov, paid from the owner's RumptyCloud credit; back to Free after demo day.
 
 ## Open questions (RumptyCloud)
 
