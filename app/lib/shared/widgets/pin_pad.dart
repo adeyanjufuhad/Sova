@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import 'sova_loader.dart';
 
 /// Four dots plus a large numeric keypad. Big keys suit low-literacy users
 /// and work without the system keyboard.
@@ -66,8 +67,7 @@ class PinPadState extends State<PinPad> {
         SizedBox(
           height: 24,
           child: widget.busy
-              ? const SizedBox.square(
-                  dimension: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: SovaColors.electric))
+              ? const SovaLoader(size: 20)
               : null,
         ),
         const SizedBox(height: SovaSpacing.lg),

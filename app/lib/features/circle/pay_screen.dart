@@ -11,6 +11,7 @@ import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/pin_pad.dart';
+import '../../shared/widgets/sova_loader.dart';
 
 /// Sova never moves money: the member pays from their own bank app, then
 /// records it here with a reference and (optionally) a receipt photo.
@@ -260,10 +261,7 @@ class _PhotoPreview extends StatelessWidget {
             child: Row(
               children: [
                 if (uploading)
-                  const SizedBox.square(
-                    dimension: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: SovaColors.electric),
-                  )
+                  const SovaLoader(size: 16)
                 else
                   Icon(uploaded ? Icons.check_circle_rounded : Icons.error_outline_rounded,
                       size: 18, color: uploaded ? SovaColors.electric : SovaColors.navy900),

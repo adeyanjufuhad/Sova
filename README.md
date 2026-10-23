@@ -228,4 +228,4 @@ Create two RumptyCloud deployments of type Static Site/SPA, one serving branch `
 
 ## Credits
 
-Several website components are adapted from open-source libraries: Aceternity UI (Timeline, Container Scroll Animation), Magic UI (Marquee, Animated Beam, Blur Fade) and Orbiting Circles 02, as listed on [21st.dev](https://21st.dev), and React Bits (DotGrid, RotatingText, CountUp) from [reactbits.dev](https://reactbits.dev), all restyled flat to Sova's palette.
+Several website components are adapted from open-source libraries: Aceternity UI (Timeline, Container Scroll Animation), Magic UI (Marquee, Animated Beam, Blur Fade) and Orbiting Circles 02, as listed on [21st.dev](https://21st.dev), and React Bits (DotGrid, RotatingText, CountUp) from [reactbits.dev](https://reactbits.dev), all restyled flat to Sova's palette. The app's loader is adapted from dovatgabriel's Newton's cradle on [Uiverse.io](https://uiverse.io/dovatgabriel/jolly-kangaroo-36) (MIT).

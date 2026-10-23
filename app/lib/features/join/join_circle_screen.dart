@@ -11,6 +11,7 @@ import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/pin_pad.dart';
 import '../../shared/widgets/polish.dart';
+import '../../shared/widgets/sova_loader.dart';
 import '../../shared/widgets/steps.dart';
 import '../circles/circles_screen.dart' show AvatarStack;
 
@@ -129,7 +130,7 @@ class _JoinCircleScreenState extends ConsumerState<JoinCircleScreen> {
         FilledButton(
           onPressed: _busy || _code.length != 6 ? null : _find,
           child: _busy
-              ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: SovaColors.white))
+              ? const SovaLoader(size: 22, color: SovaColors.white)
               : const Text('Find circle'),
         ),
         const SizedBox(height: SovaSpacing.xl2),

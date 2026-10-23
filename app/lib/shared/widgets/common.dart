@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models.dart';
 import 'adire_painter.dart';
+import 'sova_loader.dart';
 
 class SovaLogo extends StatelessWidget {
   const SovaLogo({super.key, this.size = 32, this.onBlue = false, this.wordmark = true});
@@ -142,7 +143,7 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(strokeWidth: 2.5, color: SovaColors.electric));
+      const Center(child: SovaLoader());
 }
 
 class ErrorView extends StatelessWidget {

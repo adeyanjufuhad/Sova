@@ -7,6 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
+import '../../shared/widgets/sova_loader.dart';
 
 /// The rules every member signs. Accepting is recorded with a timestamp, so
 /// disagreements later are settled by what was agreed.
@@ -118,8 +119,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
                 FilledButton(
                   onPressed: _busy ? null : () => _accept(rules.version),
                   child: _busy
-                      ? const SizedBox.square(
-                          dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: SovaColors.white))
+                      ? const SovaLoader(size: 22, color: SovaColors.white)
                       : const Text('I accept these rules'),
                 ),
               ],

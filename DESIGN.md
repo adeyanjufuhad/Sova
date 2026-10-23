@@ -257,6 +257,9 @@ A bottom sheet opened from the chat icon on Home, a circle or a dispute, and fro
 ### Empty state (app)
 A white card with a 64 px adire tile holding a white icon, a short title, one sentence on what to do, and up to two full-width actions. Used when a whole list is empty (circles, activity, disputes) and for the "page not found" screen.
 
+### Loader (app)
+A Newton's cradle: four flat royal-blue dots in a row, the outer two swinging in turn (1.2 s cycle), like a payment passing along the circle. Adapted from "newtons-cradle" by dovatgabriel on Uiverse.io (MIT). `SovaLoader` in the app replaces every spinner: 40 px for a page, 16–22 px inside buttons (white on a filled button). The web build's first-load screen (`app/web/index.html`) shows the same cradle in CSS, under the logo, "Loading Sova…" and "The first visit takes a few seconds.", until Flutter draws its first frame. It holds still when the system asks for reduced motion.
+
 ### Motion
 Short and purposeful: staggered entrances (60–80 ms apart), count-up for the next payout, 200–300 ms transitions on transform and opacity only. Buttons press to 0.98 scale; cards lift 2 px on hover. Every animation is skipped when the system asks for reduced motion. The hero headline names ajo, esusu and adashe once (React Bits RotatingText) and settles on ajo; it does not cycle.
 

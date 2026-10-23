@@ -11,6 +11,7 @@ import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/pin_pad.dart';
+import '../../shared/widgets/sova_loader.dart';
 
 /// The public page that shows a shared score card.
 String scoreLink(String token) => '$siteUrl/score/?t=$token';
@@ -38,7 +39,7 @@ class ScoreCard extends ConsumerWidget {
       color: SovaColors.navy900,
       radius: SovaRadius.xl2,
       child: async.when(
-        loading: () => const SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: SovaColors.white))),
+        loading: () => const SizedBox(height: 180, child: Center(child: SovaLoader(color: SovaColors.white))),
         error: (e, _) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

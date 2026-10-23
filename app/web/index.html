@@ -31,8 +31,75 @@
 
   <title>Sova</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Shown while main.dart.js downloads (about 3.4 MB); removed on Flutter's first frame. -->
+  <style>
+    body { margin: 0; background: #FFFFFF; }
+    #sova-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 0 16px;
+      background: #FFFFFF;
+      color: #0B1A33;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+    }
+    #sova-loading img { width: 56px; height: 56px; border-radius: 12px; }
+    #sova-loading p { margin: 0; }
+    #sova-loading .title { font-size: 18px; font-weight: 600; }
+    #sova-loading .note { font-size: 14px; color: #475569; }
+    /* Newton's cradle, adapted from "newtons-cradle" by dovatgabriel on
+       Uiverse.io (MIT); the app's SovaLoader draws the same thing. */
+    .cradle { display: flex; width: 48px; height: 48px; margin-top: 8px; }
+    .cradle span {
+      display: flex;
+      align-items: center;
+      width: 25%;
+      height: 100%;
+      transform-origin: center top;
+    }
+    .cradle span::after {
+      content: "";
+      width: 100%;
+      height: 25%;
+      border-radius: 50%;
+      background: #1D4ED8;
+    }
+    .cradle span:first-child { animation: sova-swing 1.2s linear infinite; }
+    .cradle span:last-child { animation: sova-swing-back 1.2s linear infinite; }
+    @keyframes sova-swing {
+      0% { transform: rotate(0deg); animation-timing-function: ease-out; }
+      25% { transform: rotate(70deg); animation-timing-function: ease-in; }
+      50% { transform: rotate(0deg); animation-timing-function: linear; }
+    }
+    @keyframes sova-swing-back {
+      0% { transform: rotate(0deg); animation-timing-function: linear; }
+      50% { transform: rotate(0deg); animation-timing-function: ease-out; }
+      75% { transform: rotate(-70deg); animation-timing-function: ease-in; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cradle span { animation: none !important; }
+    }
+  </style>
 </head>
 <body>
+  <div id="sova-loading" role="status" aria-live="polite">
+    <img src="icons/Icon-192.png" alt="">
+    <p class="title">Loading Sova…</p>
+    <p class="note">The first visit takes a few seconds.</p>
+    <div class="cradle" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('sova-loading');
+      if (el) el.remove();
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

@@ -6,6 +6,7 @@ import '../../data/providers.dart';
 import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
+import '../../shared/widgets/sova_loader.dart';
 
 class _Slide {
   const _Slide(this.title, this.body, this.cardLabel, this.cardValue, this.cardFoot);
@@ -178,8 +179,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   OutlinedButton.icon(
                     onPressed: _startingDemo ? null : _tryDemo,
                     icon: _startingDemo
-                        ? const SizedBox.square(
-                            dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SovaColors.electric))
+                        ? const SovaLoader(size: 18)
                         : const Icon(Icons.play_circle_outline_rounded),
                     label: const Text('Try the demo'),
                   ),

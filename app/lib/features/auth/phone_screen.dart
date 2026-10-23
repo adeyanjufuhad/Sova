@@ -7,6 +7,7 @@ import '../../core/format.dart';
 import '../../core/theme/theme.dart';
 import '../../data/providers.dart';
 import '../../shared/widgets/common.dart';
+import '../../shared/widgets/sova_loader.dart';
 
 class PhoneScreen extends ConsumerStatefulWidget {
   const PhoneScreen({super.key});
@@ -85,7 +86,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
             FilledButton(
               onPressed: _busy ? null : _submit,
               child: _busy
-                  ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: SovaColors.white))
+                  ? const SovaLoader(size: 22, color: SovaColors.white)
                   : const Text('Send code'),
             ),
             const SizedBox(height: SovaSpacing.sm),
