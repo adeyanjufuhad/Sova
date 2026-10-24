@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="app/assets/brand/sova-mark-light.png">
+    <img src="app/assets/brand/sova-mark-navy.png" alt="Sova logo" width="96">
+  </picture>
+</p>
+
 # Sova
 
 Sova keeps the record for ajo, esusu and adashe savings circles: who joined, who collects when, who has paid and who has confirmed. It never holds, moves, lends or invests money. Members pay each other by bank transfer or cash as they always have; Sova keeps a tamper-evident record of it.
