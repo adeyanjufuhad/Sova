@@ -73,6 +73,8 @@ Roadmap, not built: push, SMS and WhatsApp reminders; voice prompts and local la
 
 ## Architecture
 
+**How Sova runs**
+
 ```mermaid
 flowchart TB
   subgraph People
@@ -87,27 +89,17 @@ flowchart TB
   end
 
   subgraph RumptyCloud
-    appweb["Static site<br/>branch app-web"]
-    siteweb["Static site<br/>branch site-web"]
     api["Sova API<br/>Fastify + TypeScript"]
     db[("PostgreSQL 17<br/>rules, triggers,<br/>hash-chained ledger")]
     bucket[("Private bucket<br/>receipt photos")]
     ai["AI inference<br/>Llama 3.2 3B for Ask Sova"]
   end
 
-  subgraph GitHub
-    repo["Repository<br/>branch main"]
-    actions["GitHub Actions<br/>CI, builds, anchors"]
-    releases["Releases<br/>signed APK"]
-    anchors["Branch ledger-anchors<br/>public chain heads"]
-  end
+  anchors["GitHub branch ledger-anchors<br/>public chain heads"]
 
   member --> android
   member --> webapp
   visitor --> site
-  releases -. download .-> android
-  appweb -. serves .-> webapp
-  siteweb -. serves .-> site
   android -- "HTTPS + JWT" --> api
   webapp -- "HTTPS + JWT" --> api
   site -- "waitlist, public ledger, shared scores" --> api
@@ -115,13 +107,32 @@ flowchart TB
   api -- "restricted role sova_app" --> db
   api -- "S3 API, signed links" --> bucket
   api -- "prompt built from the record" --> ai
-  repo -. "auto-deploy on push" .-> api
+```
+
+**How Sova is built and released**
+
+```mermaid
+flowchart LR
+  repo["GitHub repository<br/>branch main"]
+  actions["GitHub Actions<br/>tests on every push"]
+
+  subgraph RumptyCloud
+    api["Sova API"]
+    appweb["Static site<br/>branch app-web"]
+    siteweb["Static site<br/>branch site-web"]
+  end
+
+  subgraph GitHub
+    releases["Releases<br/>signed APK"]
+    anchors["Branch ledger-anchors<br/>public chain heads"]
+  end
+
+  repo -- "auto-deploy on push" --> api
   repo --> actions
   actions -- "flutter build web" --> appweb
   actions -- "next build" --> siteweb
   actions -- "flutter build apk on a v* tag" --> releases
-  actions -- "every 6 hours: read chain heads" --> api
-  actions -- "append chain heads" --> anchors
+  actions -- "every 6 hours: chain heads from the API" --> anchors
 ```
 
 - **The database holds the rules.** Joining, the draw, paying, confirming, closing a turn, disputes, swaps, handovers, the score and the ledger are PostgreSQL functions and triggers. They refuse with `SVxxx` errors that the API returns as `{ error: { code, message } }`. Whatever code writes, the rules still apply.
