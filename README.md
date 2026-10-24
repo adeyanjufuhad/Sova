@@ -5,7 +5,13 @@
   </picture>
 </p>
 
-# Sova
+<h1 align="center">Sova</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Dart-Flutter%20app-1D4ED8?style=flat&logo=dart&logoColor=white" alt="Dart: Flutter app">
+  <img src="https://img.shields.io/badge/TypeScript-API%20%2B%20website-1D4ED8?style=flat&logo=typescript&logoColor=white" alt="TypeScript: API and website">
+  <img src="https://img.shields.io/badge/SQL-PostgreSQL%2017-1D4ED8?style=flat&logo=postgresql&logoColor=white" alt="SQL: PostgreSQL 17">
+</p>
 
 Sova keeps the record for ajo, esusu and adashe savings circles: who joined, who collects when, who has paid and who has confirmed. It never holds, moves, lends or invests money. Members pay each other by bank transfer or cash as they always have; Sova keeps a tamper-evident record of it.
 
@@ -68,37 +74,62 @@ Roadmap, not built: push, SMS and WhatsApp reminders; voice prompts and local la
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
+  subgraph People
+    member["Circle member"]
+    visitor["Anyone checking a circle"]
+  end
+
   subgraph Clients
-    app["Flutter app<br/>Android + web build"]
-    site["Website<br/>Next.js static export"]
+    android["Android app<br/>Flutter APK"]
+    webapp["Web app<br/>Flutter web build"]
+    site["Website<br/>Next.js static export + /verify"]
   end
 
   subgraph RumptyCloud
     appweb["Static site<br/>branch app-web"]
     siteweb["Static site<br/>branch site-web"]
     api["Sova API<br/>Fastify + TypeScript"]
-    db[("PostgreSQL 17<br/>rules, triggers, ledger")]
+    db[("PostgreSQL 17<br/>rules, triggers,<br/>hash-chained ledger")]
     bucket[("Private bucket<br/>receipt photos")]
+    ai["AI inference<br/>Llama 3.2 3B for Ask Sova"]
   end
 
-  gha["GitHub<br/>repo, CI, web builds"]
+  subgraph GitHub
+    repo["Repository<br/>branch main"]
+    actions["GitHub Actions<br/>CI, builds, anchors"]
+    releases["Releases<br/>signed APK"]
+    anchors["Branch ledger-anchors<br/>public chain heads"]
+  end
 
-  appweb -. serves .-> app
+  member --> android
+  member --> webapp
+  visitor --> site
+  releases -. download .-> android
+  appweb -. serves .-> webapp
   siteweb -. serves .-> site
-  app -- "HTTPS + JWT" --> api
+  android -- "HTTPS + JWT" --> api
+  webapp -- "HTTPS + JWT" --> api
   site -- "waitlist, public ledger, shared scores" --> api
+  site -- "checks checkpoints" --> anchors
   api -- "restricted role sova_app" --> db
   api -- "S3 API, signed links" --> bucket
-  gha -- "flutter build web" --> appweb
-  gha -- "next build" --> siteweb
-  gha -. "auto-deploy on push to main" .-> api
+  api -- "prompt built from the record" --> ai
+  repo -. "auto-deploy on push" .-> api
+  repo --> actions
+  actions -- "flutter build web" --> appweb
+  actions -- "next build" --> siteweb
+  actions -- "flutter build apk on a v* tag" --> releases
+  actions -- "every 6 hours: read chain heads" --> api
+  actions -- "append chain heads" --> anchors
 ```
 
 - **The database holds the rules.** Joining, the draw, paying, confirming, closing a turn, disputes, swaps, handovers, the score and the ledger are PostgreSQL functions and triggers. They refuse with `SVxxx` errors that the API returns as `{ error: { code, message } }`. Whatever code writes, the rules still apply.
 - **The API is a thin, checked wrapper.** Every input is validated with zod; every request is checked against circle membership and role (non-members get 404). It signs in by one-time code, issues 15-minute JWTs with rotating refresh tokens, and checks PINs (argon2id, 5 wrong tries lock for 15 minutes). In production it connects as `sova_app`, which can't change the schema or edit the ledger.
 - **The app** talks only to the `SovaRepository` interface: `ApiRepository` in production, an in-memory `DemoRepository` with the same rules for tests and offline runs.
 - **Public pages are static.** The website and the app's web build are plain files; their dynamic parts call the API.
+- **Ask Sova** runs on RumptyCloud's AI inference. The API builds each prompt from the database (first names and initials only; never phones, bank details or PINs) and holds the key.
+- **Public checkpoints.** Every 6 hours a GitHub Actions job reads each circle's chain head from the API and appends it to the public `ledger-anchors` branch; the verify page checks a circle's chain against them.
 
 ## Repository
 
