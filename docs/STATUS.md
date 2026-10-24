@@ -17,7 +17,7 @@ Update it at the end of every phase.
 
 ## Hackathon (Devcenter Hacktober)
 
-- Build: 1–31 October 2026. Submission: 24 October (owner, 23 Oct). Judging: 1–6 November. Live demo day: 7 November.
+- Build: 1–31 October 2026. Submission: 24 October (owner, 23 Oct). **Submitted 24 Oct** through the Devcenter form: live demo https://sova-app.rumptycloud.app, repository and README as the technical documentation. Judging: 1–6 November. Live demo day: 7 November.
 - Judged on: live and fully functional on **RumptyCloud**; clean code and docs (setup from README); innovation and practical utility.
 - Milestones: core loop live by **12 Oct**, trust features by **22 Oct**, polish and docs by **28 Oct**, buffer 29–31 Oct.
 - Before submission (24 Oct): move every RumptyCloud deployment to the Tiny size with scale-to-zero off, paid from the owner's RumptyCloud credit (see the 23 Oct decision).
