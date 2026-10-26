@@ -441,7 +441,8 @@ export async function circleRoutes(
       pool.query<{
         id: string;
         name: string | null;
-        phone: string;
+        phone: string | null;
+        email: string | null;
         position: number | null;
         accepted: boolean;
         voucher_id: string | null;
@@ -449,7 +450,7 @@ export async function circleRoutes(
         owes_after_collecting: boolean;
       }>(
         `with current_rules as (select id from group_rules where group_id = $1 order by version desc limit 1)
-         select u.id, u.full_name as name, u.phone, m.payout_position as position,
+         select u.id, u.full_name as name, u.phone, u.email, m.payout_position as position,
                 exists (select 1 from rule_acceptances a where a.rules_id = (select id from current_rules) and a.user_id = u.id) as accepted,
                 v.voucher_id, vu.full_name as voucher_name,
                 exists (select 1 from unfinished_obligations o where o.group_id = $1 and o.user_id = u.id) as owes_after_collecting
@@ -558,6 +559,8 @@ export async function circleRoutes(
         id: m.id,
         name: m.name,
         phone: m.phone,
+        /** Shown where the phone would be, for members who signed in with email or Google. */
+        email: m.email,
         position: m.position,
         isAdmin: m.id === g.admin_id,
         acceptedRules: m.accepted,

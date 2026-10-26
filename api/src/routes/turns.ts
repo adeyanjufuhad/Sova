@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser, userIdOf } from "../auth/plugin.js";
 import { verifyPin } from "../auth/pin.js";
 import type { TokenService } from "../auth/tokens.js";
+import { normaliseEmail } from "../auth/email.js";
 import { notFound } from "../lib/errors.js";
 import { normalisePhone } from "../lib/phone.js";
 
@@ -21,17 +22,18 @@ const uuid = z.uuid("Not a valid id.");
 const idParam = z.object({ id: uuid });
 const reason = z.string().trim().max(500, "Keep it under 500 characters.").nullish();
 const swapBody = z.object({ targetId: uuid, reason, pin });
+/** The replacement is named by their phone, or by the email they sign in with. */
 const handoverBody = z.object({
   phone: z
     .string()
-    .max(30)
+    .max(254)
     .transform((v, ctx) => {
-      const phone = normalisePhone(v);
-      if (!phone) {
-        ctx.addIssue({ code: "custom", message: "Enter a Nigerian mobile number, like 0803 123 4567." });
+      const contact = v.includes("@") ? normaliseEmail(v) : normalisePhone(v);
+      if (!contact) {
+        ctx.addIssue({ code: "custom", message: "Enter their Nigerian mobile number or their email address." });
         return z.NEVER;
       }
-      return phone;
+      return contact;
     }),
   reason,
   pin,

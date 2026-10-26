@@ -60,6 +60,23 @@ const schema = z
     OTP_TEST_NUMBERS: list,
     OTP_TTL_SECONDS: z.coerce.number().int().min(60).max(1_800).default(300),
 
+    /**
+     * Email sign-in codes: "off", "brevo" (sends through Brevo; needs BREVO_API_KEY
+     * and a sender verified in Brevo) or "test-emails" (fixed codes, nothing sent).
+     */
+    EMAIL_PROVIDER: z.enum(["off", "brevo", "test-emails"]).default("off"),
+    BREVO_API_KEY: z.string().trim().optional(),
+    /** The verified sender, e.g. "Sova <you@gmail.com>" or just the address. */
+    EMAIL_FROM: z.string().trim().optional(),
+    /** Whitelist for the test-emails provider: "ada@example.com:123456,...". */
+    OTP_TEST_EMAILS: list,
+
+    /**
+     * "Continue with Google": the OAuth client ids whose ID tokens are accepted
+     * (web first; the web id is also what Android asks Google for). Empty = off.
+     */
+    GOOGLE_CLIENT_IDS: list,
+
     /** Enables POST /auth/demo, which signs into a private copy of the demo. */
     DEMO_LOGIN_ENABLED: bool,
     /** Private demo copies kept built in advance, so "Try the demo" is instant (0 = build on demand). */
@@ -112,7 +129,25 @@ const schema = z
         });
       }
     }
+    if (c.EMAIL_PROVIDER === "brevo") {
+      if (!c.BREVO_API_KEY) ctx.addIssue({ code: "custom", path: ["BREVO_API_KEY"], message: "is required when EMAIL_PROVIDER=brevo" });
+      if (!c.EMAIL_FROM || !parseSender(c.EMAIL_FROM)) {
+        ctx.addIssue({ code: "custom", path: ["EMAIL_FROM"], message: 'must be "Name <address>" or an address when EMAIL_PROVIDER=brevo' });
+      }
+    }
+    for (const entry of c.OTP_TEST_EMAILS) {
+      if (!/^[^@\s:]+@[^@\s:]+\.[^@\s:]+:\d{6}$/.test(entry)) {
+        ctx.addIssue({ code: "custom", path: ["OTP_TEST_EMAILS"], message: "entries must look like ada@example.com:123456" });
+      }
+    }
   });
+
+/** "Sova <you@example.com>" or "you@example.com" → the sender Brevo expects. */
+export function parseSender(from: string): { email: string; name: string } | null {
+  const m = /^\s*(?:(.+?)\s*<\s*([^<>\s]+@[^<>\s]+)\s*>|([^<>\s]+@[^<>\s]+))\s*$/.exec(from);
+  if (!m) return null;
+  return { email: (m[2] ?? m[3])!.toLowerCase(), name: m[1]?.trim() || "Sova" };
+}
 
 export type Config = z.infer<typeof schema>;
 

@@ -5,9 +5,11 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance } from "fastify";
 import type pg from "pg";
 
+import { BrevoEmailProvider, EmailOffProvider, TestEmailsProvider } from "./auth/email.js";
+import { GoogleIdTokenVerifier, GoogleOffVerifier, type GoogleVerifier } from "./auth/google.js";
 import { OtpService, SmsProvider, TestNumbersProvider, type OtpProvider } from "./auth/otp.js";
 import { TokenService } from "./auth/tokens.js";
-import type { Config } from "./config.js";
+import { parseSender, type Config } from "./config.js";
 import { createAssistant, type Assistant } from "./lib/assistant.js";
 import { AppError, registerErrorHandler } from "./lib/errors.js";
 import { createProofStorage, type ProofStorage } from "./lib/storage.js";
@@ -27,6 +29,10 @@ export const VERSION = "0.9.1";
 
 export interface AppOverrides {
   otpProvider?: OtpProvider;
+  /** Replaces the email code sender (tests). */
+  emailProvider?: OtpProvider;
+  /** Replaces the Google ID token check (tests). */
+  google?: GoogleVerifier;
   /** Replaces the S3 bucket (tests). */
   storage?: ProofStorage | null;
   /** Replaces the model service behind "Ask Sova" (tests). */
@@ -52,6 +58,7 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
           "*.otp",
           "*.token",
           "*.refreshToken",
+          "*.idToken",
           "*.accessToken",
           "*.password",
           "*.secret",
@@ -94,6 +101,17 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
     overrides.otpProvider ??
     (config.OTP_PROVIDER === "sms" ? new SmsProvider() : new TestNumbersProvider(config.OTP_TEST_NUMBERS));
   const otp = new OtpService(pool, provider, secret, config.OTP_TTL_SECONDS);
+  const emailProvider =
+    overrides.emailProvider ??
+    (config.EMAIL_PROVIDER === "brevo"
+      ? new BrevoEmailProvider(config.BREVO_API_KEY!, parseSender(config.EMAIL_FROM!)!, Math.round(config.OTP_TTL_SECONDS / 60))
+      : config.EMAIL_PROVIDER === "test-emails"
+        ? new TestEmailsProvider(config.OTP_TEST_EMAILS)
+        : new EmailOffProvider());
+  const emailOtp = new OtpService(pool, emailProvider, secret, config.OTP_TTL_SECONDS, "email");
+  const google =
+    overrides.google ??
+    (config.GOOGLE_CLIENT_IDS.length ? new GoogleIdTokenVerifier(config.GOOGLE_CLIENT_IDS) : new GoogleOffVerifier());
   const tokens = new TokenService(pool, secret, config.ACCESS_TOKEN_TTL_SECONDS, config.REFRESH_TOKEN_TTL_DAYS);
 
   const assistant = overrides.assistant !== undefined ? overrides.assistant : createAssistant(config);
@@ -101,6 +119,10 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   await app.register(authRoutes, {
     pool,
     otp,
+    emailOtp,
+    google,
+    googleClientId: config.GOOGLE_CLIENT_IDS[0] ?? null,
+    emailOn: overrides.emailProvider !== undefined || config.EMAIL_PROVIDER !== "off",
     tokens,
     demoEnabled: config.DEMO_LOGIN_ENABLED,
     demoPhone: config.DEMO_PHONE,

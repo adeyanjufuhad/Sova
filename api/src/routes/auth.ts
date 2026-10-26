@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import type pg from "pg";
 import { z } from "zod";
 
+import { normaliseEmail } from "../auth/email.js";
+import type { GoogleVerifier } from "../auth/google.js";
 import type { OtpService } from "../auth/otp.js";
 import { requireUser, userIdOf } from "../auth/plugin.js";
 import { assertStrongPin, hashPin, verifyPin } from "../auth/pin.js";
@@ -22,8 +24,24 @@ const phoneField = z
     return phone;
   });
 
+const emailField = z
+  .string()
+  .max(254)
+  .transform((v, ctx) => {
+    const email = normaliseEmail(v);
+    if (!email) {
+      ctx.addIssue({ code: "custom", message: "Enter an email address, like ada@example.com." });
+      return z.NEVER;
+    }
+    return email;
+  });
+const codeField = z.string().regex(/^\d{6}$/, "Enter the 6-digit code.");
+
 const otpRequestBody = z.object({ phone: phoneField });
-const otpVerifyBody = z.object({ phone: phoneField, code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code.") });
+const otpVerifyBody = z.object({ phone: phoneField, code: codeField });
+const emailRequestBody = z.object({ email: emailField });
+const emailVerifyBody = z.object({ email: emailField, code: codeField });
+const googleBody = z.object({ idToken: z.string().min(20).max(4096) });
 const refreshBody = z.object({ refreshToken: z.string().min(20).max(200) });
 const profileBody = z.object({
   fullName: z
@@ -48,8 +66,9 @@ const changePinBody = z.object({
 
 interface UserRow {
   id: string;
-  /** Null for a private demo's people (and deleted accounts). */
+  /** Null for a private demo's people, accounts made with email or Google, and deleted accounts. */
   phone: string | null;
+  email: string | null;
   full_name: string | null;
   pin_hash: string | null;
   is_demo: boolean;
@@ -59,7 +78,8 @@ interface UserRow {
   tours_done: string[];
 }
 
-const USER_COLUMNS = "id, phone, full_name, pin_hash, is_demo, bank_name, account_number, account_name, tours_done";
+const USER_COLUMNS =
+  "id, phone, email, full_name, pin_hash, is_demo, bank_name, account_number, account_name, tours_done";
 
 /** Guided tours in the app; see db/migrations/20261013000000_tours.sql. */
 const TOURS = ["home", "circle"] as const;
@@ -72,6 +92,7 @@ const tourParam = z.object({ tour: z.enum(TOURS) });
 export const toUser = (u: UserRow, demoPhone: string, assistant = false) => ({
   id: u.id,
   phone: u.phone ?? (u.is_demo ? demoPhone : ""),
+  email: u.email,
   fullName: u.full_name,
   hasPin: u.pin_hash !== null,
   isDemo: u.is_demo,
@@ -89,6 +110,11 @@ export async function authRoutes(
   opts: {
     pool: pg.Pool;
     otp: OtpService;
+    emailOtp: OtpService;
+    google: GoogleVerifier;
+    /** The web OAuth client id the app signs in with; null when Google sign-in is off. */
+    googleClientId: string | null;
+    emailOn: boolean;
     tokens: TokenService;
     demoEnabled: boolean;
     demoPhone: string;
@@ -96,7 +122,7 @@ export async function authRoutes(
     assistantOn?: boolean;
   },
 ) {
-  const { pool, otp, tokens } = opts;
+  const { pool, otp, emailOtp, google, tokens } = opts;
   const auth = requireUser(tokens);
   const view = (u: UserRow) => toUser(u, opts.demoPhone, opts.assistantOn ?? false);
 
@@ -125,6 +151,79 @@ export async function authRoutes(
     );
     const user = rows[0]!;
     return { ...(await tokens.issue(user.id, req.headers["user-agent"])), user: view(user) };
+  });
+
+  /** Which ways to sign in are switched on, so the app only shows those. */
+  app.get("/auth/methods", async () => ({
+    phone: true,
+    email: opts.emailOn,
+    google: opts.googleClientId ? { clientId: opts.googleClientId } : null,
+    demo: opts.demoEnabled,
+  }));
+
+  app.post("/auth/email/request", { config: strict }, async (req, reply) => {
+    const { email } = emailRequestBody.parse(req.body);
+    const result = await emailOtp.request(email);
+    return reply.code(202).send({ sentTo: email, ...result });
+  });
+
+  app.post("/auth/email/verify", { config: strict }, async (req) => {
+    const { email, code } = emailVerifyBody.parse(req.body);
+    await emailOtp.verify(email, code);
+    const { rows } = await pool.query<UserRow>(
+      `insert into users (email) values ($1)
+       on conflict (email) where email is not null do update set email = excluded.email
+       returning ${USER_COLUMNS}`,
+      [email],
+    );
+    const user = rows[0]!;
+    return { ...(await tokens.issue(user.id, req.headers["user-agent"])), user: view(user) };
+  });
+
+  /**
+   * "Continue with Google". The ID token is checked against Google's keys and
+   * Sova's client ids. The account is found by Google id, then by the (verified)
+   * email, so someone who first signed in with an email code keeps one account.
+   * `suggestedName` lets the app prefill the profile name.
+   */
+  app.post("/auth/google", { config: strict }, async (req) => {
+    const { idToken } = googleBody.parse(req.body);
+    const who = await google.verify(idToken);
+    const client = await pool.connect();
+    let user: UserRow;
+    try {
+      await client.query("begin");
+      const found = await client.query<UserRow>(
+        `select ${USER_COLUMNS} from users
+          where (google_sub = $1 or email = $2) and deleted_at is null
+          order by (google_sub = $1) desc nulls last limit 1 for update`,
+        [who.sub, who.email],
+      );
+      if (found.rows[0]) {
+        const linked = await client.query<UserRow>(
+          `update users set google_sub = $2, email = coalesce(email, $3) where id = $1 returning ${USER_COLUMNS}`,
+          [found.rows[0].id, who.sub, who.email],
+        );
+        user = linked.rows[0]!;
+      } else {
+        const made = await client.query<UserRow>(
+          `insert into users (email, google_sub) values ($1, $2) returning ${USER_COLUMNS}`,
+          [who.email, who.sub],
+        );
+        user = made.rows[0]!;
+      }
+      await client.query("commit");
+    } catch (err) {
+      await client.query("rollback");
+      throw err;
+    } finally {
+      client.release();
+    }
+    return {
+      ...(await tokens.issue(user.id, req.headers["user-agent"])),
+      user: view(user),
+      suggestedName: who.name,
+    };
   });
 
   /** Builds the next spare demo copy in the background, one top-up at a time. */
