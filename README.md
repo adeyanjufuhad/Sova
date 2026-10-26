@@ -38,7 +38,7 @@ The full 8-minute walkthrough is [docs/demo-script.md](docs/demo-script.md).
 
 Good to know:
 
-- During judging Sova is demo-only. Signing in with your own phone number needs an SMS provider, which isn't connected yet; **Try the demo** needs no phone number.
+- To use Sova as yourself, sign up with **Continue with Google** or an **email code**: start your own circle and invite another judge with its code. Phone sign-in needs a paid SMS provider, which isn't connected yet, so phone codes work only for test numbers. **Try the demo** needs no account.
 - Ask Sova answers in English, up to 20 answers per account and 60 a day across the service.
 - Roadmap items (SMS and WhatsApp reminders, push notifications, voice and local languages, offline use, USSD, collector mode) are labelled as roadmap on the website and are not in the app.
 
@@ -95,6 +95,9 @@ flowchart TB
     ai["AI inference<br/>Llama 3.2 3B for Ask Sova"]
   end
 
+  google["Google sign-in"]
+  brevo["Brevo<br/>email sign-in codes"]
+
   anchors["GitHub branch ledger-anchors<br/>public chain heads"]
 
   member --> android
@@ -107,6 +110,8 @@ flowchart TB
   api -- "restricted role sova_app" --> db
   api -- "S3 API, signed links" --> bucket
   api -- "prompt built from the record" --> ai
+  api -- "verify token" --> google
+  api -- "codes" --> brevo
 ```
 
 **How Sova is built and released**
@@ -139,6 +144,7 @@ flowchart LR
 - **The API is a thin, checked wrapper.** Every input is validated with zod; every request is checked against circle membership and role (non-members get 404). It signs in by one-time code, issues 15-minute JWTs with rotating refresh tokens, and checks PINs (argon2id, 5 wrong tries lock for 15 minutes). In production it connects as `sova_app`, which can't change the schema or edit the ledger.
 - **The app** talks only to the `SovaRepository` interface: `ApiRepository` in production, an in-memory `DemoRepository` with the same rules for tests and offline runs.
 - **Public pages are static.** The website and the app's web build are plain files; their dynamic parts call the API.
+- **Signing in.** By a 6-digit code sent to a phone (test numbers until an SMS provider is connected) or to an email address (sent through Brevo), or with Google: the app gets an ID token from Google and the API checks its signature, audience and verified email against Google's keys. Codes are stored as HMACs, expire after 5 minutes and are rate-limited per address and per IP. An email or Google account has no phone; members see its email instead.
 - **Ask Sova** runs on RumptyCloud's AI inference. The API builds each prompt from the database (first names and initials only; never phones, bank details or PINs) and holds the key.
 - **Public checkpoints.** Every 6 hours a GitHub Actions job reads each circle's chain head from the API and appends it to the public `ledger-anchors` branch; the verify page checks a circle's chain against them.
 
@@ -182,7 +188,7 @@ npm run seed
 npm run dev
 ```
 
-The API is at http://localhost:8080/health. `npm run seed` creates the shared demo: 18 people and 5 circles in the reserved phone range `+2348000000xxx`, and nothing else. To sign in with a phone number instead of the demo, use `+2348000000001` with the code `123456` (the test number in `OTP_TEST_NUMBERS`; it is a seeded member, Ifeoma).
+The API is at http://localhost:8080/health. `npm run seed` creates the shared demo: 18 people and 5 circles in the reserved phone range `+2348000000xxx`, and nothing else. To sign in with a phone number instead of the demo, use `+2348000000001` with the code `123456` (the test number in `OTP_TEST_NUMBERS`; it is a seeded member, Ifeoma). To try email sign-in, use `ada@example.com` with `246810` (`OTP_TEST_EMAILS`; nothing is sent). Google sign-in works locally once `GOOGLE_CLIENT_IDS` holds a web client that allows `http://localhost:3300`.
 
 **3. App** (a third terminal)
 
@@ -249,6 +255,8 @@ The start command sets `PATH` itself because RumptyCloud runs it in a shell that
 | `CORS_ORIGINS` | `https://sova-app.rumptycloud.app,https://sova.rumptycloud.app` |
 | `DEMO_LOGIN_ENABLED` | `true` |
 | `OTP_PROVIDER`, `OTP_TEST_NUMBERS` | `test-numbers` and the phones allowed to sign in, with their fixed codes |
+| `EMAIL_PROVIDER`, `BREVO_API_KEY`, `EMAIL_FROM` | `brevo`, a Brevo API key and a sender verified in Brevo (free: 300 emails a day) |
+| `GOOGLE_CLIENT_IDS` | the web OAuth client id from Google Cloud Console (its JavaScript origins list the app's address) |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | the bucket from step 2 |
 
 `api/.env.example` describes every variable.

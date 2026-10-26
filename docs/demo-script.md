@@ -20,7 +20,9 @@ A walk through Sova on the live services, for judging day and anyone trying it f
    - https://sova.rumptycloud.app
    - https://sova-app.rumptycloud.app
 
-3. **The demo PIN is `2580`.** The app shows it on every PIN sheet when you're on the demo account. The demo account's name, bank details and PIN can't be changed, so one visitor can't lock out the next.
+3. **Judges can also sign up as themselves** with **Continue with Google** or an email code on the sign-in screen (Get started → Sign in), then start a circle and share its code. Phone codes work only for test numbers until an SMS provider is connected.
+
+4. **The demo PIN is `2580`.** The app shows it on every PIN sheet when you're on the demo account. The demo account's name, bank details and PIN can't be changed, so one visitor can't lock out the next.
 
 ## The story
 

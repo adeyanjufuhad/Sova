@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "What Sova stores, who can see it and how to ask for it to be corrected or deleted. Sova never holds your money, and the website has no ads or trackers.",
 };
 
-const UPDATED = "23 October 2026";
+const UPDATED = "26 October 2026";
 
 const email = (
   <a href={`mailto:${site.contactEmail}`} className="whitespace-nowrap">
@@ -22,7 +22,15 @@ const email = (
 const collected: { what: string; why: ReactNode }[] = [
   {
     what: "Phone number",
-    why: "To sign you in with a text code, and so members of your circles can reach you. Stored as +234XXXXXXXXXX.",
+    why: "If you sign in with your phone: to sign you in with a text code, and so members of your circles can reach you. Stored as +234XXXXXXXXXX.",
+  },
+  {
+    what: "Email address",
+    why: "If you sign in with an email code or with Google: to sign you in, and members of your circles see it where they would see a phone number. Stored in lower case.",
+  },
+  {
+    what: "Google account",
+    why: "If you choose “Continue with Google”, Google confirms it is you and tells Sova your email address, your name (to fill in your profile, which you can change) and an account id. Sova never sees your Google password and gets no other access to your Google account.",
   },
   {
     what: "Name",
@@ -54,7 +62,7 @@ const collected: { what: string; why: ReactNode }[] = [
   },
   {
     what: "Sign-in records",
-    why: "Sign-in codes are stored only as a keyed hash and expire after 5 minutes. Sessions are stored as a hash of the token, with the description your browser or app sends (its user agent), and last up to 30 days unless you sign out.",
+    why: "Sign-in codes sent to your phone or email are stored only as a keyed hash and expire after 5 minutes. Sessions are stored as a hash of the token, with the description your browser or app sends (its user agent), and last up to 30 days unless you sign out.",
   },
   {
     what: "Notifications",
@@ -80,8 +88,8 @@ export default function PrivacyPage() {
         <>
           <p>
             This page explains what Sova stores, why, who can see it and what you can ask us to do with it. It
-            describes Sova as it works today. Sova is open as a demo for now: sign-in works through “Try the demo”
-            and a short list of test numbers. We will update this page before opening to everyone.
+            describes Sova as it works today. Sova is open as a demo for now: sign-in works through “Try the demo”,
+            Google, an email code, and a short list of test phone numbers. We will update this page before opening to everyone.
           </p>
         </>
       }
@@ -90,8 +98,8 @@ export default function PrivacyPage() {
           <strong className="font-semibold text-navy-900">Sova never holds, moves, lends or invests your money.</strong>{" "}
           Members pay each other directly; Sova keeps the record.
         </>,
-        "We store what a savings record needs: your phone number, name, bank details, a hashed PIN, and receipt photos you choose to add.",
-        "Members of your circles see your name and phone number, and your bank details when it is your turn to collect. The public circle record shows only an id and your first name and initial.",
+        "We store what a savings record needs: your phone number or email, name, bank details, a hashed PIN, and receipt photos you choose to add.",
+        "Members of your circles see your name and phone number (or email, if you signed in with email or Google), and your bank details when it is your turn to collect. The public circle record shows only an id and your first name and initial.",
         "No ads, no analytics, no trackers. We don't sell your data.",
         "You can ask to see, correct or delete your data under the Nigeria Data Protection Act 2023.",
       ]}
@@ -159,15 +167,16 @@ export default function PrivacyPage() {
           body: (
             <ul>
               <li>
-                <strong>Members of your circles</strong> see your full name and phone number, your payments and
+                <strong>Members of your circles</strong> see your full name and phone number (or your email, if you
+                signed in with email or Google), your payments and
                 their status, receipt photos you attach in that circle, and disputes and votes. When you are the
                 collector for the current turn, they also see your bank details so they know where to pay.
               </li>
               <li>
                 <strong>Anyone with a circle&apos;s link</strong> can download and check that circle&apos;s
                 tamper-evident record on the <Link href="/verify/">verify page</Link>. People appear in it only as an
-                opaque id and first name plus initial (for example “Ada O.”). Phone numbers and bank details are
-                never written to it. A circle&apos;s link works like a private link, so share it with care.
+                opaque id and first name plus initial (for example “Ada O.”). Phone numbers, emails and bank details
+                are never written to it. A circle&apos;s link works like a private link, so share it with care.
               </li>
               <li>
                 <strong>Anyone at all</strong> can read the public ledger anchors: every 6 hours, each circle&apos;s
@@ -188,7 +197,9 @@ export default function PrivacyPage() {
               <li>
                 <strong>Service providers.</strong> RumptyCloud hosts the database, API, file storage, web app and
                 website, and runs the open AI model behind Ask Sova on its own servers in Lagos (RumptyCloud says
-                prompts are not used for training). GitHub stores Sova&apos;s code and the public anchors, and builds the app and website. Sign-in
+                prompts are not used for training). GitHub stores Sova&apos;s code and the public anchors, and builds the app and website. Google
+                checks who you are when you continue with Google. Brevo sends email sign-in codes, so it receives
+                your email address and the code. Phone sign-in
                 codes currently work only for a fixed list of test numbers, so no text messages are sent. Before
                 opening to everyone we will use a paid SMS provider, which will receive your phone number and code;
                 we will name it here first.
@@ -217,7 +228,9 @@ export default function PrivacyPage() {
                 The web app keeps you signed in using the browser tab&apos;s session storage, which is cleared when
                 you close the tab; the Android app uses the phone&apos;s secure storage. Neither has ads or analytics.
                 Like other Flutter web apps by default, the web app loads its rendering engine from Google&apos;s
-                servers (gstatic.com), so Google sees your IP address and browser details when it loads.
+                servers (gstatic.com), so Google sees your IP address and browser details when it loads. The sign-in page
+                also loads Google&apos;s sign-in button from accounts.google.com, so Google sees the same details there,
+                whether or not you use it.
               </p>
             </>
           ),
@@ -262,10 +275,10 @@ export default function PrivacyPage() {
                 You can change your name and bank details yourself in the app, and delete your account from the
                 Record tab (Delete account, with your PIN) once none of your circles is running. Circles that
                 haven&apos;t started are left for you; if you started one, cancel it first. Deleting it
-                removes your name, phone number, PIN, bank details, sessions, notifications, score history and
+                removes your name, phone number, email, Google account id, PIN, bank details, sessions, notifications, score history and
                 receipt photos; payments in finished circles stay on those circles&apos; records without your name or
-                number, and ledger entries stay as described above. The phone number can&apos;t be changed in the
-                app. For anything else, write to {email} from or about the number on your account, and we will check
+                number, and ledger entries stay as described above. The phone number or email you sign in with
+                can&apos;t be changed in the app. For anything else, write to {email} from or about the number on your account, and we will check
                 it is yours before acting.
               </p>
               <p>

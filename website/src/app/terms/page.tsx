@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "The rules for using Sova, a record-keeping service for savings circles. Sova is not a bank, lender or wallet and never holds members' money.",
 };
 
-const UPDATED = "23 October 2026";
+const UPDATED = "26 October 2026";
 
 const email = (
   <a href={`mailto:${site.contactEmail}`} className="whitespace-nowrap">
@@ -48,8 +48,8 @@ export default function TermsPage() {
                 mean the people who run Sova, a service built in Nigeria. “You” means the person using it.
               </p>
               <p>
-                Sova is open as a demo for now. Sign-in works through “Try the demo” and a short list of test
-                numbers; we will review these terms before opening to everyone.
+                Sova is open as a demo for now. Sign-in works through “Try the demo”, Google, an email code and a
+                short list of test phone numbers; we will review these terms before opening to everyone.
               </p>
             </>
           ),
@@ -83,7 +83,7 @@ export default function TermsPage() {
           body: (
             <ul>
               <li>You must be 18 or older.</li>
-              <li>You need a Nigerian mobile number that you control. One account per person.</li>
+              <li>You need a Nigerian mobile number, an email address or a Google account that you control. One account per person.</li>
               <li>The name and bank details you give must be your own and correct.</li>
             </ul>
           ),
@@ -191,7 +191,7 @@ export default function TermsPage() {
               <p>Don&apos;t use Sova to:</p>
               <ul>
                 <li>record payments that did not happen, or confirm money you did not receive;</li>
-                <li>pretend to be someone else or use a phone number that isn&apos;t yours;</li>
+                <li>pretend to be someone else, or use a phone number, email or Google account that isn&apos;t yours;</li>
                 <li>deceive, threaten or harass other members;</li>
                 <li>
                   break, overload or get around Sova&apos;s security, or collect other people&apos;s data from it.
