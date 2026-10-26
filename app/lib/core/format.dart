@@ -43,6 +43,12 @@ String? normalisePhone(String raw) {
   return null;
 }
 
+/// Lower-cased, trimmed email address, or null if it doesn't look like one.
+String? normaliseEmail(String raw) {
+  final email = raw.trim().toLowerCase();
+  return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email) && email.length <= 254 ? email : null;
+}
+
 /// +2348031234567 -> 0803 123 4567
 String displayPhone(String e164) {
   if (!e164.startsWith('+234') || e164.length != 14) return e164;

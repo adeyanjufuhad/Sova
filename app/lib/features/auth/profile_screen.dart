@@ -27,6 +27,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    // A Google account brings its name; the member can still change it.
+    _name.text = ref.read(authProvider).suggestedName ?? '';
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     super.dispose();

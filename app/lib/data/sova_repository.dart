@@ -21,6 +21,19 @@ abstract interface class SovaRepository {
   /// Exchanges the code for a session. Throws [SovaException] if wrong.
   Future<Session> verifyOtp(String phone, String code);
 
+  /// Which ways to sign in are switched on (email codes, Google, the demo).
+  Future<SignInMethods> signInMethods();
+
+  /// Sends a one-time code to [email].
+  Future<void> requestEmailCode(String email);
+
+  /// Exchanges an emailed code for a session. Throws [SovaException] if wrong.
+  Future<Session> verifyEmailCode(String email, String code);
+
+  /// Signs in with an ID token from Google. Also returns the name on the
+  /// Google account, to prefill the profile of a new account.
+  Future<(Session, String?)> signInWithGoogle(String idToken);
+
   /// Signs in to the shared demo account ("Try the demo").
   Future<Session> startDemo();
 

@@ -20,7 +20,14 @@ final repositoryProvider = Provider<SovaRepository>(
 );
 
 class AuthState {
-  const AuthState({this.restoring = true, this.onboarded = false, this.pendingPhone, this.session});
+  const AuthState({
+    this.restoring = true,
+    this.onboarded = false,
+    this.pendingPhone,
+    this.pendingEmail,
+    this.suggestedName,
+    this.session,
+  });
 
   /// Checking for a saved session at start-up.
   final bool restoring;
@@ -28,15 +35,26 @@ class AuthState {
 
   /// Phone number a code was sent to, while waiting for the OTP.
   final String? pendingPhone;
+
+  /// Email address a code was sent to, while waiting for it.
+  final String? pendingEmail;
+
+  /// The name on a Google account, to prefill a new profile.
+  final String? suggestedName;
   final Session? session;
 
   bool get signedIn => session != null;
+
+  /// A code was sent (by SMS or email) and the code screen is showing.
+  bool get awaitingCode => pendingPhone != null || pendingEmail != null;
   bool get ready => session?.profileComplete ?? false;
 
   AuthState copyWith({
     bool? restoring,
     bool? onboarded,
     String? pendingPhone,
+    String? pendingEmail,
+    String? suggestedName,
     Session? session,
     bool clearSession = false,
     bool clearPendingPhone = false,
@@ -45,6 +63,8 @@ class AuthState {
         restoring: restoring ?? this.restoring,
         onboarded: onboarded ?? this.onboarded,
         pendingPhone: clearPendingPhone ? null : (pendingPhone ?? this.pendingPhone),
+        pendingEmail: clearPendingPhone ? null : (pendingEmail ?? this.pendingEmail),
+        suggestedName: suggestedName ?? this.suggestedName,
         session: clearSession ? null : (session ?? this.session),
       );
 }
@@ -76,12 +96,25 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(pendingPhone: phone);
   }
 
-  /// Back to the phone screen to fix a mistyped number.
+  Future<void> requestEmailCode(String email) async {
+    await _repo.requestEmailCode(email);
+    state = state.copyWith(pendingEmail: email);
+  }
+
+  /// Back to the sign-in screen to fix a mistyped number or email.
   void changeNumber() => state = state.copyWith(clearPendingPhone: true);
 
+  /// Checks the code sent to the pending phone or email.
   Future<void> verifyOtp(String code) async {
-    final session = await _repo.verifyOtp(state.pendingPhone!, code);
+    final email = state.pendingEmail;
+    final session = email != null ? await _repo.verifyEmailCode(email, code) : await _repo.verifyOtp(state.pendingPhone!, code);
     state = state.copyWith(session: session);
+  }
+
+  /// "Continue with Google", once Google has handed over an ID token.
+  Future<void> signInWithGoogle(String idToken) async {
+    final (session, name) = await _repo.signInWithGoogle(idToken);
+    state = state.copyWith(onboarded: true, session: session, suggestedName: name, clearPendingPhone: true);
   }
 
   /// "Try the demo": straight into the shared demo account.
@@ -128,6 +161,9 @@ class AuthNotifier extends Notifier<AuthState> {
 }
 
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+
+/// Which ways to sign in the backend offers (email codes, Google).
+final signInMethodsProvider = FutureProvider<SignInMethods>((ref) => ref.read(repositoryProvider).signInMethods());
 
 /// The signed-in member's user id ('' while signed out).
 final meProvider = Provider<String>((ref) => ref.watch(authProvider.select((s) => s.session?.userId ?? '')));

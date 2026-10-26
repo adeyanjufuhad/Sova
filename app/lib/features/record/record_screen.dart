@@ -274,7 +274,7 @@ class _Settings extends ConsumerWidget {
           row(
             Icons.person_outline_rounded,
             session?.fullName ?? 'Profile',
-            subtitle: session == null ? null : displayPhone(session.phone),
+            subtitle: session == null ? null : displayPhone(session.contact),
             onTap: () => context.push('/settings/profile'),
           ),
           const Divider(),

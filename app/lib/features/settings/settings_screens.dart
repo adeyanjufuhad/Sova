@@ -76,9 +76,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             onSubmitted: (_) => _save(),
           ),
           const SizedBox(height: SovaSpacing.lg),
-          InfoRow('Phone number', session == null ? '' : displayPhone(session.phone)),
+          if (session != null && session.phone.isNotEmpty) InfoRow('Phone number', displayPhone(session.phone)),
+          if (session?.email case final email? when email.isNotEmpty) InfoRow('Email', email),
           const Text(
-            'Your number signs you in, so it can\'t be changed here.',
+            'This is how you sign in, so it can\'t be changed here.',
             style: SovaText.caption,
           ),
           const SizedBox(height: SovaSpacing.xl2),

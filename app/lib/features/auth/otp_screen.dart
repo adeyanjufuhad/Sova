@@ -64,9 +64,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _resend() async {
-    final phone = ref.read(authProvider).pendingPhone;
-    if (phone == null) return;
-    await ref.read(authProvider.notifier).requestOtp(phone);
+    final auth = ref.read(authProvider);
+    final notifier = ref.read(authProvider.notifier);
+    if (auth.pendingEmail case final email?) {
+      await notifier.requestEmailCode(email);
+    } else if (auth.pendingPhone case final phone?) {
+      await notifier.requestOtp(phone);
+    } else {
+      return;
+    }
     _startTimer();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('We sent you a new code.')));
@@ -75,13 +81,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final phone = ref.watch(authProvider).pendingPhone ?? '';
+    final auth = ref.watch(authProvider);
+    final email = auth.pendingEmail;
     final code = _controller.text;
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Change number',
+          tooltip: email != null ? 'Change email' : 'Change number',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => ref.read(authProvider.notifier).changeNumber(),
         ),
@@ -90,14 +97,19 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: SovaSpacing.screenH, vertical: SovaSpacing.screenV),
           children: [
-            const Eyebrow('Verify your number'),
+            Eyebrow(email != null ? 'Verify your email' : 'Verify your number'),
             const SizedBox(height: SovaSpacing.md),
             const Text('Enter the 6-digit code', style: SovaText.h1),
             const SizedBox(height: SovaSpacing.sm),
             Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text('We sent it by SMS to ${displayPhone(phone)}. ', style: SovaText.body),
+                Text(
+                  email != null
+                      ? 'We emailed it to $email. Check your spam folder too. '
+                      : 'We sent it by SMS to ${displayPhone(auth.pendingPhone ?? '')}. ',
+                  style: SovaText.body,
+                ),
                 GestureDetector(
                   onTap: () => ref.read(authProvider.notifier).changeNumber(),
                   child: Text('Change', style: SovaText.label.copyWith(color: SovaColors.electric)),

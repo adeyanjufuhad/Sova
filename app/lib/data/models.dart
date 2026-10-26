@@ -48,6 +48,7 @@ class Member {
     required this.userId,
     required this.name,
     required this.phone,
+    this.email,
     required this.position,
     this.bank,
     this.vouchedBy,
@@ -56,7 +57,13 @@ class Member {
 
   final String userId;
   final String name;
+
+  /// Empty for members who signed in with email or Google.
   final String phone;
+  final String? email;
+
+  /// How to reach this member: their phone, or their email when they have no phone.
+  String get contact => phone.isNotEmpty ? phone : (email ?? '');
 
   /// Payout turn; null until the fair draw runs when the circle is full.
   final int? position;
@@ -257,9 +264,23 @@ const demoAccountPin = '2580';
 const demoAccountNotice =
     'This is the shared demo account, so its name, bank details and PIN stay as they are for the next visitor.';
 
+/// Which ways to sign in the backend has switched on.
+class SignInMethods {
+  const SignInMethods({this.email = false, this.googleClientId, this.demo = true});
+
+  final bool email;
+
+  /// The web OAuth client id; null when Google sign-in is off.
+  final String? googleClientId;
+  final bool demo;
+
+  bool get google => googleClientId != null;
+}
+
 class Session {
   const Session({
     required this.phone,
+    this.email,
     required this.userId,
     this.fullName,
     this.hasPin = false,
@@ -269,7 +290,9 @@ class Session {
     this.assistant = false,
   });
 
+  /// Empty for accounts made with email or Google.
   final String phone;
+  final String? email;
   final String userId;
   final String? fullName;
   final bool hasPin;
@@ -288,8 +311,12 @@ class Session {
 
   bool get profileComplete => (fullName?.isNotEmpty ?? false) && hasPin;
 
+  /// The phone, or the email when there is no phone.
+  String get contact => phone.isNotEmpty ? phone : (email ?? '');
+
   Session copyWith({String? fullName, bool? hasPin, BankDetails? bank, Set<Tour>? pendingTours}) => Session(
         phone: phone,
+        email: email,
         userId: userId,
         fullName: fullName ?? this.fullName,
         hasPin: hasPin ?? this.hasPin,

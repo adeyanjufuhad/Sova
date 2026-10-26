@@ -493,9 +493,10 @@ class _HandoverSheetState extends State<_HandoverSheet> {
   }
 
   void _submit() {
-    final phone = normalisePhone(_phone.text);
+    // Members who signed in with email or Google are found by their email.
+    final phone = _phone.text.contains('@') ? normaliseEmail(_phone.text) : normalisePhone(_phone.text);
     if (phone == null) {
-      setState(() => _error = 'Enter a Nigerian mobile number, like 0803 123 4567.');
+      setState(() => _error = 'Enter their Nigerian mobile number, like 0803 123 4567, or their email.');
       return;
     }
     Navigator.of(context).pop((phone, _reason.text.trim()));
@@ -529,9 +530,14 @@ class _HandoverSheetState extends State<_HandoverSheet> {
               const SizedBox(height: SovaSpacing.lg),
               TextField(
                 controller: _phone,
-                keyboardType: TextInputType.phone,
-                autofillHints: const [AutofillHints.telephoneNumber],
-                decoration: InputDecoration(labelText: 'Their phone number', hintText: '0803 123 4567', errorText: _error),
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  labelText: 'Their phone number or email',
+                  hintText: '0803 123 4567',
+                  errorText: _error,
+                  errorMaxLines: 2,
+                ),
               ),
               const SizedBox(height: SovaSpacing.md),
               TextField(

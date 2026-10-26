@@ -29,6 +29,36 @@ class ApiRepository implements SovaRepository {
   }
 
   @override
+  Future<SignInMethods> signInMethods() async {
+    try {
+      final res = await _api.get('/auth/methods') as Map<String, dynamic>;
+      return SignInMethods(
+        email: (res['email'] as bool?) ?? false,
+        googleClientId: (res['google'] as Map<String, dynamic>?)?['clientId'] as String?,
+        demo: (res['demo'] as bool?) ?? true,
+      );
+    } on SovaException {
+      // An older API without /auth/methods: phone and the demo only.
+      return const SignInMethods();
+    }
+  }
+
+  @override
+  Future<void> requestEmailCode(String email) => _api.post('/auth/email/request', {'email': email});
+
+  @override
+  Future<Session> verifyEmailCode(String email, String code) async {
+    final res = await _api.post('/auth/email/verify', {'email': email, 'code': code});
+    return _session(await _api.startSession(res as Map<String, dynamic>));
+  }
+
+  @override
+  Future<(Session, String?)> signInWithGoogle(String idToken) async {
+    final res = await _api.post('/auth/google', {'idToken': idToken}) as Map<String, dynamic>;
+    return (_session(await _api.startSession(res)), res['suggestedName'] as String?);
+  }
+
+  @override
   Future<Session> startDemo() async {
     final res = await _api.post('/auth/demo');
     return _session(await _api.startSession(res as Map<String, dynamic>));
@@ -204,6 +234,7 @@ class ApiRepository implements SovaRepository {
     final bank = u['bank'] as Map<String, dynamic>?;
     return Session(
       phone: (u['phone'] as String?) ?? '',
+      email: u['email'] as String?,
       userId: u['id'] as String,
       fullName: u['fullName'] as String?,
       hasPin: u['hasPin'] as bool,
@@ -296,6 +327,7 @@ class ApiRepository implements SovaRepository {
             userId: m['id'] as String,
             name: (m['name'] as String?) ?? 'Member',
             phone: (m['phone'] as String?) ?? '',
+            email: m['email'] as String?,
             position: m['position'] as int?,
             vouchedBy: (m['vouchedBy'] as Map<String, dynamic>?)?['id'] as String?,
             owesAfterCollecting: (m['owesAfterCollecting'] as bool?) ?? false,

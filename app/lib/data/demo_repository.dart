@@ -53,6 +53,27 @@ class DemoRepository implements SovaRepository {
   }
 
   @override
+  Future<SignInMethods> signInMethods() async => const SignInMethods(email: true);
+
+  @override
+  Future<void> requestEmailCode(String email) => _latency();
+
+  @override
+  Future<Session> verifyEmailCode(String email, String code) async {
+    await _latency();
+    if (code != demoOtp) throw const SovaException('That code is not correct. Check your email and try again.');
+    return _session = Session(phone: '', email: email, userId: me, pendingTours: Tour.values.toSet(), assistant: true);
+  }
+
+  /// Any token signs in; the offline demo has no Google to ask.
+  @override
+  Future<(Session, String?)> signInWithGoogle(String idToken) async {
+    await _latency();
+    _session = Session(phone: '', email: 'ada@example.com', userId: me, pendingTours: Tour.values.toSet(), assistant: true);
+    return (_session!, 'Ada Obi');
+  }
+
+  @override
   Future<Session> startDemo() async {
     await _latency();
     _pin = demoPin;

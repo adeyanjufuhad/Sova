@@ -78,7 +78,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       } else if (!auth.onboarded) {
         gate = SovaRoutes.welcome;
       } else if (!auth.signedIn) {
-        gate = auth.pendingPhone == null ? SovaRoutes.phone : SovaRoutes.otp;
+        gate = auth.awaitingCode ? SovaRoutes.otp : SovaRoutes.phone;
       } else if (!auth.ready) {
         gate = SovaRoutes.profile;
       } else {
