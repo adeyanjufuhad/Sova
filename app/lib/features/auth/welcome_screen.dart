@@ -7,6 +7,7 @@ import '../../shared/widgets/adire_painter.dart';
 import '../../shared/widgets/common.dart';
 import '../../shared/widgets/polish.dart';
 import '../../shared/widgets/sova_loader.dart';
+import 'google_sign_in_button.dart';
 
 class _Slide {
   const _Slide(this.title, this.body, this.cardLabel, this.cardValue, this.cardFoot);
@@ -68,6 +69,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   void _start() => ref.read(authProvider.notifier).finishOnboarding();
 
+  /// "Continue with Google" right from the welcome screen: a new account goes
+  /// on to its name and PIN, an existing one straight home.
+  Future<void> _google(String idToken) async {
+    try {
+      await ref.read(authProvider.notifier).signInWithGoogle(idToken);
+    } catch (e) {
+      _showError(e.toString());
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   /// Straight into the shared demo account, for judges and the curious.
   Future<void> _tryDemo() async {
     setState(() => _startingDemo = true);
@@ -83,6 +98,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final index = _page.round();
+    final googleClientId = ref.watch(signInMethodsProvider).value?.googleClientId;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -176,6 +192,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       TextButton(onPressed: _start, child: const Text('Log in')),
                     ],
                   ),
+                  if (googleClientId != null) ...[
+                    GoogleSignInButton(clientId: googleClientId, onIdToken: _google, onError: _showError),
+                    const SizedBox(height: SovaSpacing.sm),
+                  ],
                   OutlinedButton.icon(
                     onPressed: _startingDemo ? null : _tryDemo,
                     icon: _startingDemo
