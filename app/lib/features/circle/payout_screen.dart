@@ -123,7 +123,8 @@ class _PayoutFormState extends ConsumerState<_PayoutForm> {
         TextField(
           controller: _amount,
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+          // The largest payout is ₦290,000,000 (₦10M × 29), nine digits; the API refuses over ₦1 billion.
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)],
           style: SovaText.h2,
           onChanged: (_) => setState(() {}),
           decoration: const InputDecoration(labelText: 'Amount that reached your account', prefixText: '₦ '),
