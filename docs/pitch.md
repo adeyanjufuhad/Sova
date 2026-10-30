@@ -36,7 +36,7 @@ Honesty rule for everything below: say only what is built. Every number marked *
 
 - [ ] Morning of: `npm run seed` in `api/`, then run the Ledger anchors workflow by hand.
 - [ ] Open `/health`, the website and the app one minute before (all three on Tiny until 7 Nov).
-- [ ] Phone charged, APK v1.0.3 installed, signed in to a fresh "Try the demo".
+- [ ] Phone charged, APK v1.0.4 installed, signed in to a fresh "Try the demo".
 - [ ] Backup: a screen recording of the full demo on the laptop (plan says "backup video", not made yet).
 - [ ] Offline fallback: an app build without `SOVA_API_URL` runs the in-memory demo with the same story.
 - [ ] Demo PIN `2580`. Invite code for the forming circle: `T7KP9Q`.
@@ -55,7 +55,7 @@ Honesty rule for everything below: say only what is built. Every number marked *
 | How do people sign in today? | Google or an email code, plus the demo. Phone codes need a paid SMS provider, which is the first spend after judging. |
 | What does the AI do? | "Ask Sova" explains a circle or a dispute in plain English from the circle's data. It never sees phones, bank details or PINs, never gives financial advice, and the circle screen stays the record. |
 | How will you make money? | See below: paid plans for circle admins and collectors first; partnerships later, only with consent. |
-| What's your traction? | Say the truth: built in October, live, Android release v1.0.3, demo-tested on a real phone. No public users yet: opening after judging. |
+| What's your traction? | Say the truth: built in October, live, Android release v1.0.4, demo-tested on a real phone. No public users yet: opening after judging. |
 
 ## What it costs to get real users (SMS first)
 
