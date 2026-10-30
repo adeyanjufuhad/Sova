@@ -86,7 +86,7 @@ Errors always look like `{ "error": { "code": "...", "message": "...", "details"
 | POST | `/me/pin/change` | bearer | `{ currentPin, newPin }`; a wrong current PIN counts towards the lockout |
 | POST | `/me/delete` | bearer | `{ pin }`; deletes the account (204) once no circle of yours is running; leaves circles still forming, removes receipt photos; 403 on the demo account |
 | POST | `/me/pin` | bearer | `{ pin }` sets the first PIN (4 digits, not trivial) |
-| POST | `/me/pin/verify` | bearer | `{ pin }` → `204`, `401` with attempts left, or `423` when locked |
+| POST | `/me/pin/verify` | bearer | `{ pin }` → `204`, `403` (`wrong_pin`) with attempts left, or `423` when locked |
 | PUT | `/me/bank` | bearer | `{ bankName, accountNumber, accountName, pin }`: where this person receives payouts |
 | GET | `/me/notifications` | bearer | Live reminders (due within 2 days, overdue, to confirm), recent notifications, badge count |
 | POST | `/me/notifications/read` | bearer | Marks every notification read |

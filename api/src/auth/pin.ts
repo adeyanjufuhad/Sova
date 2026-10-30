@@ -16,7 +16,8 @@ export const hashPin = (pin: string) => hash(pin);
 /**
  * Checks a PIN using the database lockout (5 wrong tries locks it for 15
  * minutes; see check_and_increment_pin_attempts). Throws 423 when locked,
- * 401 with attempts left when wrong.
+ * 403 with attempts left when wrong. Not 401: clients treat 401 as an expired
+ * session, refresh and resend, which would spend a second try.
  */
 export async function verifyPin(pool: pg.Pool, userId: string, pin: string): Promise<void> {
   const { rows } = await pool.query<{ pin_hash: string | null }>("select pin_hash from users where id = $1", [userId]);
@@ -45,5 +46,5 @@ export async function verifyPin(pool: pg.Pool, userId: string, pin: string): Pro
     });
   }
   const left = 5 - state.attempts;
-  throw new AppError(401, "wrong_pin", `Wrong PIN. ${left} ${left === 1 ? "try" : "tries"} left.`, { attemptsLeft: left });
+  throw new AppError(403, "wrong_pin", `Wrong PIN. ${left} ${left === 1 ? "try" : "tries"} left.`, { attemptsLeft: left });
 }

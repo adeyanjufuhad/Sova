@@ -244,7 +244,7 @@ describe("profile and PIN", () => {
     expect((await verify("4826")).statusCode).toBe(204);
     for (let i = 1; i <= 4; i++) {
       const res = await verify("0001");
-      expect(res.statusCode).toBe(401);
+      expect(res.statusCode).toBe(403);
       expect(res.json().error.details.attemptsLeft).toBe(5 - i);
     }
     expect((await verify("0001")).statusCode).toBe(423);
