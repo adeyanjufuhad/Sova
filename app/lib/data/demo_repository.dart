@@ -42,6 +42,10 @@ class DemoRepository implements SovaRepository {
   @override
   Future<Session?> restoreSession() async => null;
 
+  /// The in-memory demo never expires.
+  @override
+  Stream<void> get sessionExpired => const Stream.empty();
+
   @override
   Future<void> requestOtp(String phone) => _latency();
 

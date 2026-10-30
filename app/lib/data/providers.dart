@@ -73,6 +73,11 @@ class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
     Future.microtask(_restore);
+    // The server ended the session: back to sign-in rather than an error on every screen.
+    final expired = _repo.sessionExpired.listen((_) {
+      if (state.signedIn) state = AuthState(restoring: false, onboarded: state.onboarded);
+    });
+    ref.onDispose(expired.cancel);
     return const AuthState();
   }
 

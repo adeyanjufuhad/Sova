@@ -15,6 +15,10 @@ abstract interface class SovaRepository {
   /// The session saved on this device, or null. Called once at start-up.
   Future<Session?> restoreSession();
 
+  /// Fires when the server ends the session (expired, account deleted, demo
+  /// copy gone), so the app returns to sign-in.
+  Stream<void> get sessionExpired;
+
   /// Sends a one-time code to [phone] (E.164, e.g. +2348031234567).
   Future<void> requestOtp(String phone);
 

@@ -10,7 +10,8 @@ import 'session_store.dart';
 /// JSON over HTTPS to the Sova API.
 ///
 /// * Keeps the access token in memory and the refresh token in [SessionStore].
-/// * On a 401 it refreshes once (shared by concurrent requests) and retries.
+/// * On a 401 `unauthorized` it refreshes once (shared by concurrent requests)
+///   and retries. If the server refuses the refresh, [sessionExpired] fires.
 /// * The host may be asleep (free deployments sleep when idle) and answer with
 ///   a "waking" page for a few seconds; requests wait and retry meanwhile.
 /// * Errors become [SovaException] with the server's message and code.
@@ -33,8 +34,14 @@ class ApiClient {
   String? _accessToken;
   String? _refreshToken;
   Future<bool>? _refreshing;
+  final _expired = StreamController<void>.broadcast();
 
   bool get hasSession => _refreshToken != null;
+
+  /// Fires when the server stops accepting this session (it expired, the
+  /// account was deleted, or a private demo copy ran out), so the app can
+  /// go back to sign-in instead of failing on every screen.
+  Stream<void> get sessionExpired => _expired.stream;
 
   Future<dynamic> get(String path) => _send('GET', path);
   Future<dynamic> post(String path, [Object? body]) => _send('POST', path, body: body ?? const {});
@@ -107,9 +114,6 @@ class ApiClient {
       return _http.send(req).then(http.Response.fromStream);
     });
 
-    if (res.statusCode == 401 && auth && !retried && _refreshToken != null && await _refresh()) {
-      return _send(method, path, body: body, bytes: bytes, contentType: contentType, auth: auth, retried: true);
-    }
     if (res.statusCode == 204 || res.body.isEmpty) return null;
 
     final dynamic json;
@@ -120,6 +124,16 @@ class ApiClient {
     }
     if (res.statusCode >= 400) {
       final error = (json is Map ? json['error'] : null) as Map<String, dynamic>?;
+      // Only an expired access token is worth a refresh; anything else (a wrong
+      // PIN, say) would just be sent again and counted twice.
+      if (res.statusCode == 401 &&
+          error?['code'] == 'unauthorized' &&
+          auth &&
+          !retried &&
+          _refreshToken != null &&
+          await _refresh()) {
+        return _send(method, path, body: body, bytes: bytes, contentType: contentType, auth: auth, retried: true);
+      }
       throw SovaException(
         (error?['message'] as String?) ?? 'Something went wrong. Please try again.',
         code: error?['code'] as String?,
@@ -128,15 +142,19 @@ class ApiClient {
     return json;
   }
 
-  /// One refresh at a time; concurrent 401s wait for the same attempt.
+  /// One refresh at a time; concurrent 401s wait for the same attempt. A lost
+  /// connection keeps the session (the error reaches the caller); only a
+  /// refused refresh token ends it.
   Future<bool> _refresh() {
     return _refreshing ??= () async {
       try {
         final res = await _send('POST', '/auth/refresh', body: {'refreshToken': _refreshToken}, auth: false);
         await startSession(res as Map<String, dynamic>);
         return true;
-      } on SovaException {
+      } on SovaException catch (e) {
+        if (e.code != 'unauthorized' && e.code != 'invalid_request') rethrow;
         await endSession();
+        _expired.add(null);
         return false;
       } finally {
         _refreshing = null;

@@ -75,6 +75,51 @@ void main() {
     );
   });
 
+  test('a wrong PIN is sent once, not refreshed and sent again', () async {
+    final paths = <String>[];
+    final api = client(
+      MockClient((req) async {
+        paths.add(req.url.path);
+        return json({'error': {'code': 'wrong_pin', 'message': 'Wrong PIN. 4 tries left.'}}, 401);
+      }),
+      MemorySessionStore(),
+    );
+    await api.startSession(tokens('access-1', 'refresh-1'));
+    await expectLater(api.post('/me/pin/verify', {'pin': '0000'}), throwsA(isA<SovaException>()));
+    expect(paths, ['/me/pin/verify']);
+  });
+
+  test('a refused refresh ends the session and says so', () async {
+    final store = MemorySessionStore();
+    final api = client(
+      MockClient((_) async => json({'error': {'code': 'unauthorized', 'message': 'Please sign in again.'}}, 401)),
+      store,
+    );
+    await api.startSession(tokens('access-1', 'refresh-1'));
+    var expired = 0;
+    api.sessionExpired.listen((_) => expired++);
+    await expectLater(api.get('/circles'), throwsA(isA<SovaException>()));
+    await Future<void>.delayed(Duration.zero);
+    expect(expired, 1);
+    expect(api.hasSession, isFalse);
+    expect(await store.read(), isNull);
+  });
+
+  test('losing the connection while refreshing keeps the session', () async {
+    final store = MemorySessionStore();
+    final api = client(
+      MockClient((req) async {
+        if (req.url.path == '/auth/refresh') throw http.ClientException('offline');
+        return json({'error': {'code': 'unauthorized', 'message': 'Please sign in.'}}, 401);
+      }),
+      store,
+    );
+    await api.startSession(tokens('access-1', 'refresh-1'));
+    await expectLater(api.get('/circles'), throwsA(isA<SovaException>().having((e) => e.code, 'code', 'offline')));
+    expect(api.hasSession, isTrue);
+    expect(await store.read(), 'refresh-1');
+  });
+
   test('a saved session that the server no longer accepts just signs out', () async {
     final store = MemorySessionStore()..write('old-refresh');
     final repo = ApiRepository(client(

@@ -20,6 +20,9 @@ class ApiRepository implements SovaRepository {
   }
 
   @override
+  Stream<void> get sessionExpired => _api.sessionExpired;
+
+  @override
   Future<void> requestOtp(String phone) => _api.post('/auth/otp/request', {'phone': phone});
 
   @override
