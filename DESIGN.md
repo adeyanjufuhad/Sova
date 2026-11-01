@@ -275,6 +275,7 @@ Short and purposeful: staggered entrances (60–80 ms apart), count-up for the n
 ### Don't
 - Don't use gradients, neon, glows, glass, or large drop shadows (the app's glass tab bar is the single exception).
 - Don't use red for errors or missed payments.
+- Don't recolour Google's "G": the "Continue with Google" button keeps Google's original four-colour logo, as its brand rules require (the only non-Sova colours in the app).
 - Don't show anything that looks like a wallet, balance or money held by Sova.
 - Don't swap Plus Jakarta Sans for another face, or use emojis in the interface.
 - Don't invent statistics, testimonials or partners.
