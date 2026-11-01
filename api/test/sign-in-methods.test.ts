@@ -147,9 +147,21 @@ describe("Brevo email sender", () => {
     expect(body.sender).toEqual({ email: "sova@example.com", name: "Sova" });
     expect(body.textContent).toContain(code);
 
-    const failing = (async () => new Response("nope", { status: 401 })) as unknown as typeof fetch;
-    const broken = new BrevoEmailProvider("bad", { email: "sova@example.com", name: "Sova" }, 5, failing);
+    const failing = (async () =>
+      Response.json({ code: "unauthorized", message: "We have detected you are using an unrecognised IP address" }, { status: 401 })) as unknown as typeof fetch;
+    const warnings: { details: Record<string, unknown>; message: string }[] = [];
+    const broken = new BrevoEmailProvider("bad", { email: "sova@example.com", name: "Sova" }, 5, failing, (details, message) =>
+      warnings.push({ details, message }),
+    );
     await expect(broken.send(EMAIL, "123456")).rejects.toMatchObject({ code: "email_unavailable" });
+    // The reason is logged for the owner, without the key, the code or the address.
+    expect(warnings).toEqual([
+      {
+        message: "Brevo refused the email",
+        details: { status: 401, brevoCode: "unauthorized", brevoMessage: "We have detected you are using an unrecognised IP address" },
+      },
+    ]);
+    expect(JSON.stringify(warnings)).not.toMatch(/bad|123456|ada@example/);
   });
 
   it("reads the sender from EMAIL_FROM", () => {

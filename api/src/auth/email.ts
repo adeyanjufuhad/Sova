@@ -60,6 +60,8 @@ export class BrevoEmailProvider implements OtpProvider {
     private readonly from: { email: string; name: string },
     private readonly ttlMinutes: number,
     private readonly fetchImpl: typeof fetch = fetch,
+    /** Where to note why Brevo refused; never given the key, the code or the address. */
+    private readonly warn: (details: Record<string, unknown>, message: string) => void = () => {},
   ) {}
 
   codeFor(): string {
@@ -88,10 +90,17 @@ export class BrevoEmailProvider implements OtpProvider {
         }),
         signal: AbortSignal.timeout(10_000),
       });
-    } catch {
+    } catch (err) {
+      this.warn({ reason: err instanceof Error ? err.name : "unknown" }, "Brevo could not be reached");
       throw new AppError(503, "email_unavailable", "We couldn't send the email just now. Please try again.");
     }
     if (!res.ok) {
+      // Brevo explains refusals as { code, message }, e.g. an unauthorised IP or an unverified sender.
+      const reply = (await res.json().catch(() => ({}))) as { code?: unknown; message?: unknown };
+      this.warn(
+        { status: res.status, brevoCode: reply.code, brevoMessage: String(reply.message ?? "").slice(0, 300) },
+        "Brevo refused the email",
+      );
       throw new AppError(503, "email_unavailable", "We couldn't send the email just now. Please try again.");
     }
   }

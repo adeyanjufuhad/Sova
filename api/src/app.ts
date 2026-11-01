@@ -104,7 +104,13 @@ export async function buildApp(config: Config, pool: pg.Pool | null, overrides: 
   const emailProvider =
     overrides.emailProvider ??
     (config.EMAIL_PROVIDER === "brevo"
-      ? new BrevoEmailProvider(config.BREVO_API_KEY!, parseSender(config.EMAIL_FROM!)!, Math.round(config.OTP_TTL_SECONDS / 60))
+      ? new BrevoEmailProvider(
+          config.BREVO_API_KEY!,
+          parseSender(config.EMAIL_FROM!)!,
+          Math.round(config.OTP_TTL_SECONDS / 60),
+          fetch,
+          (details, message) => app.log.warn(details, message),
+        )
       : config.EMAIL_PROVIDER === "test-emails"
         ? new TestEmailsProvider(config.OTP_TEST_EMAILS)
         : new EmailOffProvider());
