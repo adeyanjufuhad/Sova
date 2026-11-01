@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'google_button_stub.dart' if (dart.library.js_interop) 'google_button_web.dart' as platform;
+import 'google_logo.dart';
 
 /// "Continue with Google". On the web Google draws its own button (its rules);
 /// on Android ours opens Google's account picker. Either way the ID token goes
@@ -29,7 +30,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
   StreamSubscription<GoogleSignInAuthenticationEvent>? _events;
   bool _ready = false;
 
-  static const _failed = 'Google sign-in didn\'t work. Please try again, or use your phone or email.';
+  static const _failed = 'Google sign-in didn\'t work. Please try again, or use your email.';
 
   @override
   void initState() {
@@ -47,7 +48,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
       },
       onError: (Object _) {
         _initialised = null;
-        if (mounted) widget.onError('Google sign-in isn\'t available right now. Use your phone or email.');
+        if (mounted) widget.onError('Google sign-in isn\'t available right now. Use your email.');
       },
     );
   }
@@ -91,7 +92,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
     }
     return OutlinedButton.icon(
       onPressed: _ready && !widget.busy ? _tap : null,
-      icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
+      icon: const GoogleLogo(),
       label: const Text('Continue with Google'),
     );
   }

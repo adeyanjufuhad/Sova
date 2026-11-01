@@ -6,8 +6,8 @@ import '../../data/providers.dart';
 import '../theme/theme.dart';
 import '../../features/activity/activity_screen.dart';
 import '../../features/auth/otp_screen.dart';
-import '../../features/auth/phone_screen.dart';
 import '../../features/auth/profile_screen.dart';
+import '../../features/auth/sign_in_screen.dart';
 import '../../features/auth/welcome_screen.dart';
 import '../../features/circle/circle_screen.dart';
 import '../../features/circle/disputes_screen.dart';
@@ -31,7 +31,7 @@ import '../../shared/widgets/common.dart';
 abstract final class SovaRoutes {
   static const start = '/';
   static const welcome = '/welcome';
-  static const phone = '/phone';
+  static const signIn = '/sign-in';
   static const otp = '/otp';
   static const profile = '/profile';
   static const home = '/home';
@@ -78,7 +78,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       } else if (!auth.onboarded) {
         gate = SovaRoutes.welcome;
       } else if (!auth.signedIn) {
-        gate = auth.awaitingCode ? SovaRoutes.otp : SovaRoutes.phone;
+        gate = auth.awaitingCode ? SovaRoutes.otp : SovaRoutes.signIn;
       } else if (!auth.ready) {
         gate = SovaRoutes.profile;
       } else {
@@ -88,14 +88,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (gate != null) return at == gate ? null : gate;
 
       // Fully signed in: keep people out of the sign-up screens.
-      const authScreens = {SovaRoutes.start, SovaRoutes.welcome, SovaRoutes.phone, SovaRoutes.otp, SovaRoutes.profile};
+      const authScreens = {SovaRoutes.start, SovaRoutes.welcome, SovaRoutes.signIn, SovaRoutes.otp, SovaRoutes.profile};
       return authScreens.contains(at) ? SovaRoutes.home : null;
     },
     routes: [
       // Shown for a moment while the saved session loads.
       GoRoute(path: SovaRoutes.start, builder: (_, _) => const Scaffold(body: LoadingView())),
       GoRoute(path: SovaRoutes.welcome, builder: (_, _) => const WelcomeScreen()),
-      GoRoute(path: SovaRoutes.phone, builder: (_, _) => const PhoneScreen()),
+      GoRoute(path: SovaRoutes.signIn, builder: (_, _) => const SignInScreen()),
       GoRoute(path: SovaRoutes.otp, builder: (_, _) => const OtpScreen()),
       GoRoute(path: SovaRoutes.profile, builder: (_, _) => const ProfileScreen()),
       StatefulShellRoute.indexedStack(

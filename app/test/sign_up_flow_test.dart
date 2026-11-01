@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sova/app.dart';
 
-/// Walks the whole sign-up: welcome -> phone -> OTP -> name -> PIN x2 -> home.
+/// Walks the whole sign-up: welcome -> email -> code -> name -> PIN x2 -> home.
 void main() {
   Future<void> settle(WidgetTester tester) async {
     // Demo repository answers after ~350ms.
@@ -28,21 +28,27 @@ void main() {
     await settle(tester);
     expect(find.text('Your ajo.\nOn record.'), findsOneWidget);
 
-    await tester.tap(find.text('Skip'));
+    // The last slide leads straight to signing up with email.
+    await tester.drag(find.byType(PageView), const Offset(-500, 0));
     await settle(tester);
-    expect(find.text('What is your phone number?'), findsOneWidget);
+    await tester.drag(find.byType(PageView), const Offset(-500, 0));
+    await settle(tester);
+    await tester.tap(find.text('Sign up with email'));
+    await settle(tester);
+    expect(find.text('What is your email?'), findsOneWidget);
+    expect(find.textContaining('phone'), findsNothing, reason: 'phone sign-up waits for a paid SMS provider');
 
-    // A bad number is explained, not silently rejected.
-    await tester.enterText(find.byType(TextField), '12345');
+    // A bad address is explained, not silently rejected.
+    await tester.enterText(find.byType(TextField), 'ada.example.com');
     await tester.tap(find.text('Send code'));
     await settle(tester);
-    expect(find.textContaining('Enter a Nigerian mobile number'), findsOneWidget);
+    expect(find.textContaining('Enter your email address'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), '0803 123 4567');
+    await tester.enterText(find.byType(TextField), 'ada@example.com');
     await tester.tap(find.text('Send code'));
     await settle(tester);
     expect(find.text('Enter the 6-digit code'), findsOneWidget);
-    expect(find.textContaining('0803 123 4567'), findsOneWidget);
+    expect(find.textContaining('ada@example.com'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), '123456');
     await settle(tester);

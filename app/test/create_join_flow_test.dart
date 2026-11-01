@@ -33,7 +33,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Skip'));
     await settle(tester);
-    await tester.enterText(find.byType(TextField), '08031234567');
+    await tester.enterText(find.byType(TextField), 'ada@example.com');
     await tester.tap(find.text('Send code'));
     await settle(tester);
     await tester.enterText(find.byType(TextField), '123456');

@@ -175,10 +175,16 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(index < _slides.length - 1 ? 'Next' : 'Get started',
+                          if (index == _slides.length - 1) ...[
+                            const Icon(Icons.mail_outline_rounded, color: SovaColors.white, size: 20),
+                            const SizedBox(width: SovaSpacing.sm),
+                          ],
+                          Text(index < _slides.length - 1 ? 'Next' : 'Sign up with email',
                               style: SovaText.button.copyWith(color: SovaColors.white)),
-                          const SizedBox(width: SovaSpacing.sm),
-                          const Icon(Icons.arrow_forward_rounded, color: SovaColors.white, size: 20),
+                          if (index < _slides.length - 1) ...[
+                            const SizedBox(width: SovaSpacing.sm),
+                            const Icon(Icons.arrow_forward_rounded, color: SovaColors.white, size: 20),
+                          ],
                         ],
                       ),
                     ),

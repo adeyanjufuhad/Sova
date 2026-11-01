@@ -10,18 +10,17 @@ import '../../shared/widgets/common.dart';
 import '../../shared/widgets/sova_loader.dart';
 import 'google_sign_in_button.dart';
 
-/// Signing in: a phone number by default, or an email address, or Google,
-/// whichever the backend has switched on.
-class PhoneScreen extends ConsumerStatefulWidget {
-  const PhoneScreen({super.key});
+/// Signing in or signing up: an emailed code first, or Google, whichever the
+/// backend has switched on. Phone codes come back with a paid SMS provider.
+class SignInScreen extends ConsumerStatefulWidget {
+  const SignInScreen({super.key});
 
   @override
-  ConsumerState<PhoneScreen> createState() => _PhoneScreenState();
+  ConsumerState<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _PhoneScreenState extends ConsumerState<PhoneScreen> {
+class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _controller = TextEditingController();
-  bool _useEmail = false;
   bool _busy = false;
   String? _error;
 
@@ -32,17 +31,17 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   }
 
   Future<void> _submit() async {
-    final auth = ref.read(authProvider.notifier);
-    final address = _useEmail ? normaliseEmail(_controller.text) : normalisePhone(_controller.text);
-    if (address == null) {
-      setState(() => _error =
-          _useEmail ? 'Enter your email address, like ada@example.com.' : 'Enter a Nigerian mobile number, like 0803 123 4567.');
+    final email = normaliseEmail(_controller.text);
+    if (email == null) {
+      setState(() => _error = 'Enter your email address, like ada@example.com.');
       return;
     }
-    await _run(() => _useEmail ? auth.requestEmailCode(address) : auth.requestOtp(address));
+    await _run(() => ref.read(authProvider.notifier).requestEmailCode(email));
   }
 
   Future<void> _google(String idToken) => _run(() => ref.read(authProvider.notifier).signInWithGoogle(idToken));
+
+  Future<void> _tryDemo() => _run(() => ref.read(authProvider.notifier).startDemo());
 
   Future<void> _run(Future<void> Function() action) async {
     setState(() {
@@ -58,18 +57,14 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     }
   }
 
-  void _switchMode() => setState(() {
-        _useEmail = !_useEmail;
-        _controller.clear();
-        _error = null;
-      });
-
   /// The terms and privacy policy live on the website.
   void _open(String page) => launchUrl(Uri.parse('$siteUrl/$page/'), mode: LaunchMode.externalApplication);
 
   @override
   Widget build(BuildContext context) {
     final methods = ref.watch(signInMethodsProvider).value;
+    // Only say email is off once the backend has answered.
+    final emailOff = methods != null && !methods.email;
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -77,54 +72,49 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
           children: [
             const SovaLogo(size: 28),
             const SizedBox(height: SovaSpacing.xl4),
-            const Eyebrow('Sign in'),
+            const Eyebrow('Sign up or sign in'),
             const SizedBox(height: SovaSpacing.md),
-            Text(_useEmail ? 'What is your email?' : 'What is your phone number?', style: SovaText.h1),
+            const Text('What is your email?', style: SovaText.h1),
             const SizedBox(height: SovaSpacing.sm),
-            Text(
-              _useEmail
-                  ? 'We will email you a 6-digit code to confirm it is you.'
-                  : 'We will text you a 6-digit code to confirm it is you.',
+            const Text(
+              'We will email you a 6-digit code. New to Sova? The same code creates your account.',
               style: SovaText.body,
             ),
             const SizedBox(height: SovaSpacing.xl3),
             TextField(
-              key: ValueKey(_useEmail),
               controller: _controller,
-              autofocus: true,
-              keyboardType: _useEmail ? TextInputType.emailAddress : TextInputType.phone,
+              autofocus: !emailOff,
+              enabled: !emailOff,
+              keyboardType: TextInputType.emailAddress,
               autocorrect: false,
-              autofillHints: [_useEmail ? AutofillHints.email : AutofillHints.telephoneNumber],
+              autofillHints: const [AutofillHints.email],
               textInputAction: TextInputAction.done,
-              inputFormatters: _useEmail
-                  ? [LengthLimitingTextInputFormatter(254)]
-                  : [FilteringTextInputFormatter.allow(RegExp(r'[\d\s+]')), LengthLimitingTextInputFormatter(16)],
+              inputFormatters: [LengthLimitingTextInputFormatter(254)],
               style: SovaText.h2,
               onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
-                hintText: _useEmail ? 'ada@example.com' : '0803 123 4567',
+                hintText: 'ada@example.com',
                 errorText: _error,
                 errorMaxLines: 3,
-                prefixIcon: _useEmail
-                    ? null
-                    : Padding(
-                        padding: const EdgeInsets.only(left: SovaSpacing.lg, right: SovaSpacing.sm),
-                        child: Text('+234', style: SovaText.h3.copyWith(height: 2.1)),
-                      ),
+                prefixIcon: const Icon(Icons.mail_outline_rounded),
               ),
             ),
             const SizedBox(height: SovaSpacing.xl2),
             FilledButton(
-              onPressed: _busy ? null : _submit,
+              onPressed: _busy || emailOff ? null : _submit,
               child: _busy ? const SovaLoader(size: 22, color: SovaColors.white) : const Text('Send code'),
             ),
-            if (methods?.email ?? false)
-              TextButton(
-                onPressed: _busy ? null : _switchMode,
-                child: Text(_useEmail ? 'Use my phone number instead' : 'Use email instead'),
+            if (emailOff) ...[
+              const SizedBox(height: SovaSpacing.md),
+              NoticeBox(
+                methods.google
+                    ? 'Email sign-up is coming soon. For now, continue with Google or try the demo.'
+                    : 'Email sign-up is coming soon. For now, try the demo.',
+                icon: Icons.schedule_rounded,
               ),
+            ],
             if (methods?.googleClientId case final clientId?) ...[
-              const SizedBox(height: SovaSpacing.sm),
+              const SizedBox(height: SovaSpacing.lg),
               const _OrDivider(),
               const SizedBox(height: SovaSpacing.md),
               GoogleSignInButton(
@@ -134,6 +124,8 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 onError: (message) => setState(() => _error = message),
               ),
             ],
+            if (emailOff && methods.demo)
+              TextButton(onPressed: _busy ? null : _tryDemo, child: const Text('Try the demo')),
             const SizedBox(height: SovaSpacing.sm),
             Wrap(
               alignment: WrapAlignment.center,
