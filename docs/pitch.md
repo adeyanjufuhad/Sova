@@ -25,7 +25,7 @@ Honesty rule for everything below: say only what is built. Every number marked *
 
 **4. Why it's different (20 s)**
 - Fair draw by commit-reveal: the order is sealed before anyone joins and anyone can recheck it.
-- Tamper-evident ledger (hash chain written by the database, append-only, anchored publicly every 6 hours on GitHub).
+- Tamper-evident ledger (hash chain written by the database, append-only, chain heads published on GitHub on a 6-hour schedule; GitHub has been running it about twice a day, so say "published on GitHub", not "every six hours").
 - Disputes decided by the circle's vote, not by the admin.
 - Sova Score: your record, shareable by link, only after 3 confirmed payments.
 
@@ -51,7 +51,7 @@ Honesty rule for everything below: say only what is built. Every number marked *
 | Do you hold people's money? | No. Members pay each other directly. Sova records it. That keeps us out of deposit-taking rules and means a Sova failure can't lose anyone's savings. |
 | So what stops someone running off after collecting? | Nothing physical, and we don't pretend otherwise. What changes is that it can't be hidden: the record shows who collected and stopped, the circle sees it, vouches are visible, and their Sova Score shows it. Social pressure plus a permanent record. |
 | Can the admin rig the order? | No. The seed is committed (SHA-256) when the circle is created, before anyone joins; the order is computed from it; the app and the website both recheck it. The admin can only pledge to go last. |
-| Can Sova edit the ledger? | The database refuses updates and deletes on ledger rows for every role, and chain heads are published every 6 hours outside our database. We say "tamper-evident", not "tamper-proof": a change would be detectable, not impossible. |
+| Can Sova edit the ledger? | The database refuses updates and deletes on ledger rows for every role, and chain heads are published on GitHub, outside our database, several times a day. We say "tamper-evident", not "tamper-proof": a change would be detectable, not impossible. |
 | Is the Sova Score a credit score? | No. It's the person's own record of paying on time, shown only after 3 confirmed payments, shared only when they choose. Using it for lending would need a licensed credit bureau partner. |
 | Why not just a WhatsApp group? | A WhatsApp group can't prove the draw was fair, can't stop an admin editing the list, and can't settle "I sent it" vs "it never came". |
 | How do people sign in today? | Google or an email code, plus the demo. Phone codes need a paid SMS provider, which is the first spend after judging. |

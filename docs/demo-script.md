@@ -43,8 +43,8 @@ Finalists get a 3-minute pitch, then a 3-minute product walkthrough, then Q&A (G
 ### Set up (before 4:30)
 
 - [ ] Morning: `npm run seed` in `api/`, then run the **Ledger anchors** workflow by hand (see "Before the demo").
-- [ ] Morning: ask Ask Sova one question on a throwaway demo to check it answers. If the day's cap worries you, raise `AI_DAILY_TOTAL` on `sova-api` for the day.
-- [ ] 4:00: open `/health`, the website and the app so the first load (about 20 s) is over before you share.
+- [ ] Morning, after the workflow finishes: open the verify page's **Office Esusu** and check its dates are this week and "Public anchors: every checkpoint matches". Before reseeding, the shared demo still holds 16 Oct data (dates in September and October) that won't match what the app shows.
+- [ ] 4:00: open `/health`, the website and the app so the first load (about 25 s from cold in the dry run) is over before you share.
 - [ ] 4:10: in a **new** tab (never duplicate a tab: the copied session signs both out), tap **Try the demo**, then **Skip tour**. Open **Office Esusu**, skip its circle tour, and go back to Home. Touch nothing else, so Halima, Emeka and the vote are still waiting.
 - [ ] 4:10: in a second tab open https://sova.rumptycloud.app/verify/, pick the shared **Office Esusu** and wait for "Public anchors: every checkpoint matches". Use this tab for the verify beat: a private demo copy is never anchored publicly, so the app's own **Verify this circle** link shows "Public anchors: not published yet" for it.
 - [ ] Close other tabs, mute notifications, zoom the browser so text reads on a shared screen.
@@ -55,18 +55,25 @@ Finalists get a 3-minute pitch, then a 3-minute product walkthrough, then Q&A (G
 
 | Time | Where | Do | Say (roughly) |
 |---|---|---|---|
-| 0:00–0:15 | Home | Point at the next payout and what Ada owes. | "This is Ada. She's in five savings circles. Home shows what she's owed and what she owes." |
+| 0:00–0:15 | Home | Point at the next payout (₦30,000, Yaba Traders, "2 days ago") and Halima's reminder. | "This is Ada. She's in several savings circles. Her own payout is two days late, because someone stopped paying; we'll get to him. First, what she owes." |
 | 0:15–0:45 | Office Esusu → **Pay Halima ₦20,000** | Show Halima's bank details, type a reference, enter the PIN. Skip the receipt photo (mention it). | "Ada pays Halima by her own bank transfer. Sova never touches the money: it records it. She can attach a receipt, and Halima now has to confirm." |
 | 0:45–1:10 | Unilag Class of '24 Ajo | Tap **Confirm** on Emeka's payment, PIN. | "Here Ada is the collector. Five members at ₦10,000, so she receives ₦40,000 from the other four. She confirms Emeka's payment and he gets a receipt." |
-| 1:10–1:40 | Yaba Traders Circle → the dispute | On the member list, point at Musa's "Collected, then missed a payment"; open the dispute and cast Ada's vote with the PIN. | "This is what kills ajo. Musa collected first, then stopped paying. He says he sent it, Peter says it never came. The admin doesn't decide: the members who aren't involved vote, and it goes on the record." |
-| 1:40–1:55 | Same dispute → chat icon (Ask Sova) | Ask for an explanation. **If no answer in 5 seconds, go back and move on.** | "For members who aren't technical, Ask Sova explains the dispute in plain English, from the circle's record, running on GPUs here in Lagos." |
-| 1:55–2:30 | Office Esusu → **How it was drawn** | Let the replay run until both checks pass. | "Who collects first is where people suspect rigging. Sova sealed a fingerprint of a secret seed before anyone joined. When the circle filled, the seed was revealed and the order computed from it. Your phone rechecks both. Nobody, not even the admin, picked their turn." |
-| 2:30–2:50 | Switch to the verify tab (shared Office Esusu) | Point at the chain check, the draw check and the anchors card. | "Every payment, vote and confirmation is chained by SHA-256. This page recomputes the whole chain in the browser and checks it against copies we publish on GitHub every six hours. Tamper-evident, not tamper-proof, and it says so." |
+| 1:10–1:55 | Yaba Traders Circle → **2 open disputes** → **Musa's turn 2 payment** | On the circle, point at Musa's "Collected, then missed a payment". Open the dispute (it takes a few seconds to load), scroll to "The circle decides", tap **It didn't arrive**, PIN. Tap back once: the list now says "Closed: not paid. Decided by the circle: 2 of 2 members voted". | "This is what kills ajo. Musa collected first, then stopped paying. He says he sent it, Peter says it never came. The admin doesn't decide: the members who aren't involved vote. Sani already voted; Ada's vote decides it, and it's on the record." |
+| 1:55–2:30 | Office Esusu → **How it was drawn** | Let the replay run (about 6 s), then scroll down to "Checked on this phone": both ticks. | "Who collects first is where people suspect rigging. Sova sealed a fingerprint of a secret seed before anyone joined. When the circle filled, the seed was revealed and the order computed from it. Your phone rechecks both. Nobody, not even the admin, picked their turn." |
+| 2:30–2:50 | Switch to the verify tab (shared Office Esusu) | Point at the chain check, the draw check and the anchors card. | "Every payment, vote and confirmation is chained by SHA-256. This page recomputes the whole chain in the browser and checks it against checkpoints we publish on GitHub, outside our own database. Tamper-evident, not tamper-proof, and it says so." |
 | 2:50–3:00 | Back in the app → **Record** tab | Show the Sova Score card. | "And all of that becomes Ada's record, which she can share. Live today on the web and Android." |
+
+**Ask Sova is not in the 3 minutes.** In the dry run (6 Nov) it answered in about 6 seconds but told Ada "you paid" Musa's ₦10,000, although the data it was given says Ada is a voter and Musa is the payer: the small model (Llama 3.2 3B) mixed up the people. Mention it in one line if there's time ("an AI helper explains disputes in plain English; it's labelled as AI and the circle screen stays the record"), or keep it for Q&A. Don't open it live.
+
+**Anchor timing:** the workflow is scheduled every 6 hours, but GitHub has been running it about twice a day (1–6 Nov). On stage say "published on GitHub", not "every six hours".
 
 ### If you're running late
 
-Cut in this order: Ask Sova (saves 15 s), then the Sova Score close (end on the verify page instead), then shorten the confirm beat to one sentence. Never cut the dispute or the fair draw: they are what makes Sova different.
+Cut in this order: the Sova Score close (end on the verify page instead), then shorten the confirm beat to one sentence, then skip the Home beat and open Office Esusu straight away. Never cut the dispute or the fair draw: they are what makes Sova different.
+
+### Dry run (6 Nov, evening, live services)
+
+Every beat worked on a fresh private demo: the demo opened in about 5 s, paying Halima showed the receipt ("Awaiting confirmation"), confirming Emeka showed "Confirmed. Emeka will get a receipt." (2 of 4 paid), Ada's vote closed the dispute as not paid, the fair draw passed both checks, and the shared Office Esusu verified with matching anchors. Slow spots: about 25 s first load from cold, 3–5 s to open the dispute. Cosmetic, not fixed: Musa's line reads "Collected · Collected, then missed a payment".
 
 ### If something breaks mid-walkthrough
 
