@@ -1,6 +1,6 @@
 # Demo script
 
-A walk through Sova on the live services, for judging day and anyone trying it for the first time. It takes about 8 minutes. Use the web app (https://sova-app.rumptycloud.app) or the Android app (https://github.com/adeyanjufuhad/Sova/releases/latest: download the APK and install it; Android may ask you to allow installs from your browser). Everything shown here is built; the roadmap is named as roadmap at the end.
+A walk through Sova on the live services, for judging day and anyone trying it for the first time. It takes about 8 minutes. For the 3-minute product walkthrough on demo day (7 Nov), use [Demo day: the 3-minute walkthrough](#demo-day-the-3-minute-walkthrough) instead. Use the web app (https://sova-app.rumptycloud.app) or the Android app (https://github.com/adeyanjufuhad/Sova/releases/latest: download the APK and install it; Android may ask you to allow installs from your browser). Everything shown here is built; the roadmap is named as roadmap at the end.
 
 ## Before the demo
 
@@ -35,6 +35,42 @@ Ada belongs to five circles in different states:
 | Ikeja Tech Hub Esusu | Forming, 4 of 8 joined | Join with code `T7KP9Q`; the draw is sealed but not run |
 | Church Adashe | Completed | Finished history that feeds Ada's record |
 | Yaba Traders Circle | Weekly, ₦10,000, turn 3 of 4 | Musa collected first then stopped paying; a short payout opened a dispute, and the circle is voting on his late payment |
+
+## Demo day: the 3-minute walkthrough
+
+Finalists get a 3-minute pitch, then a 3-minute product walkthrough, then Q&A (Google Meet, 4:30 PM WAT). The pitch is in `docs/pitch.md`; this is the walkthrough. It follows one thread: **pay → confirm → someone cheats → the circle decides → nobody could rig the order → anyone can check the record.** Everything else (website landing page, tours, reminders, swaps, handovers, joining, settings) is left out on purpose.
+
+### Set up (before 4:30)
+
+- [ ] Morning: `npm run seed` in `api/`, then run the **Ledger anchors** workflow by hand (see "Before the demo").
+- [ ] Morning: ask Ask Sova one question on a throwaway demo to check it answers. If the day's cap worries you, raise `AI_DAILY_TOTAL` on `sova-api` for the day.
+- [ ] 4:00: open `/health`, the website and the app so the first load (about 20 s) is over before you share.
+- [ ] 4:10: in a **new** tab (never duplicate a tab: the copied session signs both out), tap **Try the demo**, then **Skip tour**. Open **Office Esusu**, skip its circle tour, and go back to Home. Touch nothing else, so Halima, Emeka and the vote are still waiting.
+- [ ] 4:10: in a second tab open https://sova.rumptycloud.app/verify/, pick the shared **Office Esusu** and wait for "Public anchors: every checkpoint matches". Use this tab for the verify beat: a private demo copy is never anchored publicly, so the app's own **Verify this circle** link shows "Public anchors: not published yet" for it.
+- [ ] Close other tabs, mute notifications, zoom the browser so text reads on a shared screen.
+- [ ] Backup: the screen recording on the laptop and the APK (v1.0.5) on your phone, signed in to its own fresh demo.
+- [ ] Demo PIN `2580`.
+
+### The 3 minutes
+
+| Time | Where | Do | Say (roughly) |
+|---|---|---|---|
+| 0:00–0:15 | Home | Point at the next payout and what Ada owes. | "This is Ada. She's in five savings circles. Home shows what she's owed and what she owes." |
+| 0:15–0:45 | Office Esusu → **Pay Halima ₦20,000** | Show Halima's bank details, type a reference, enter the PIN. Skip the receipt photo (mention it). | "Ada pays Halima by her own bank transfer. Sova never touches the money: it records it. She can attach a receipt, and Halima now has to confirm." |
+| 0:45–1:10 | Unilag Class of '24 Ajo | Tap **Confirm** on Emeka's payment, PIN. | "Here Ada is the collector. Five members at ₦10,000, so she receives ₦40,000 from the other four. She confirms Emeka's payment and he gets a receipt." |
+| 1:10–1:40 | Yaba Traders Circle → the dispute | On the member list, point at Musa's "Collected, then missed a payment"; open the dispute and cast Ada's vote with the PIN. | "This is what kills ajo. Musa collected first, then stopped paying. He says he sent it, Peter says it never came. The admin doesn't decide: the members who aren't involved vote, and it goes on the record." |
+| 1:40–1:55 | Same dispute → chat icon (Ask Sova) | Ask for an explanation. **If no answer in 5 seconds, go back and move on.** | "For members who aren't technical, Ask Sova explains the dispute in plain English, from the circle's record, running on GPUs here in Lagos." |
+| 1:55–2:30 | Office Esusu → **How it was drawn** | Let the replay run until both checks pass. | "Who collects first is where people suspect rigging. Sova sealed a fingerprint of a secret seed before anyone joined. When the circle filled, the seed was revealed and the order computed from it. Your phone rechecks both. Nobody, not even the admin, picked their turn." |
+| 2:30–2:50 | Switch to the verify tab (shared Office Esusu) | Point at the chain check, the draw check and the anchors card. | "Every payment, vote and confirmation is chained by SHA-256. This page recomputes the whole chain in the browser and checks it against copies we publish on GitHub every six hours. Tamper-evident, not tamper-proof, and it says so." |
+| 2:50–3:00 | Back in the app → **Record** tab | Show the Sova Score card. | "And all of that becomes Ada's record, which she can share. Live today on the web and Android." |
+
+### If you're running late
+
+Cut in this order: Ask Sova (saves 15 s), then the Sova Score close (end on the verify page instead), then shorten the confirm beat to one sentence. Never cut the dispute or the fair draw: they are what makes Sova different.
+
+### If something breaks mid-walkthrough
+
+Say what happened in one line ("the free model is busy, let me move on") and go to the next beat. If the web app won't respond, switch the share to the phone or the recording. The full list is under "If something goes wrong" at the end of this file.
 
 ## Walkthrough
 
