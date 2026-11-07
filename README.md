@@ -11,11 +11,12 @@
   <img src="https://img.shields.io/badge/Dart-Flutter%20app-1D4ED8?style=flat&logo=dart&logoColor=white" alt="Dart: Flutter app">
   <img src="https://img.shields.io/badge/TypeScript-API%20%2B%20website-1D4ED8?style=flat&logo=typescript&logoColor=white" alt="TypeScript: API and website">
   <img src="https://img.shields.io/badge/SQL-PostgreSQL%2017-1D4ED8?style=flat&logo=postgresql&logoColor=white" alt="SQL: PostgreSQL 17">
+  <img src="https://img.shields.io/badge/Devcenter%20Hacktober%202026-2nd%20place-0B1A33?style=flat" alt="Devcenter Hacktober 2026: 2nd place">
 </p>
 
 Sova keeps the record for ajo, esusu and adashe savings circles: who joined, who collects when, who has paid and who has confirmed. It never holds, moves, lends or invests money. Members pay each other by bank transfer or cash as they always have; Sova keeps a tamper-evident record of it.
 
-Built for Devcenter Hacktober 2026. First users are self-run circles of friends, colleagues and classmates.
+Built for Devcenter Hacktober 2026, where it took **second place** at demo day on 7 November 2026. First users are self-run circles of friends, colleagues and classmates.
 
 ## For judges
 
