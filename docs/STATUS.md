@@ -1,6 +1,6 @@
 # Sova status report
 
-Last updated: 1 November 2026 (judging week; email-first sign-up). Before that: 30 October (Phase 7, ready for judging: bug sweep, pitch prep in `docs/pitch.md`). Phases 4, 5 and 6 done early.
+Last updated: 9 November 2026 (hackathon result: **2nd place**, ₦300,000). Before that: 1 November (judging week; email-first sign-up), and 30 October (Phase 7, ready for judging: bug sweep, pitch prep in `docs/pitch.md`). Phases 4, 5 and 6 done early.
 
 > Sova makes Ajo impossible to cheat, and turns your saving history into your credit history.
 
@@ -18,6 +18,9 @@ Update it at the end of every phase.
 ## Hackathon (Devcenter Hacktober)
 
 - Build: 1–31 October 2026. Submission: 24 October (owner, 23 Oct). **Submitted 24 Oct** through the Devcenter form: live demo https://sova-app.rumptycloud.app, repository and README as the technical documentation. Judging: 1–6 November. Live demo day: 7 November. **Result: Sova took second place** (owner, 7 Nov).
+- **Result details:** the second place came with ₦300,000 (owner, 9 Nov). Demo day morning (afternoon in practice, about 15:50 WAT): shared demo reseeded on the live database (18 people, 5 circles), Ledger anchors run by hand (success), verify page showed Office Esusu "Record intact" with every checkpoint matching. The walkthrough followed `docs/demo-script.md` ("Demo day: the 3-minute walkthrough"); Ask Sova was left out after the 6 Nov dry run, where the 3B model told the demo member "you paid" another member's payment.
+- **Owner decisions after the hackathon (open):** keep the API, app and website on Tiny (about ₦8,100 a month, always awake) or move them back to Free as planned for after 7 Nov; what the prize pays for, given the zero-cost rule (candidates: always-on hosting, the $25 Google Play account, a first pilot with real circles); the next phase (see "Phase plan").
+- **Wording to fix:** the verify page, `docs/ledger.md` and the privacy page say chain heads are published "every 6 hours". The workflow is scheduled that way, but GitHub ran it about twice a day from 1 to 6 Nov; say "on a 6-hour schedule" or "several times a day".
 - Judged on: live and fully functional on **RumptyCloud**; clean code and docs (setup from README); innovation and practical utility.
 - Milestones: core loop live by **12 Oct**, trust features by **22 Oct**, polish and docs by **28 Oct**, buffer 29–31 Oct.
 - Before submission (24 Oct): move every RumptyCloud deployment to the Tiny size with scale-to-zero off, paid from the owner's RumptyCloud credit (see the 23 Oct decision).
@@ -274,7 +277,8 @@ Earlier hosting (Neon database, Vercel) is replaced by RumptyCloud for the hacka
 | 4. Fair draw + trust screens ✅ (early, 7 Oct) | 17–22 Oct | Commit-reveal draw with animation and verification; Sova Score card from the database; swaps, handovers, disputes with votes; collected-then-stopped flag |
 | 5. Settings + reminders ✅ (early, 7 Oct) | 22–25 Oct | Edit profile, bank details, change PIN; in-app notifications |
 | 6. Docs + polish ✅ (early, 7 Oct) | 25–28 Oct | Root README with Mermaid diagram and RumptyCloud deployment; folder READMEs; demo script |
-| 7. Ready for judging (started 19 Oct) | 19–31 Oct | 19–22 Oct: APK signed with an upload key (v1.0.1); keep-awake ping dropped (23 Oct): Tiny size with scale-to-zero off from 24 Oct to 7 Nov, paid from RumptyCloud credit. 23–28 Oct: demo script on a real phone (done 23 Oct); `web-design-guidelines` audit; owner signs off the 18+ rule, privacy policy and terms (done 23 Oct); "For judges" README section (done 23 Oct). 29–31 Oct: backup video and pitch deck, then a full rehearsal. 1–7 Nov: reseed, run ledger anchors and check health each morning |
+| 7. Ready for judging ✅ (2nd place, 7 Nov) | 19 Oct–7 Nov | 19–22 Oct: APK signed with an upload key (v1.0.1); keep-awake ping dropped (23 Oct): Tiny size with scale-to-zero off from 24 Oct to 7 Nov, paid from RumptyCloud credit. 23–28 Oct: demo script on a real phone (done 23 Oct); `web-design-guidelines` audit; owner signs off the 18+ rule, privacy policy and terms (done 23 Oct); "For judges" README section (done 23 Oct). 29–31 Oct: backup video and pitch deck, then a full rehearsal. 1–7 Nov: reseed, run ledger anchors and check health each morning. Not made: the backup video and the pitch deck (no time on demo day) |
+| 8. Next (not decided) | from 9 Nov | Proposed, owner to choose: post-hackathon fixes (monthly due-date drift, 2-person disputes, duplicate-tab sign-out, the repeated "Collected" on the member line, the "every 6 hours" wording, the 3.4 MB uncompressed first load); push notifications (Firebase, free) before paid SMS; Google Play listing; privacy policy naming Brevo and Google; a small pilot with real self-run circles |
 
 ## RumptyCloud facts (observed 3 Oct)
 
